@@ -1,0 +1,368 @@
+"use client"
+
+import Link from "next/link"
+import { usePathname } from "next/navigation"
+import { useState, useEffect } from "react"
+import { Menu, X } from "lucide-react"
+import { motion, AnimatePresence } from "framer-motion"
+
+import { cn } from "@/lib/utils"
+import { Button } from "@/components/ui/button"
+
+export function MainNav() {
+  const pathname = usePathname()
+  const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const [scrolled, setScrolled] = useState(false)
+  const [hoveredItem, setHoveredItem] = useState<string | null>(null)
+
+  const navItems = [
+    { href: "/", label: "Home" },
+    { href: "/enjoy-realty", label: "Enjoy Realty" },
+    { href: "/aman-engineering", label: "Aman Engineering" },
+    {
+      label: "Properties",
+      items: [
+        { href: "/model-houses", label: "Model Houses" },
+        { href: "/ready-for-occupancy", label: "Ready For Occupancy" },
+      ],
+    },
+    {
+      label: "Resources",
+      items: [
+        { href: "/loan-calculator", label: "Loan Calculator" },
+        { href: "/calendar", label: "Calendar" },
+      ],
+    },
+    { href: "/contact", label: "Contact Us" },
+  ]
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.scrollY > 10) {
+        setScrolled(true)
+      } else {
+        setScrolled(false)
+      }
+    }
+
+    window.addEventListener("scroll", handleScroll)
+    return () => {
+      window.removeEventListener("scroll", handleScroll)
+    }
+  }, [])
+
+  // Close menu when route changes
+  useEffect(() => {
+    setIsMenuOpen(false)
+  }, [pathname])
+
+  const toggleMenu = () => {
+    setIsMenuOpen(!isMenuOpen)
+  }
+
+  return (
+    <motion.nav
+      initial={{ y: -20, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      transition={{ duration: 0.3 }}
+      className={cn(
+        "sticky top-0 z-30 w-full border-b bg-white transition-all duration-300",
+        scrolled ? "shadow-md" : "",
+      )}
+    >
+      <div className="container mx-auto px-4">
+        <div className="flex h-16 items-center justify-between">
+          <motion.div
+            className="flex items-center"
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            <Link href="/" className="flex items-center" onClick={() => setIsMenuOpen(false)}>
+              <motion.div
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="flex items-center justify-center bg-primary text-primary-foreground font-bold text-xl rounded-md h-10 w-10"
+              >
+                A
+              </motion.div>
+              <span className="ml-2 font-semibold text-lg">Aman Group</span>
+            </Link>
+          </motion.div>
+
+          {/* Desktop Navigation */}
+          <div className="hidden md:flex md:items-center md:space-x-1 lg:space-x-4">
+            {navItems.map((item, index) => {
+              // Check if the item has a dropdown
+              if (item.items) {
+                return (
+                  <motion.div
+                    key={item.label}
+                    className="relative group"
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3, delay: 0.1 * index }}
+                    onHoverStart={() => setHoveredItem(item.label)}
+                    onHoverEnd={() => setHoveredItem(null)}
+                  >
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      className={cn(
+                        "text-sm font-medium transition-colors hover:text-primary relative px-3 py-2 rounded-md flex items-center",
+                        pathname.startsWith(`/${item.items[0].href?.split("/")[1]}`) ||
+                          pathname.startsWith(`/${item.items[1].href?.split("/")[1]}`)
+                          ? "text-primary font-semibold bg-primary/5"
+                          : "text-muted-foreground hover:bg-gray-50",
+                      )}
+                    >
+                      {item.label}
+                      <motion.svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        className="ml-1 h-4 w-4"
+                        animate={{ rotate: hoveredItem === item.label ? 180 : 0 }}
+                        transition={{ duration: 0.2 }}
+                      >
+                        <path d="m6 9 6 6 6-6" />
+                      </motion.svg>
+                    </motion.button>
+                    <AnimatePresence>
+                      {hoveredItem === item.label && (
+                        <motion.div
+                          className="absolute left-0 mt-1 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50"
+                          initial={{ opacity: 0, y: 10, height: 0 }}
+                          animate={{ opacity: 1, y: 0, height: "auto" }}
+                          exit={{ opacity: 0, y: 10, height: 0 }}
+                          transition={{ duration: 0.2 }}
+                        >
+                          <div className="py-1" role="menu" aria-orientation="vertical">
+                            {item.items.map((subItem, subIndex) => (
+                              <motion.div
+                                key={subItem.href}
+                                initial={{ opacity: 0, x: -10 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ duration: 0.2, delay: 0.05 * subIndex }}
+                              >
+                                <Link
+                                  href={subItem.href}
+                                  className={cn(
+                                    "block px-4 py-2 text-sm hover:bg-gray-100",
+                                    pathname === subItem.href ? "text-primary font-semibold" : "text-gray-700",
+                                  )}
+                                >
+                                  {subItem.label}
+                                </Link>
+                              </motion.div>
+                            ))}
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </motion.div>
+                )
+              }
+
+              // Regular menu item without dropdown
+              return (
+                <motion.div
+                  key={item.href}
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: 0.1 * index }}
+                >
+                  <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                    <Link
+                      href={item.href}
+                      className={cn(
+                        "text-sm font-medium transition-colors hover:text-primary relative px-3 py-2 rounded-md",
+                        pathname === item.href
+                          ? "text-primary font-semibold bg-primary/5"
+                          : "text-muted-foreground hover:bg-gray-50",
+                      )}
+                    >
+                      {item.label}
+                    </Link>
+                  </motion.div>
+                </motion.div>
+              )
+            })}
+          </div>
+
+          {/* Mobile Menu Button */}
+          <motion.div
+            className="md:hidden"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={toggleMenu}
+                className="h-12 w-12 p-0 rounded-full"
+                aria-label={isMenuOpen ? "Close menu" : "Open menu"}
+                aria-expanded={isMenuOpen}
+              >
+                <AnimatePresence mode="wait">
+                  {isMenuOpen ? (
+                    <motion.div
+                      key="close"
+                      initial={{ rotate: -90, opacity: 0 }}
+                      animate={{ rotate: 0, opacity: 1 }}
+                      exit={{ rotate: 90, opacity: 0 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      <X className="h-6 w-6" />
+                    </motion.div>
+                  ) : (
+                    <motion.div
+                      key="menu"
+                      initial={{ rotate: 90, opacity: 0 }}
+                      animate={{ rotate: 0, opacity: 1 }}
+                      exit={{ rotate: -90, opacity: 0 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      <Menu className="h-6 w-6" />
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </Button>
+            </motion.div>
+          </motion.div>
+        </div>
+      </div>
+
+      {/* Mobile Navigation */}
+      <AnimatePresence>
+        {isMenuOpen && (
+          <motion.div
+            initial={{ x: "100%" }}
+            animate={{ x: 0 }}
+            exit={{ x: "100%" }}
+            transition={{ type: "tween", duration: 0.3 }}
+            className="fixed inset-0 bg-white z-40 md:hidden"
+            style={{ top: "64px" }}
+          >
+            <div className="container mx-auto px-4 py-3 h-full overflow-y-auto">
+              <motion.div
+                className="space-y-1 pb-32"
+                initial="hidden"
+                animate="visible"
+                variants={{
+                  visible: { transition: { staggerChildren: 0.07 } },
+                }}
+              >
+                {navItems.map((item) => {
+                  // Check if the item has a dropdown
+                  if (item.items) {
+                    return (
+                      <motion.div
+                        key={item.label}
+                        className="mb-2"
+                        variants={{
+                          hidden: { opacity: 0, y: 20 },
+                          visible: { opacity: 1, y: 0, transition: { duration: 0.3 } },
+                        }}
+                      >
+                        <div
+                          className={cn(
+                            "flex items-center justify-between py-3 px-4 text-base font-medium rounded-md",
+                            pathname.startsWith(`/${item.items[0].href?.split("/")[1]}`) ||
+                              pathname.startsWith(`/${item.items[1].href?.split("/")[1]}`)
+                              ? "bg-primary/10 text-primary font-semibold"
+                              : "text-muted-foreground",
+                          )}
+                        >
+                          {item.label}
+                        </div>
+                        <motion.div
+                          className="pl-4 mt-1 space-y-1 border-l-2 border-gray-200 ml-4"
+                          initial="hidden"
+                          animate="visible"
+                          variants={{
+                            visible: { transition: { staggerChildren: 0.05, delayChildren: 0.1 } },
+                          }}
+                        >
+                          {item.items.map((subItem) => (
+                            <motion.div
+                              key={subItem.href}
+                              variants={{
+                                hidden: { opacity: 0, x: -10 },
+                                visible: { opacity: 1, x: 0, transition: { duration: 0.3 } },
+                              }}
+                            >
+                              <Link
+                                href={subItem.href}
+                                className={cn(
+                                  "flex items-center py-2 px-4 text-sm rounded-md transition-all",
+                                  pathname === subItem.href
+                                    ? "bg-primary/10 text-primary font-semibold"
+                                    : "text-muted-foreground hover:bg-gray-50",
+                                )}
+                                onClick={() => setIsMenuOpen(false)}
+                              >
+                                {subItem.label}
+                              </Link>
+                            </motion.div>
+                          ))}
+                        </motion.div>
+                      </motion.div>
+                    )
+                  }
+
+                  // Regular menu item without dropdown
+                  return (
+                    <motion.div
+                      key={item.href}
+                      variants={{
+                        hidden: { opacity: 0, y: 20 },
+                        visible: { opacity: 1, y: 0, transition: { duration: 0.3 } },
+                      }}
+                    >
+                      <Link
+                        href={item.href}
+                        className={cn(
+                          "flex items-center justify-between py-4 px-4 text-base font-medium rounded-md transition-all",
+                          pathname === item.href
+                            ? "bg-primary/10 text-primary font-semibold"
+                            : "text-muted-foreground hover:bg-gray-50",
+                        )}
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        {item.label}
+                      </Link>
+                    </motion.div>
+                  )
+                })}
+              </motion.div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Overlay for mobile menu */}
+      <AnimatePresence>
+        {isMenuOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 bg-black/20 z-30 md:hidden"
+            style={{ top: "64px" }}
+            onClick={toggleMenu}
+          />
+        )}
+      </AnimatePresence>
+    </motion.nav>
+  )
+}

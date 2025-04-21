@@ -1,0 +1,509 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+
+    --primary: 142.1 76.2% 36.3%;
+    --primary-foreground: 355.7 100% 97.3%;
+
+    --secondary: 240 3.7% 15.9%;
+    --secondary-foreground: 0 0% 98%;
+
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 222.2 84% 4.9%;
+
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 142.1 70.6% 45.3%;
+    --primary-foreground: 144.9 80.4% 10%;
+
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 212.7 26.8% 83.9%;
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  /* For users who prefer reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+  }
+
+  /* Rest of your existing base styles */
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Mobile-first typography adjustments */
+  h1 {
+    @apply text-2xl md:text-4xl font-bold leading-tight;
+  }
+  h2 {
+    @apply text-xl md:text-3xl font-bold leading-tight;
+  }
+  h3 {
+    @apply text-lg md:text-2xl font-bold leading-tight;
+  }
+  p {
+    @apply leading-relaxed;
+  }
+}
+
+@keyframes logoReveal {
+  0% {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes fadeUp {
+  0% {
+    transform: translateY(10px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+/* Remove any PWA-specific styles like these if they exist */
+.splash-screen-bg,
+.logo-reveal,
+.fade-up,
+.shimmer {
+  /* Remove these styles */
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+/* Improved mobile touch targets */
+.mobile-touch-target {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* Ensure all interactive elements have sufficient touch target size */
+button,
+a,
+input,
+select,
+textarea {
+  @apply mobile-touch-target;
+}
+
+/* Responsive spacing utilities */
+.mobile-container {
+  @apply px-4 md:px-6 lg:px-8;
+}
+
+.mobile-py {
+  @apply py-6 md:py-10 lg:py-12;
+}
+
+.mobile-my {
+  @apply my-6 md:my-8 lg:my-10;
+}
+
+.mobile-px {
+  @apply px-4 md:px-6;
+}
+
+.mobile-mx {
+  @apply mx-4 md:mx-6;
+}
+
+/* Hide scrollbar for Chrome, Safari and Opera */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Hide scrollbar for IE, Edge and Firefox */
+.no-scrollbar {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
+
+/* Improved tab transitions */
+[role="tab"] {
+  transition: all 0.2s ease;
+}
+
+[role="tab"][data-state="active"] {
+  transition: all 0.2s ease;
+}
+
+/* Tab container improvements */
+[role="tablist"] {
+  position: relative;
+  display: flex;
+  gap: 2px;
+}
+
+/* Tab animations and styling */
+.tabs-animated [data-state="active"] {
+  animation: tabFadeIn 0.3s ease forwards;
+  position: relative;
+}
+
+.tabs-animated [data-state="active"]::after {
+  content: "";
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background-color: currentColor;
+  animation: tabUnderline 0.3s ease forwards;
+}
+
+@keyframes tabFadeIn {
+  from {
+    opacity: 0.7;
+    transform: translateY(2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes tabUnderline {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+/* Responsive tabs improvements */
+@media (max-width: 640px) {
+  [role="tablist"] {
+    overflow-x: auto;
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE and Edge */
+    padding-bottom: 5px;
+    gap: 1px;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    padding: 0.5rem;
+  }
+
+  [role="tablist"]::-webkit-scrollbar {
+    display: none;
+  }
+
+  [role="tab"] {
+    white-space: nowrap;
+    flex-shrink: 0;
+    font-size: 0.75rem;
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+    min-width: auto;
+    height: auto;
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+  }
+}
+
+/* Improve tab display on mobile devices */
+.mobile-tabs [role="tab"] {
+  font-size: 0.75rem; /* Smaller font on mobile */
+  padding: 0.5rem 0.75rem;
+  min-width: auto;
+  white-space: nowrap;
+  flex-shrink: 0;
+  height: auto;
+}
+
+/* Ensure tab text doesn't wrap and shows ellipsis if needed */
+[role="tab"] {
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+/* Improve tab scrolling behavior */
+.mobile-tabs {
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+  scroll-snap-type: x mandatory;
+  padding: 0.25rem;
+}
+
+.mobile-tabs [role="tab"] {
+  scroll-snap-align: start;
+}
+
+/* Make active tabs more visible on mobile */
+.mobile-tabs [role="tab"][data-state="active"] {
+  font-weight: 600;
+  transform: scale(1.05);
+}
+
+/* Responsive table styles */
+@media (max-width: 640px) {
+  /* Make the amortization schedule table more mobile-friendly */
+  .overflow-x-auto {
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+  }
+
+  /* Adjust font size for better readability on small screens */
+  .grid.grid-cols-5 {
+    font-size: 0.75rem;
+  }
+
+  /* Add some padding to ensure content is readable */
+  .grid.grid-cols-5 > div {
+    padding: 0.5rem 0.25rem;
+    word-break: break-word;
+  }
+
+  /* Ensure the header is sticky when scrolling horizontally */
+  .grid.grid-cols-5.bg-muted {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+}
+
+/* Improved scrollbar for better UX */
+.overflow-x-auto::-webkit-scrollbar {
+  height: 6px;
+}
+
+.overflow-x-auto::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.overflow-x-auto::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 3px;
+}
+
+.overflow-x-auto::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+/* Safe area insets for modern mobile browsers */
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0);
+}
+
+.safe-top {
+  padding-top: env(safe-area-inset-top, 0);
+}
+
+/* Mobile-friendly form elements */
+@media (max-width: 640px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px !important; /* Prevents iOS zoom on focus */
+  }
+
+  .form-group {
+    margin-bottom: 1rem;
+  }
+
+  .form-label {
+    margin-bottom: 0.5rem;
+    display: block;
+  }
+}
+
+/* Improved mobile card layouts */
+@media (max-width: 640px) {
+  .card-mobile-friendly {
+    border-radius: 0.75rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  }
+
+  .card-mobile-friendly .card-header {
+    padding: 1rem;
+  }
+
+  .card-mobile-friendly .card-content {
+    padding: 0 1rem 1rem 1rem;
+  }
+}
+
+/* Mobile-friendly buttons */
+.btn-mobile-friendly {
+  min-height: 44px;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  touch-action: manipulation;
+}
+
+/* Bottom navigation specific styles */
+.bottom-nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 0;
+  min-width: 60px;
+}
+
+.bottom-nav-item-icon {
+  margin-bottom: 0.25rem;
+}
+
+.bottom-nav-item-label {
+  font-size: 0.65rem;
+  text-align: center;
+}
+
+@layer components {
+  .mobile-touch-target {
+    @apply min-h-[48px];
+  }
+}
+
+/* PWA-specific animations */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.5s ease-in-out forwards;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.animate-pulse {
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+/* PWA touch improvements */
+@media (display-mode: standalone) {
+  /* Increase spacing for standalone mode */
+  .container {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  /* Ensure content is not hidden under the status bar on iOS */
+  body {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+
+  /* Improve touch targets in standalone mode */
+  button,
+  a,
+  input,
+  select,
+  textarea {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+/* Hide scrollbar in PWA mode */
+@media (display-mode: standalone) {
+  ::-webkit-scrollbar {
+    display: none;
+  }
+
+  * {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
