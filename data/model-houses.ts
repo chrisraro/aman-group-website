@@ -526,7 +526,7 @@ export const modelHouseSeries = {
         floorPlanImage: "/placeholder.svg?height=800&width=1200&text=Jasmine+63+Loft+Floor+Plan",
         imageUrl:
           "https://8ybl2ah7tkcii6tt.public.blob.vercel-storage.com/Model_houses_images/Jasmine/JASMINE%2063_Basic%20with%20Loft%20and%20Parking_end%20unit-s2bExKfgvHdgJRTNhaTaqQ6OPSsuml.jpg",
-        floorPlanPdfId: "1234567890abcdef",
+        floorPlanPdfId: "1bpNCQj5jdqTsAuf7tx8duH8WbVCXARTI",
         walkthrough: "https://www.youtube.com/embed/dQw4w9WgXcQ",
         lotArea: "45 sqm",
         reservationFee: 25000,
@@ -585,7 +585,7 @@ export const modelHouseSeries = {
         floorPlanImage: "/placeholder.svg?height=800&width=1200&text=Jasmine+63+Loft+End+Floor+Plan",
         imageUrl:
           "https://8ybl2ah7tkcii6tt.public.blob.vercel-storage.com/Model_houses_images/Jasmine/JASMINE%2063_Basic%20with%20Loft%20and%20Parking_end%20unit-s2bExKfgvHdgJRTNhaTaqQ6OPSsuml.jpg",
-        floorPlanPdfId: "1234567890abcdef",
+        floorPlanPdfId: "1bpNCQj5jdqTsAuf7tx8duH8WbVCXARTI",
         walkthrough: "https://www.youtube.com/embed/dQw4w9WgXcQ",
       },
       {
@@ -609,7 +609,7 @@ export const modelHouseSeries = {
         floorPlanImage: "/placeholder.svg?height=800&width=1200&text=Jasmine+63+Complete+Floor+Plan",
         imageUrl:
           "https://8ybl2ah7tkcii6tt.public.blob.vercel-storage.com/Model_houses_images/Jasmine/JASMINE%2063_Complete%20without%20Finishing_end%20unit-dPmYGjxCqd51G9nukNXEtD86CjEbS4.jpg",
-        floorPlanPdfId: "1234567890abcdef",
+        floorPlanPdfId: "1eUShdoT2THKeSE6BDi47z3pusXXOqEtC",
         walkthrough: "https://www.youtube.com/embed/dQw4w9WgXcQ",
         completionDate: "December 2025",
         constructionProgress: 65,
@@ -635,7 +635,7 @@ export const modelHouseSeries = {
         floorPlanImage: "/placeholder.svg?height=800&width=1200&text=Jasmine+63+Complete+Finished+Floor+Plan",
         imageUrl:
           "https://8ybl2ah7tkcii6tt.public.blob.vercel-storage.com/Model_houses_images/Jasmine/JASMINE%2063_Complete%20with%20Finishing_end%20unit-IytGbLqnEaq3C2zw3obIqCgCFxAtod.jpg",
-        floorPlanPdfId: "1234567890abcdef",
+        floorPlanPdfId: "179NKOyCvcVj6QJY4wFDggB4oxqkSFIpm",
         walkthrough: "https://www.youtube.com/embed/dQw4w9WgXcQ",
       },
       {
@@ -660,7 +660,7 @@ export const modelHouseSeries = {
         floorPlanImage: "/placeholder.svg?height=800&width=1200&text=Jasmine+63+Complete+End+Floor+Plan",
         imageUrl:
           "https://8ybl2ah7tkcii6tt.public.blob.vercel-storage.com/Model_houses_images/Jasmine/JASMINE%2063_Complete%20without%20Finishing_end%20unit-dPmYGjxCqd51G9nukNXEtD86CjEbS4.jpg",
-        floorPlanPdfId: "1234567890abcdef",
+        floorPlanPdfId: "1eUShdoT2THKeSE6BDi47z3pusXXOqEtC",
         walkthrough: "https://www.youtube.com/embed/dQw4w9WgXcQ",
         completionDate: "December 2025",
         constructionProgress: 65,
@@ -687,7 +687,7 @@ export const modelHouseSeries = {
         floorPlanImage: "/placeholder.svg?height=800&width=1200&text=Jasmine+63+Complete+Finished+Floor+Plan",
         imageUrl:
           "https://8ybl2ah7tkcii6tt.public.blob.vercel-storage.com/Model_houses_images/Jasmine/JASMINE%2063_Complete%20with%20Finishing_end%20unit-IytGbLqnEaq3C2zw3obIqCgCFxAtod.jpg",
-        floorPlanPdfId: "1234567890abcdef",
+        floorPlanPdfId: "179NKOyCvcVj6QJY4wFDggB4oxqkSFIpm",
         walkthrough: "https://www.youtube.com/",
       },
     ],
@@ -751,7 +751,7 @@ export const modelHouseSeries = {
         floorPlanImage: "/placeholder.svg?height=800&width=1200&text=Chloe+72+Basic+Floor+Plan",
         imageUrl:
           "https://8ybl2ah7tkcii6tt.public.blob.vercel-storage.com/Model_houses_images/Chloe/Chloe%2072%20Basic%20Package%20-PZtCtAU6mg4JMmJhTQzcJAPBe5iuZu.jpg",
-        floorPlanPdfId: "1234567890abcdef",
+        floorPlanPdfId: "1mVAj2r0jDOrqU3lmNwc5K8YRWQK2eaqP",
         walkthrough: "https://www.youtube.com/embed/dQw4w9WgXcQ",
       },
       {
@@ -776,7 +776,7 @@ export const modelHouseSeries = {
         floorPlanImage: "/placeholder.svg?height=800&width=1200&text=Chloe+72+Basic+Ext+CR+Floor+Plan",
         imageUrl:
           "https://8ybl2ah7tkcii6tt.public.blob.vercel-storage.com/Model_houses_images/Chloe/Chloe%2072%20Basic%20Package%20-PZtCtAU6mg4JMmJhTQzcJAPBe5iuZu.jpg",
-        floorPlanPdfId: "1234567890abcdef",
+        floorPlanPdfId: "1rnOHrWkT70UE25ShCibwnoYxHpdEfaEM",
         walkthrough: "https://www.youtube.com/embed/dQw4w9WgXcQ",
       },
       {
@@ -802,7 +802,7 @@ export const modelHouseSeries = {
         floorPlanImage: "/placeholder.svg?height=800&width=1200&text=Chloe+72+Basic+CG+Floor+Plan",
         imageUrl:
           "https://8ybl2ah7tkcii6tt.public.blob.vercel-storage.com/Model_houses_images/Chloe/Chloe%2072%20Basic%20Package%20%2B%20Home%20Improvement-W0SohncwBYwWHJZTNtxGz9M8Q9vD1R.jpg",
-        floorPlanPdfId: "1234567890abcdef",
+        floorPlanPdfId: "1rnOHrWkT70UE25ShCibwnoYxHpdEfaEM",
         walkthrough: "https://www.youtube.com/embed/dQw4w9WgXcQ",
       },
       {
@@ -828,7 +828,7 @@ export const modelHouseSeries = {
         floorPlanImage: "/placeholder.svg?height=800&width=1200&text=Chloe+72+Basic+CG+B+Floor+Plan",
         imageUrl:
           "https://8ybl2ah7tkcii6tt.public.blob.vercel-storage.com/Model_houses_images/Chloe/Chloe%2072%20Basic%20Package%20%2B%20Home%20Improvement-W0SohncwBYwWHJZTNtxGz9M8Q9vD1R.jpg",
-        floorPlanPdfId: "1234567890abcdef",
+        floorPlanPdfId: "1rnOHrWkT70UE25ShCibwnoYxHpdEfaEM",
         walkthrough: "https://www.youtube.com/embed/dQw4w9WgXcQ",
       },
       {
@@ -854,7 +854,7 @@ export const modelHouseSeries = {
         floorPlanImage: "/placeholder.svg?height=800&width=1200&text=Chloe+72+Basic+Ext+CR+CG+Floor+Plan",
         imageUrl:
           "https://8ybl2ah7tkcii6tt.public.blob.vercel-storage.com/Model_houses_images/Chloe/Chloe%2072%20Basic%20Package%20%2B%20Home%20Improvement-W0SohncwBYwWHJZTNtxGz9M8Q9vD1R.jpg",
-        floorPlanPdfId: "1234567890abcdef",
+        floorPlanPdfId: "1rnOHrWkT70UE25ShCibwnoYxHpdEfaEM",
         walkthrough: "https://www.youtube.com/embed/dQw4w9WgXcQ",
       },
       {
@@ -880,7 +880,7 @@ export const modelHouseSeries = {
         floorPlanImage: "/placeholder.svg?height=800&width=1200&text=Chloe+72+Basic+Ext+CR+CG+B+Floor+Plan",
         imageUrl:
           "https://8ybl2ah7tkcii6tt.public.blob.vercel-storage.com/Model_houses_images/Chloe/Chloe%2072%20Basic%20Package%20%2B%20Home%20Improvement-W0SohncwBYwWHJZTNtxGz9M8Q9vD1R.jpg",
-        floorPlanPdfId: "1234567890abcdef",
+        floorPlanPdfId: "1rnOHrWkT70UE25ShCibwnoYxHpdEfaEM",
         walkthrough: "https://www.youtube.com/embed/dQw4w9WgXcQ",
       },
     ],
@@ -943,11 +943,11 @@ export const modelHouseSeries = {
         floorPlanImage: "/placeholder.svg?height=800&width=1200&text=Cheska+72+Basic+Floor+Plan",
         imageUrl:
           "https://8ybl2ah7tkcii6tt.public.blob.vercel-storage.com/Model_houses_images/Cheska/Cheska%2072%20Basic%2072%20%2B%20h1-5Ryphnn8ljgvO9flKif6kjefZgSFaA.jpg",
-        floorPlanPdfId: "1234567890abcdef",
+        floorPlanPdfId: "1d38CcycJtuiPWuy-77HO59m_wXqrH7Qd",
         walkthrough: "https://www.youtube.com/embed/dQw4w9WgXcQ",
       },
       {
-        id: "cheska-72-basic-hi1",
+        id: "cheska-72-basic-hi-1",
         name: "Basic with Hi-1",
         seriesName: "Cheska 72",
         description: "Basic model with Hi-1 upgrade package.",
@@ -969,11 +969,11 @@ export const modelHouseSeries = {
         floorPlanImage: "/placeholder.svg?height=800&width=1200&text=Cheska+72+Basic+Hi1+Floor+Plan",
         imageUrl:
           "https://8ybl2ah7tkcii6tt.public.blob.vercel-storage.com/Model_houses_images/Cheska/Cheska%2072%20Basic%20Package%20%2B%20Home%20Improvement-DDDezd3UbtfhMZddthr8sJWT2VlTGQ.jpg",
-        floorPlanPdfId: "1234567890abcdef",
+        floorPlanPdfId: "1VXlvU7oQ0tESNJZNtxpkGmkUbl_XOY7n",
         walkthrough: "https://www.youtube.com/embed/dQw4w9WgXcQ",
       },
       {
-        id: "cheska-72-basic-hi1-hi2",
+        id: "cheska-72-basic-hi-1-hi-2",
         name: "Basic with Hi-1 and Hi-2",
         seriesName: "Cheska 72",
         description: "Basic model with Hi-1 and Hi-2 upgrade packages.",
@@ -995,7 +995,7 @@ export const modelHouseSeries = {
         floorPlanImage: "/placeholder.svg?height=800&width=1200&text=Cheska+72+Basic+Hi1+Hi2+Floor+Plan",
         imageUrl:
           "https://8ybl2ah7tkcii6tt.public.blob.vercel-storage.com/Model_houses_images/Cheska/Cheska%2072%20Basic%20Package%20%2B%20Home%20Improvement-DDDezd3UbtfhMZddthr8sJWT2VlTGQ.jpg",
-        floorPlanPdfId: "1234567890abcdef",
+        floorPlanPdfId: "1VXlvU7oQ0tESNJZNtxpkGmkUbl_XOY7n",
         walkthrough: "https://www.youtube.com/embed/dQw4w9WgXcQ",
       },
       {
@@ -1021,7 +1021,7 @@ export const modelHouseSeries = {
         floorPlanImage: "/placeholder.svg?height=800&width=1200&text=Cheska+72+Basic+Hi1+Hi2+Hi3+Floor+Plan",
         imageUrl:
           "https://8ybl2ah7tkcii6tt.public.blob.vercel-storage.com/Model_houses_images/Cheska/Cheska%2072%20Basic%20Package%20%2B%20Home%20Improvement-DDDezd3UbtfhMZddthr8sJWT2VlTGQ.jpg",
-        floorPlanPdfId: "1234567890abcdef",
+        floorPlanPdfId: "1VXlvU7oQ0tESNJZNtxpkGmkUbl_XOY7n",
         walkthrough: "https://www.youtube.com/embed/dQw4w9WgXcQ",
       },
     ],
@@ -1084,7 +1084,7 @@ export const modelHouseSeries = {
         floorPlanImage: "/placeholder.svg?height=800&width=1200&text=Cheska+81+Basic+Floor+Plan",
         imageUrl:
           "https://8ybl2ah7tkcii6tt.public.blob.vercel-storage.com/Model_houses_images/Cheska/CHESKA%2081%20BASIC-ivk4690rkHFiwLHtdJHCYRc4Wrijpd.jpg",
-        floorPlanPdfId: "1234567890abcdef",
+        floorPlanPdfId: "1AZE0vQaKhe2ZEekY-1OB5eKTdP3sQaGk",
         walkthrough: "https://www.youtube.com/embed/dQw4w9WgXcQ",
         lotArea: "81 sqm",
         reservationFee: 25000,
@@ -1116,12 +1116,12 @@ export const modelHouseSeries = {
         floorPlanImage: "/placeholder.svg?height=800&width=1200&text=Cheska+81+Basic+H12+Floor+Plan",
         imageUrl:
           "https://8ybl2ah7tkcii6tt.public.blob.vercel-storage.com/Model_houses_images/Cheska/CHESKA%2081%20H23-xchyEMI51GzirXEpZ7MF4nSe5JUBX6.jpg",
-        floorPlanPdfId: "1234567890abcdef",
+        floorPlanPdfId: "1gFrkZTg9BOQ_U6BVvkyEVehP-u_FBSwf",
         walkthrough: "https://www.youtube.com/embed/dQw4w9WgXcQ",
       },
       {
-        id: "cheska-81-basic-hi1-hi2",
-        name: "Basic + Hi-2 + Hi-3",
+        id: "cheska-81-basic-hi-1-hi-2",
+        name: "Basic + Hi-1 + Hi-2",
         seriesName: "Cheska 81",
         description: "Basic model with Hi1 and Hi2 upgrade packages.",
         price: 3925000,
@@ -1142,7 +1142,7 @@ export const modelHouseSeries = {
         floorPlanImage: "/placeholder.svg?height=800&width=1200&text=Cheska+81+Basic+H12+H13+Floor+Plan",
         imageUrl:
           "https://8ybl2ah7tkcii6tt.public.blob.vercel-storage.com/Model_houses_images/Cheska/CHESKA%2081%20H23-xchyEMI51GzirXEpZ7MF4nSe5JUBX6.jpg",
-        floorPlanPdfId: "1234567890abcdef",
+        floorPlanPdfId: "1gFrkZTg9BOQ_U6BVvkyEVehP-u_FBSwf",
         walkthrough: "https://www.youtube.com/embed/dQw4w9WgXcQ",
         lotArea: "81 sqm",
         reservationFee: 25000,
@@ -1211,7 +1211,7 @@ export const modelHouseSeries = {
         floorPlanImage:
           "https://8ybl2ah7tkcii6tt.public.blob.vercel-storage.com/Floor_plans/Chelsea%20series/Chelsea%2072%20Basic%20hi-1-Zpq8qsuKeF9AAjGDhgowFQXSSB2Jg5.jpg",
         imageUrl: "/placeholder.svg?height=400&width=600&text=Chelsea+72+Basic",
-        floorPlanPdfId: "1234567890abcdef",
+        floorPlanPdfId: "1yEMJVdhyGCrmpkPYQ6armVQEVVdLt7zR",
         walkthrough: "https://www.youtube.com/embed/ZCmAbO_Djdo?si=AR8ciSZC816nH3PA",
       },
       {
@@ -1238,7 +1238,7 @@ export const modelHouseSeries = {
           "https://8ybl2ah7tkcii6tt.public.blob.vercel-storage.com/Floor_plans/Chelsea%20series/Chelsea%2072%20Basic%20hi-1-Zpq8qsuKeF9AAjGDhgowFQXSSB2Jg5.jpg",
         imageUrl:
           "https://8ybl2ah7tkcii6tt.public.blob.vercel-storage.com/Model_houses_images/Chelsea%20Series/Chelsea%2072%20Basic%20%2B%20hi-1-bn5Q0n6gfohW0QSng60u8aPvi1KEaL.jpg",
-        floorPlanPdfId: "1234567890abcdef",
+        floorPlanPdfId: "1U_F8qaeGCMYjukTvlU3Fgvj2cQNO0yW5",
         walkthrough: "https://www.youtube.com/embed/ZCmAbO_Djdo?si=AR8ciSZC816nH3PA",
       },
     ],
@@ -1300,7 +1300,7 @@ export const modelHouseSeries = {
         floorPlanImage: "/placeholder.svg?height=800&width=1200&text=Chelsea+81+Basic+Floor+Plan",
         imageUrl:
           "https://8ybl2ah7tkcii6tt.public.blob.vercel-storage.com/Model_houses_images/Chelsea%20Series/Chelsea%2081%20Basic%20%2B%20hi-1-bVfSOtP3wNcKXkb8pdZJFWgU8WjrWi.jpg",
-        floorPlanPdfId: "1234567890abcdef",
+        floorPlanPdfId: "1AZE0vQaKhe2ZEekY-1OB5eKTdP3sQaGk",
         walkthrough: "https://www.youtube.com/embed/dQw4w9WgXcQ",
         lotArea: "81 sqm",
         reservationFee: 25000,
@@ -1332,7 +1332,7 @@ export const modelHouseSeries = {
         floorPlanImage: "/placeholder.svg?height=800&width=1200&text=Chelsea+81+Basic+Hi-1+Floor+Plan",
         imageUrl:
           "https://8ybl2ah7tkcii6tt.public.blob.vercel-storage.com/Model_houses_images/Chelsea%20Series/Chelsea%2081%20Basic%20%2B%20hi-1-bVfSOtP3wNcKXkb8pdZJFWgU8WjrWi.jpg",
-        floorPlanPdfId: "1234567890abcdef",
+        floorPlanPdfId: "1AZE0vQaKhe2ZEekY-1OB5eKTdP3sQaGk",
         walkthrough: "https://www.youtube.com/embed/dQw4w9WgXcQ",
         lotArea: "81 sqm",
         reservationFee: 25000,
@@ -1342,7 +1342,7 @@ export const modelHouseSeries = {
         floorArea: "48.0 sqm",
       },
       {
-        id: "chelsea-81-basic-hi-1",
+        id: "chelsea-81-basic-hi-1-hi-2",
         name: "Basic + hi-1 + h-2",
         seriesName: "Chelsea 81",
         description: "Basic model with Hi-1 upgrade package.",
@@ -1364,7 +1364,7 @@ export const modelHouseSeries = {
         floorPlanImage: "/placeholder.svg?height=800&width=1200&text=Chelsea+81+Basic+Hi-1+Floor+Plan",
         imageUrl:
           "https://8ybl2ah7tkcii6tt.public.blob.vercel-storage.com/Model_houses_images/Chelsea%20Series/Chelsea%2081%20Basic%20%2B%20hi-1-bVfSOtP3wNcKXkb8pdZJFWgU8WjrWi.jpg",
-        floorPlanPdfId: "1234567890abcdef",
+        floorPlanPdfId: "1gFrkZTg9BOQ_U6BVvkyEVehP-u_FBSwf",
         walkthrough: "https://www.youtube.com/embed/dQw4w9WgXcQ",
         lotArea: "81 sqm",
         reservationFee: 25000,
@@ -1401,7 +1401,7 @@ export const modelHouseSeries = {
         floorPlanImage: "/placeholder.svg?height=800&width=1200&text=Chelsea+81+Basic+Floor+Plan",
         imageUrl:
           "https://8ybl2ah7tkcii6tt.public.blob.vercel-storage.com/Model_houses_images/Chelsea%20Series/Chelsea%2081%20Basic%20%2B%20hi-1-bVfSOtP3wNcKXkb8pdZJFWgU8WjrWi.jpg",
-        floorPlanPdfId: "1234567890abcdef",
+        floorPlanPdfId: "1AZE0vQaKhe2ZEekY-1OB5eKTdP3sQaGk",
         walkthrough: "https://www.youtube.com/embed/dQw4w9WgXcQ",
       },
       {
@@ -1432,7 +1432,7 @@ export const modelHouseSeries = {
         floorPlanImage: "/placeholder.svg?height=800&width=1200&text=Chelsea+81+Basic+Floor+Plan",
         imageUrl:
           "https://8ybl2ah7tkcii6tt.public.blob.vercel-storage.com/Model_houses_images/Chelsea%20Series/Chelsea%2081%20Basic%20%2B%20hi-1-bVfSOtP3wNcKXkb8pdZJFWgU8WjrWi.jpg",
-        floorPlanPdfId: "1234567890abcdef",
+        floorPlanPdfId: "1AZE0vQaKhe2ZEekY-1OB5eKTdP3sQaGk",
         walkthrough: "https://www.youtube.com/embed/dQw4w9WgXcQ",
       },
     ],
@@ -1495,7 +1495,7 @@ export const modelHouseSeries = {
         floorPlanImage: "/placeholder.svg?height=800&width=1200&text=Chelsea+86+Basic+H1I+H1-2+Floor+Plan",
         imageUrl:
           "https://8ybl2ah7tkcii6tt.public.blob.vercel-storage.com/Model_houses_images/Chelsea%20Series/Chelsea%2086%20Basic%20%2B%20hi-1%20%2B%20hi-2-ULvNbB5weepNYLIK6xqRouXO3BV6rf.jpg",
-        floorPlanPdfId: "1234567890abcdef",
+        floorPlanPdfId: "1H67XLGU_4xc2TDUksbykFXtVLrdEx1PL",
         walkthrough: "https://www.youtube.com/embed/dQw4w9WgXcQ",
         lotArea: "86 sqm",
         reservationFee: 25000,
@@ -1565,7 +1565,7 @@ export const modelHouseSeries = {
         floorPlanImage: "/placeholder.svg?height=800&width=1200&text=Thalia+80+Basic+Floor+Plan",
         imageUrl:
           "https://8ybl2ah7tkcii6tt.public.blob.vercel-storage.com/Model_houses_images/Thalia%20Series/Thalia%20Basic%20CG-OaTBNVC8a5RVAVQthreX8VBhokGXGa.jpg",
-        floorPlanPdfId: "1234567890abcdef",
+        floorPlanPdfId: "1zySKIx-UZO6W24v_uSy1mojC5rSZxYPA",
         walkthrough: "https://www.youtube.com/embed/dQw4w9WgXcQ",
       },
       {
@@ -1591,7 +1591,7 @@ export const modelHouseSeries = {
         floorPlanImage: "/placeholder.svg?height=800&width=1200&text=Thalia+80+Basic+Garage+Floor+Plan",
         imageUrl:
           "https://8ybl2ah7tkcii6tt.public.blob.vercel-storage.com/Model_houses_images/Thalia%20Series/Thalia%20Basic-HcLA8o5rJLzE1UpNXs952NSw8O6hcf.jpg",
-        floorPlanPdfId: "1234567890abcdef",
+        floorPlanPdfId: "14DR5Q-0ART8JWz5SE5H9_AVITf0A0M-P",
         walkthrough: "https://www.youtube.com/embed/dQw4w9WgXcQ",
       },
       {
@@ -1617,7 +1617,7 @@ export const modelHouseSeries = {
         floorPlanImage: "/placeholder.svg?height=800&width=1200&text=Thalia+80+Complete+Floor+Plan",
         imageUrl:
           "https://8ybl2ah7tkcii6tt.public.blob.vercel-storage.com/Model_houses_images/Thalia%20Series/Thalia%20complete-5uM6Nr5LTL7lrb4SE8ae3mNiWh0ZFi.jpg",
-        floorPlanPdfId: "1234567890abcdef",
+        floorPlanPdfId: "1DjEltSnDau18PHXTWPccQXs4VWEEv6nA",
         walkthrough: "https://www.youtube.com/embed/dQw4w9WgXcQ",
       },
       {
@@ -1644,7 +1644,7 @@ export const modelHouseSeries = {
         floorPlanImage: "/placeholder.svg?height=800&width=1200&text=Thalia+80+Complete+Garage+Floor+Plan",
         imageUrl:
           "https://8ybl2ah7tkcii6tt.public.blob.vercel-storage.com/Model_houses_images/Thalia%20Series/Thalia%20complete%20cg-9o9xvu2wshCPmxRp2QKZyx4h8QDz48.jpg",
-        floorPlanPdfId: "1234567890abcdef",
+        floorPlanPdfId: "1u6Fvjx5z_FRuCDyo20gwsRPWIX-srLk6",
         walkthrough: "https://www.youtube.com/embed/dQw4w9WgXcQ",
       },
     ],
