@@ -1563,8 +1563,8 @@ export const modelHouseSeries = {
           "Premium fixtures and finishes",
         ],
         floorPlanImage: "/placeholder.svg?height=800&width=1200&text=Thalia+80+Basic+Floor+Plan",
-        imageUrl:
-          "https://8ybl2ah7tkcii6tt.public.blob.vercel-storage.com/Model_houses_images/Thalia%20Series/Thalia%20Basic%20CG-OaTBNVC8a5RVAVQthreX8VBhokGXGa.jpg",
+        imageUrl: 
+          "https://8ybl2ah7tkcii6tt.public.blob.vercel-storage.com/Model_houses_images/Thalia%20Series/Thalia%20Basic-HcLA8o5rJLzE1UpNXs952NSw8O6hcf.jpg",
         floorPlanPdfId: "1zySKIx-UZO6W24v_uSy1mojC5rSZxYPA",
         walkthrough: "https://www.youtube.com/embed/dQw4w9WgXcQ",
       },
@@ -1590,7 +1590,7 @@ export const modelHouseSeries = {
         ],
         floorPlanImage: "/placeholder.svg?height=800&width=1200&text=Thalia+80+Basic+Garage+Floor+Plan",
         imageUrl:
-          "https://8ybl2ah7tkcii6tt.public.blob.vercel-storage.com/Model_houses_images/Thalia%20Series/Thalia%20Basic-HcLA8o5rJLzE1UpNXs952NSw8O6hcf.jpg",
+          "https://8ybl2ah7tkcii6tt.public.blob.vercel-storage.com/Model_houses_images/Thalia%20Series/Thalia%20Basic%20CG-OaTBNVC8a5RVAVQthreX8VBhokGXGa.jpg",
         floorPlanPdfId: "14DR5Q-0ART8JWz5SE5H9_AVITf0A0M-P",
         walkthrough: "https://www.youtube.com/embed/dQw4w9WgXcQ",
       },
