@@ -586,7 +586,7 @@ export const modelHouseSeries = {
         imageUrl:
           "https://8ybl2ah7tkcii6tt.public.blob.vercel-storage.com/Model_houses_images/Jasmine/JASMINE%2063_Basic%20with%20Loft%20and%20Parking_end%20unit-s2bExKfgvHdgJRTNhaTaqQ6OPSsuml.jpg",
         floorPlanPdfId: "1bpNCQj5jdqTsAuf7tx8duH8WbVCXARTI",
-        walkthrough: "https://www.youtube.com/embed/U2AYvwZKsRM?si=nf7FDeYfnn-idG9J",
+        walkthrough: "https://www.youtube.com/embed/i18oLjbJMnE?si=M_OF79dGjqslFWl_",
       },
       {
         id: "jasmine-63-complete-inner",
