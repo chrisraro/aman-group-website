@@ -182,7 +182,7 @@ export const modelHouseSeries = {
         imageUrl:
           "https://8ybl2ah7tkcii6tt.public.blob.vercel-storage.com/Model_houses_images/Queenie/Queenie%20Basic-KP4MBfbjFwMLL2XW2jr4VaDUraoMyD.jpg",
         floorPlanPdfId: "14GONV1qqnPtBucA8gB8v2VGKYgod3dGj",
-        walkthrough: "https://www.youtube.com/embed/dQw4w9WgXcQ",
+        walkthrough: "https://www.youtube.com/embed/0cnS9EAiG7A?si=IxrED1Uyg7HFslgi",
       },
       {
         id: "queenie-72-loft",
@@ -228,7 +228,7 @@ export const modelHouseSeries = {
         imageUrl:
           "https://8ybl2ah7tkcii6tt.public.blob.vercel-storage.com/Model_houses_images/Queenie/QUEENIE%2072%20BASIC%20WITH%20LOFT-szGDKN6YShCca1bsxetvOX7vhCtkV3.jpg",
         floorPlanPdfId: "1LFRi5NkfsD4uE7-nUzuH3RqZ6poyp3QB",
-        walkthrough: "https://www.youtube.com/embed/dQw4w9WgXcQ",
+        walkthrough: "https://www.youtube.com/embed/vFasaT5Bqzc?si=REeFL_1Ro7ohpXQC",
       },
       {
         id: "queenie-72-complete",
@@ -276,7 +276,7 @@ export const modelHouseSeries = {
         imageUrl:
           "https://8ybl2ah7tkcii6tt.public.blob.vercel-storage.com/Model_houses_images/Queenie/QUEENIE%2072%20COMPLETE%20WITHOUT%20FINISHING-t0pLPqBnu1sEEAE84YDP4dzg3n0oH0.jpg",
         floorPlanPdfId: "163NXz5QOHwPjLgXKDQGBHH-lQgfFeJBG",
-        walkthrough: "https://www.youtube.com/embed/dQw4w9WgXcQ",
+        walkthrough: "https://www.youtube.com/embed/cQVIPGIqDSY?si=Vsr5f47mEsycvHhB",
       },
       {
         id: "queenie-72-complete-finished",
@@ -323,7 +323,7 @@ export const modelHouseSeries = {
         imageUrl:
           "https://8ybl2ah7tkcii6tt.public.blob.vercel-storage.com/Model_houses_images/Queenie/QUEENIE%2072%20COMPLETE%20WITH%20FINISHNG-kNSxVQ6LU7qCvUgcOIqSsTrIXjn9Oo.jpg",
         floorPlanPdfId: "1YtZUlaht4u067k3aSCwb2frmtZlxBJOA",
-        walkthrough: "https://www.youtube.com/embed/dQw4w9WgXcQ",
+        walkthrough: "https://www.youtube.com/embed/qmG0Rzx7cj4?si=s4wmciY3qVz9-6pW",
       },
     ],
   },
@@ -387,7 +387,7 @@ export const modelHouseSeries = {
         imageUrl:
           "https://8ybl2ah7tkcii6tt.public.blob.vercel-storage.com/Model_houses_images/Jade%20Series/JADE%2045%20BASIC%20-4PnHQu5ggGYBsVauuyuRYUhDxtLbJ1.jpg",
         floorPlanPdfId: "11G3flTaGbZgYGVHT1rx40h85WdZc7_K4",
-        walkthrough: "https://www.youtube.com/embed/dQw4w9WgXcQ",
+        walkthrough: "https://www.youtube.com/embed/Rfw7Ptxg2kg?si=bSC7CcglsCbb9Uhu",
       },
       {
         id: "jade-45-loft",
@@ -411,7 +411,7 @@ export const modelHouseSeries = {
         imageUrl:
           "https://8ybl2ah7tkcii6tt.public.blob.vercel-storage.com/Model_houses_images/Jade%20Series/JADE%2045%20BASIC%20WITH%20LOFT-A2YZ8MXO6wpZcuHw5sdHwIhGK2dooV.jpg",
         floorPlanPdfId: "1xttsm9czTKmWiU7O9BhxZxGo34fSWWsw",
-        walkthrough: "https://www.youtube.com/embed/dQw4w9WgXcQ",
+        walkthrough: "https://www.youtube.com/embed/tybTwCUgWVc?si=kfqVIA_B5HMU3lhq",
       },
       {
         id: "jade-45-complete",
@@ -435,7 +435,7 @@ export const modelHouseSeries = {
         imageUrl:
           "https://8ybl2ah7tkcii6tt.public.blob.vercel-storage.com/Model_houses_images/Jade%20Series/JADE%2045%20COMPLETE%20WITHOUT%20FINISHING-fhbvw4NM7fBUx6r4DnQFeKd7cZAFYg.jpg",
         floorPlanPdfId: "1lHiYRhrxXCzpoV1Chh0EqBBkxswcC5-S",
-        walkthrough: "https://www.youtube.com/embed/dQw4w9WgXcQ",
+        walkthrough: "https://www.youtube.com/embed/LnUOhaQgJoE?si=shxY47uxBwz3Weww",
       },
       {
         id: "jade-45-complete-finished",
@@ -459,7 +459,7 @@ export const modelHouseSeries = {
         imageUrl:
           "https://8ybl2ah7tkcii6tt.public.blob.vercel-storage.com/Model_houses_images/Jade%20Series/JADE%2045%20COMPLETE%20WITH%20FINISHING-GbvNMug5f5oMtKt5hAUZ2RTrd1lY6i.jpg",
         floorPlanPdfId: "1jNKIOsIyfvqGPF1w6ZtgKyzRmmr_KdkR",
-        walkthrough: "https://www.youtube.com/embed/dQw4w9WgXcQ",
+        walkthrough: "https://www.youtube.com/embed/lOOMQBDs4RY?si=15rYqXDKJHNZTict",
       },
     ],
   },
@@ -527,7 +527,7 @@ export const modelHouseSeries = {
         imageUrl:
           "https://8ybl2ah7tkcii6tt.public.blob.vercel-storage.com/Model_houses_images/Jasmine/JASMINE%2063_Basic%20with%20Loft%20and%20Parking_end%20unit-s2bExKfgvHdgJRTNhaTaqQ6OPSsuml.jpg",
         floorPlanPdfId: "1bpNCQj5jdqTsAuf7tx8duH8WbVCXARTI",
-        walkthrough: "https://www.youtube.com/embed/dQw4w9WgXcQ",
+        walkthrough: "https://www.youtube.com/embed/U2AYvwZKsRM?si=nf7FDeYfnn-idG9J",
         lotArea: "45 sqm",
         reservationFee: 25000,
         financingOptions: "Bank/Pag-Ibig Financing",
@@ -561,7 +561,7 @@ export const modelHouseSeries = {
         imageUrl:
           "https://8ybl2ah7tkcii6tt.public.blob.vercel-storage.com/Model_houses_images/Jasmine/JASMINE%2063_Basic%20with%20Loft%20and%20Parking_end%20unit-s2bExKfgvHdgJRTNhaTaqQ6OPSsuml.jpg",
         floorPlanPdfId: "1234567890abcdef",
-        walkthrough: "https://www.youtube.com/embed/dQw4w9WgXcQ",
+        walkthrough: "https://www.youtube.com/embed/U2AYvwZKsRM?si=nf7FDeYfnn-idG9J",
       },
       {
         id: "jasmine-63-loft-end",
@@ -586,7 +586,7 @@ export const modelHouseSeries = {
         imageUrl:
           "https://8ybl2ah7tkcii6tt.public.blob.vercel-storage.com/Model_houses_images/Jasmine/JASMINE%2063_Basic%20with%20Loft%20and%20Parking_end%20unit-s2bExKfgvHdgJRTNhaTaqQ6OPSsuml.jpg",
         floorPlanPdfId: "1bpNCQj5jdqTsAuf7tx8duH8WbVCXARTI",
-        walkthrough: "https://www.youtube.com/embed/dQw4w9WgXcQ",
+        walkthrough: "https://www.youtube.com/embed/U2AYvwZKsRM?si=nf7FDeYfnn-idG9J",
       },
       {
         id: "jasmine-63-complete-inner",
@@ -610,7 +610,7 @@ export const modelHouseSeries = {
         imageUrl:
           "https://8ybl2ah7tkcii6tt.public.blob.vercel-storage.com/Model_houses_images/Jasmine/JASMINE%2063_Complete%20without%20Finishing_end%20unit-dPmYGjxCqd51G9nukNXEtD86CjEbS4.jpg",
         floorPlanPdfId: "1eUShdoT2THKeSE6BDi47z3pusXXOqEtC",
-        walkthrough: "https://www.youtube.com/embed/dQw4w9WgXcQ",
+        walkthrough: "https://www.youtube.com/embed/U2AYvwZKsRM?si=nf7FDeYfnn-idG9J",
         completionDate: "December 2025",
         constructionProgress: 65,
       },
@@ -636,7 +636,7 @@ export const modelHouseSeries = {
         imageUrl:
           "https://8ybl2ah7tkcii6tt.public.blob.vercel-storage.com/Model_houses_images/Jasmine/JASMINE%2063_Complete%20with%20Finishing_end%20unit-IytGbLqnEaq3C2zw3obIqCgCFxAtod.jpg",
         floorPlanPdfId: "179NKOyCvcVj6QJY4wFDggB4oxqkSFIpm",
-        walkthrough: "https://www.youtube.com/embed/dQw4w9WgXcQ",
+        walkthrough: "https://www.youtube.com/embed/U2AYvwZKsRM?si=nf7FDeYfnn-idG9J",
       },
       {
         id: "jasmine-63-complete-end",
@@ -661,7 +661,7 @@ export const modelHouseSeries = {
         imageUrl:
           "https://8ybl2ah7tkcii6tt.public.blob.vercel-storage.com/Model_houses_images/Jasmine/JASMINE%2063_Complete%20without%20Finishing_end%20unit-dPmYGjxCqd51G9nukNXEtD86CjEbS4.jpg",
         floorPlanPdfId: "1eUShdoT2THKeSE6BDi47z3pusXXOqEtC",
-        walkthrough: "https://www.youtube.com/embed/dQw4w9WgXcQ",
+        walkthrough: "https://www.youtube.com/embed/U2AYvwZKsRM?si=nf7FDeYfnn-idG9J",
         completionDate: "December 2025",
         constructionProgress: 65,
       },
@@ -688,7 +688,7 @@ export const modelHouseSeries = {
         imageUrl:
           "https://8ybl2ah7tkcii6tt.public.blob.vercel-storage.com/Model_houses_images/Jasmine/JASMINE%2063_Complete%20with%20Finishing_end%20unit-IytGbLqnEaq3C2zw3obIqCgCFxAtod.jpg",
         floorPlanPdfId: "179NKOyCvcVj6QJY4wFDggB4oxqkSFIpm",
-        walkthrough: "https://www.youtube.com/",
+        walkthrough: "https://www.youtube.com/U2AYvwZKsRM?si=nf7FDeYfnn-idG9J",
       },
     ],
   },
@@ -944,7 +944,7 @@ export const modelHouseSeries = {
         imageUrl:
           "https://8ybl2ah7tkcii6tt.public.blob.vercel-storage.com/Model_houses_images/Cheska/Cheska%2072%20Basic%2072%20%2B%20h1-5Ryphnn8ljgvO9flKif6kjefZgSFaA.jpg",
         floorPlanPdfId: "1d38CcycJtuiPWuy-77HO59m_wXqrH7Qd",
-        walkthrough: "https://www.youtube.com/embed/dQw4w9WgXcQ",
+        walkthrough: "https://www.youtube.com/embed/ZCmAbO_Djdo?si=oCBq7z0cXA0OmyB_",
       },
       {
         id: "cheska-72-basic-hi-1",
@@ -970,7 +970,7 @@ export const modelHouseSeries = {
         imageUrl:
           "https://8ybl2ah7tkcii6tt.public.blob.vercel-storage.com/Model_houses_images/Cheska/Cheska%2072%20Basic%20Package%20%2B%20Home%20Improvement-DDDezd3UbtfhMZddthr8sJWT2VlTGQ.jpg",
         floorPlanPdfId: "1VXlvU7oQ0tESNJZNtxpkGmkUbl_XOY7n",
-        walkthrough: "https://www.youtube.com/embed/dQw4w9WgXcQ",
+        walkthrough: "https://www.youtube.com/embed/ZCmAbO_Djdo?si=oCBq7z0cXA0OmyB_",
       },
       {
         id: "cheska-72-basic-hi-1-hi-2",
@@ -996,7 +996,7 @@ export const modelHouseSeries = {
         imageUrl:
           "https://8ybl2ah7tkcii6tt.public.blob.vercel-storage.com/Model_houses_images/Cheska/Cheska%2072%20Basic%20Package%20%2B%20Home%20Improvement-DDDezd3UbtfhMZddthr8sJWT2VlTGQ.jpg",
         floorPlanPdfId: "1VXlvU7oQ0tESNJZNtxpkGmkUbl_XOY7n",
-        walkthrough: "https://www.youtube.com/embed/dQw4w9WgXcQ",
+        walkthrough: "https://www.youtube.com/embed/ZCmAbO_Djdo?si=oCBq7z0cXA0OmyB_",
       },
       {
         id: "cheska-72-basic-hi1-hi2-hi3",
@@ -1566,7 +1566,7 @@ export const modelHouseSeries = {
         imageUrl: 
           "https://8ybl2ah7tkcii6tt.public.blob.vercel-storage.com/Model_houses_images/Thalia%20Series/Thalia%20Basic-HcLA8o5rJLzE1UpNXs952NSw8O6hcf.jpg",
         floorPlanPdfId: "1zySKIx-UZO6W24v_uSy1mojC5rSZxYPA",
-        walkthrough: "https://www.youtube.com/embed/dQw4w9WgXcQ",
+        walkthrough: "https://www.youtube.com/embed/6IpFwXUy52I?si=LnE00k0abEj_vqRA",
       },
       {
         id: "thalia-80-basic-garage",
@@ -1592,7 +1592,7 @@ export const modelHouseSeries = {
         imageUrl:
           "https://8ybl2ah7tkcii6tt.public.blob.vercel-storage.com/Model_houses_images/Thalia%20Series/Thalia%20Basic%20CG-OaTBNVC8a5RVAVQthreX8VBhokGXGa.jpg",
         floorPlanPdfId: "14DR5Q-0ART8JWz5SE5H9_AVITf0A0M-P",
-        walkthrough: "https://www.youtube.com/embed/dQw4w9WgXcQ",
+        walkthrough: "https://www.youtube.com/embed//A7-RmjSnXYw?si=6mwimL4KXkP_Bvk0",
       },
       {
         id: "thalia-80-complete",
@@ -1618,7 +1618,7 @@ export const modelHouseSeries = {
         imageUrl:
           "https://8ybl2ah7tkcii6tt.public.blob.vercel-storage.com/Model_houses_images/Thalia%20Series/Thalia%20complete-5uM6Nr5LTL7lrb4SE8ae3mNiWh0ZFi.jpg",
         floorPlanPdfId: "1DjEltSnDau18PHXTWPccQXs4VWEEv6nA",
-        walkthrough: "https://www.youtube.com/embed/dQw4w9WgXcQ",
+        walkthrough: "https://www.youtube.com/embed/5h6jFO3Pjhs?si=WBChUH9Vw6-ZCihv",
       },
       {
         id: "thalia-80-complete-garage",
@@ -1645,7 +1645,7 @@ export const modelHouseSeries = {
         imageUrl:
           "https://8ybl2ah7tkcii6tt.public.blob.vercel-storage.com/Model_houses_images/Thalia%20Series/Thalia%20complete%20cg-9o9xvu2wshCPmxRp2QKZyx4h8QDz48.jpg",
         floorPlanPdfId: "1u6Fvjx5z_FRuCDyo20gwsRPWIX-srLk6",
-        walkthrough: "https://www.youtube.com/embed/dQw4w9WgXcQ",
+        walkthrough: "https://www.youtube.com/embed/E4h4BR16Xk8?si=6OR_zIK4cn2Z7dIE",
       },
     ],
   },
