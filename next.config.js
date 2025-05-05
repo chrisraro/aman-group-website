@@ -1,28 +1,18 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  swcMinify: true,
-  images: {
-    domains: ["localhost"],
-    remotePatterns: [
-      {
-        protocol: "https",
-        hostname: "**",
-      },
-    ],
-    unoptimized: true,
-  },
-  // Enhanced PWA configuration
   experimental: {
-    serviceWorker: {
-      register: false, // We're registering the service worker manually for better control
-    },
+    serverActions: true,
   },
   eslint: {
     ignoreDuringBuilds: true,
   },
   typescript: {
     ignoreBuildErrors: true,
+  },
+  images: {
+    domains: ["8ybl2ah7tkcii6tt.public.blob.vercel-storage.com", "hebbkx1anhila5yf.public.blob.vercel-storage.com"],
+    unoptimized: true,
   },
 }
 
