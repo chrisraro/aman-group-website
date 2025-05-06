@@ -11,12 +11,14 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
-import { ArrowLeft, Save } from "lucide-react"
+import { ArrowLeft, Save, Loader2 } from "lucide-react"
 import Link from "next/link"
 import type { ModelHouseSeries } from "@/lib/hooks/useModelHouses"
+import { useToast } from "@/hooks/use-toast"
 
 export default function EditModelHouseSeriesPage({ params }: { params: { id: string } }) {
   const router = useRouter()
+  const { toast } = useToast()
   const { getModelHouseSeriesById, addModelHouseSeries, updateModelHouseSeries } = useModelHousesContext()
 
   const isNewSeries = params.id === "new"
@@ -45,6 +47,7 @@ export default function EditModelHouseSeriesPage({ params }: { params: { id: str
   const [newFeature, setNewFeature] = useState("")
   const [newSpecKey, setNewSpecKey] = useState("")
   const [newSpecValue, setNewSpecValue] = useState("")
+  const [isSaving, setIsSaving] = useState(false)
 
   useEffect(() => {
     if (existingSeries) {
@@ -112,26 +115,54 @@ export default function EditModelHouseSeriesPage({ params }: { params: { id: str
     })
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
     if (!formData.id || !formData.name || !formData.floorArea) {
-      alert("Please fill in all required fields")
+      toast({
+        title: "Validation Error",
+        description: "Please fill in all required fields",
+        variant: "destructive",
+      })
       return
     }
 
-    const seriesData = {
-      ...formData,
-      units: formData.units || [],
-    } as ModelHouseSeries
+    setIsSaving(true)
 
-    if (isNewSeries) {
-      addModelHouseSeries(seriesData)
-    } else {
-      updateModelHouseSeries(params.id, seriesData)
+    try {
+      const seriesData = {
+        ...formData,
+        units: formData.units || [],
+      } as ModelHouseSeries
+
+      if (isNewSeries) {
+        addModelHouseSeries(seriesData)
+        toast({
+          title: "Success",
+          description: `${seriesData.name} has been created successfully`,
+        })
+      } else {
+        updateModelHouseSeries(params.id, seriesData)
+        toast({
+          title: "Success",
+          description: `${seriesData.name} has been updated successfully`,
+        })
+      }
+
+      // Simulate a small delay to ensure localStorage is updated
+      await new Promise((resolve) => setTimeout(resolve, 300))
+
+      router.push("/admin/model-houses")
+    } catch (error) {
+      console.error("Error saving model house series:", error)
+      toast({
+        title: "Error",
+        description: "There was a problem saving the model house series. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsSaving(false)
     }
-
-    router.push("/admin/model-houses")
   }
 
   return (
@@ -364,9 +395,18 @@ export default function EditModelHouseSeriesPage({ params }: { params: { id: str
           <Button variant="outline" type="button" asChild>
             <Link href="/admin/model-houses">Cancel</Link>
           </Button>
-          <Button type="submit">
-            <Save className="mr-2 h-4 w-4" />
-            Save Series
+          <Button type="submit" disabled={isSaving}>
+            {isSaving ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Saving...
+              </>
+            ) : (
+              <>
+                <Save className="mr-2 h-4 w-4" />
+                Save Series
+              </>
+            )}
           </Button>
         </div>
       </form>

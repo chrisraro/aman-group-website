@@ -4,9 +4,9 @@ import { useState } from "react"
 import Link from "next/link"
 import { useModelHousesContext } from "@/lib/context/ModelHousesContext"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { PlusCircle, Edit, Trash2 } from "lucide-react"
+import { PlusCircle, Edit, Trash2, RefreshCw, Database } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import {
   Dialog,
@@ -16,12 +16,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { useToast } from "@/hooks/use-toast"
 
 export default function ModelHousesAdminPage() {
-  const { getAllModelHouseSeries, rfoUnits, deleteModelHouseSeries, deleteModelHouseUnit } = useModelHousesContext()
+  const { getAllModelHouseSeries, rfoUnits, deleteModelHouseSeries, deleteModelHouseUnit, resetToDefaultData } =
+    useModelHousesContext()
+  const { toast } = useToast()
 
   const [activeTab, setActiveTab] = useState("model-houses")
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [resetDialogOpen, setResetDialogOpen] = useState(false)
   const [itemToDelete, setItemToDelete] = useState<{
     type: "series" | "unit"
     seriesId: string
@@ -33,10 +37,27 @@ export default function ModelHousesAdminPage() {
   const handleDelete = () => {
     if (!itemToDelete) return
 
-    if (itemToDelete.type === "series") {
-      deleteModelHouseSeries(itemToDelete.seriesId)
-    } else if (itemToDelete.type === "unit" && itemToDelete.unitId) {
-      deleteModelHouseUnit(itemToDelete.seriesId, itemToDelete.unitId)
+    try {
+      if (itemToDelete.type === "series") {
+        deleteModelHouseSeries(itemToDelete.seriesId)
+        toast({
+          title: "Success",
+          description: "Model house series deleted successfully",
+        })
+      } else if (itemToDelete.type === "unit" && itemToDelete.unitId) {
+        deleteModelHouseUnit(itemToDelete.seriesId, itemToDelete.unitId)
+        toast({
+          title: "Success",
+          description: "Unit deleted successfully",
+        })
+      }
+    } catch (error) {
+      console.error("Error deleting item:", error)
+      toast({
+        title: "Error",
+        description: "There was a problem deleting the item. Please try again.",
+        variant: "destructive",
+      })
     }
 
     setDeleteDialogOpen(false)
@@ -46,6 +67,24 @@ export default function ModelHousesAdminPage() {
   const confirmDelete = (type: "series" | "unit", seriesId: string, unitId?: string) => {
     setItemToDelete({ type, seriesId, unitId })
     setDeleteDialogOpen(true)
+  }
+
+  const handleResetData = () => {
+    try {
+      resetToDefaultData()
+      toast({
+        title: "Success",
+        description: "Data has been reset to default values",
+      })
+    } catch (error) {
+      console.error("Error resetting data:", error)
+      toast({
+        title: "Error",
+        description: "There was a problem resetting the data. Please try again.",
+        variant: "destructive",
+      })
+    }
+    setResetDialogOpen(false)
   }
 
   return (
@@ -61,6 +100,54 @@ export default function ModelHousesAdminPage() {
           </Button>
         </div>
       </div>
+
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle>Data Management</CardTitle>
+          <CardDescription>
+            Manage your model houses and RFO units data. All changes are saved to your browser's local storage.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-medium">Model House Series</h3>
+                <p className="text-sm text-muted-foreground">
+                  {modelHouses.length} series with {modelHouses.reduce((acc, series) => acc + series.units.length, 0)}{" "}
+                  units
+                </p>
+              </div>
+              <Badge variant="outline">{modelHouses.length} Series</Badge>
+            </div>
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-medium">RFO Units</h3>
+                <p className="text-sm text-muted-foreground">{rfoUnits.length} ready for occupancy units</p>
+              </div>
+              <Badge variant="outline">{rfoUnits.length} Units</Badge>
+            </div>
+          </div>
+        </CardContent>
+        <CardFooter className="flex justify-between">
+          <Button variant="outline" onClick={() => setResetDialogOpen(true)}>
+            <RefreshCw className="mr-2 h-4 w-4" />
+            Reset to Default Data
+          </Button>
+          <Button
+            variant="secondary"
+            onClick={() => {
+              toast({
+                title: "Data Saved",
+                description: "All changes are automatically saved to local storage",
+              })
+            }}
+          >
+            <Database className="mr-2 h-4 w-4" />
+            Data Saved to Local Storage
+          </Button>
+        </CardFooter>
+      </Card>
 
       <Tabs defaultValue="model-houses" value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="mb-4">
@@ -174,6 +261,26 @@ export default function ModelHousesAdminPage() {
             </Button>
             <Button variant="destructive" onClick={handleDelete}>
               Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={resetDialogOpen} onOpenChange={setResetDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Reset to Default Data</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to reset all model houses and RFO units to their default values? This will discard
+              all your changes.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setResetDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleResetData}>
+              Reset Data
             </Button>
           </DialogFooter>
         </DialogContent>
