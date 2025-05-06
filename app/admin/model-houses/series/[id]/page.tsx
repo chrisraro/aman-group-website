@@ -1,508 +1,372 @@
 "use client"
 
 import type React from "react"
-import { useState, useEffect } from "react"
+
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useModelHousesContext } from "@/lib/context/ModelHousesContext"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
-import { Label } from "@/components/ui/label"
-import { Switch } from "@/components/ui/switch"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Loader2, ArrowLeft, Plus, X } from "lucide-react"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import { Checkbox } from "@/components/ui/checkbox"
+import { ArrowLeft, Save } from "lucide-react"
 import Link from "next/link"
-import type { ModelHouseSeries } from "@/data/model-houses"
+import type { ModelHouseSeries } from "@/lib/hooks/useModelHouses"
 
 export default function EditModelHouseSeriesPage({ params }: { params: { id: string } }) {
   const router = useRouter()
-  const { modelHouses, addModelHouseSeries, updateModelHouseSeries, loading } = useModelHousesContext()
+  const { getModelHouseSeriesById, addModelHouseSeries, updateModelHouseSeries } = useModelHousesContext()
 
   const isNewSeries = params.id === "new"
-  const initialSeries = isNewSeries ? null : modelHouses[params.id]
+  const existingSeries = !isNewSeries ? getModelHouseSeriesById(params.id) : null
 
-  const [formData, setFormData] = useState<Partial<ModelHouseSeries>>({
-    id: "",
-    name: "",
-    floorArea: "",
-    loftReady: false,
-    description: "",
-    longDescription: "",
-    features: [],
-    specifications: {
-      foundation: "",
-      walls: "",
-      roofing: "",
-      ceiling: "",
-      windows: "",
-      doors: "",
-      flooring: "",
-      kitchen: "",
-      bathroom: "",
-      electrical: "",
+  const [formData, setFormData] = useState<Partial<ModelHouseSeries>>(
+    existingSeries || {
+      id: "",
+      name: "",
+      floorArea: "",
+      loftReady: false,
+      description: "",
+      longDescription: "",
+      features: [],
+      specifications: {},
+      basePrice: 0,
+      floorPlanImage: "",
+      imageUrl: "",
+      developer: "",
+      developerColor: "#000000",
+      project: "",
+      units: [],
     },
-    basePrice: 0,
-    floorPlanImage: "",
-    imageUrl: "",
-    developer: "",
-    developerColor: "#000000",
-    project: "",
-    units: [],
-  })
+  )
 
   const [newFeature, setNewFeature] = useState("")
-  const [errors, setErrors] = useState<Record<string, string>>({})
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [newSpecKey, setNewSpecKey] = useState("")
+  const [newSpecValue, setNewSpecValue] = useState("")
 
   useEffect(() => {
-    if (!isNewSeries && initialSeries) {
-      setFormData({
-        ...initialSeries,
-        // Ensure all fields have default values to prevent controlled/uncontrolled input errors
-        id: initialSeries.id || "",
-        name: initialSeries.name || "",
-        floorArea: initialSeries.floorArea || "",
-        loftReady: initialSeries.loftReady || false,
-        description: initialSeries.description || "",
-        longDescription: initialSeries.longDescription || "",
-        features: initialSeries.features || [],
-        specifications: {
-          foundation: initialSeries.specifications?.foundation || "",
-          walls: initialSeries.specifications?.walls || "",
-          roofing: initialSeries.specifications?.roofing || "",
-          ceiling: initialSeries.specifications?.ceiling || "",
-          windows: initialSeries.specifications?.windows || "",
-          doors: initialSeries.specifications?.doors || "",
-          flooring: initialSeries.specifications?.flooring || "",
-          kitchen: initialSeries.specifications?.kitchen || "",
-          bathroom: initialSeries.specifications?.bathroom || "",
-          electrical: initialSeries.specifications?.electrical || "",
-          ...initialSeries.specifications,
-        },
-        basePrice: initialSeries.basePrice || 0,
-        floorPlanImage: initialSeries.floorPlanImage || "",
-        imageUrl: initialSeries.imageUrl || "",
-        developer: initialSeries.developer || "",
-        developerColor: initialSeries.developerColor || "#000000",
-        project: initialSeries.project || "",
-        units: initialSeries.units || [],
-      })
+    if (existingSeries) {
+      setFormData(existingSeries)
     }
-  }, [isNewSeries, initialSeries])
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <span className="ml-2">Loading model houses data...</span>
-      </div>
-    )
-  }
+  }, [existingSeries])
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
     setFormData((prev) => ({
       ...prev,
-      [name]: value,
+      [name]: name === "basePrice" ? Number.parseFloat(value) : value,
     }))
   }
 
-  const handleSpecificationChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target
-    setFormData((prev) => ({
-      ...prev,
-      specifications: {
-        ...prev.specifications,
-        [name]: value,
-      },
-    }))
-  }
-
-  const handleSwitchChange = (checked: boolean) => {
+  const handleCheckboxChange = (checked: boolean) => {
     setFormData((prev) => ({
       ...prev,
       loftReady: checked,
     }))
   }
 
-  const handleAddFeature = () => {
-    if (newFeature.trim()) {
-      setFormData((prev) => ({
-        ...prev,
-        features: [...(prev.features || []), newFeature.trim()],
-      }))
-      setNewFeature("")
-    }
+  const addFeature = () => {
+    if (!newFeature.trim()) return
+
+    setFormData((prev) => ({
+      ...prev,
+      features: [...(prev.features || []), newFeature],
+    }))
+
+    setNewFeature("")
   }
 
-  const handleRemoveFeature = (index: number) => {
+  const removeFeature = (index: number) => {
     setFormData((prev) => ({
       ...prev,
       features: prev.features?.filter((_, i) => i !== index) || [],
     }))
   }
 
-  const validateForm = () => {
-    const newErrors: Record<string, string> = {}
+  const addSpecification = () => {
+    if (!newSpecKey.trim() || !newSpecValue.trim()) return
 
-    if (!formData.id) newErrors.id = "ID is required"
-    if (!formData.name) newErrors.name = "Name is required"
-    if (!formData.floorArea) newErrors.floorArea = "Floor area is required"
-    if (!formData.description) newErrors.description = "Description is required"
-    if (!formData.developer) newErrors.developer = "Developer is required"
-    if (!formData.project) newErrors.project = "Project is required"
-    if (!formData.basePrice) newErrors.basePrice = "Base price is required"
+    setFormData((prev) => ({
+      ...prev,
+      specifications: {
+        ...(prev.specifications || {}),
+        [newSpecKey]: newSpecValue,
+      },
+    }))
 
-    setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
+    setNewSpecKey("")
+    setNewSpecValue("")
+  }
+
+  const removeSpecification = (key: string) => {
+    setFormData((prev) => {
+      const newSpecs = { ...(prev.specifications || {}) }
+      delete newSpecs[key]
+
+      return {
+        ...prev,
+        specifications: newSpecs,
+      }
+    })
   }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!validateForm()) return
-
-    setIsSubmitting(true)
-
-    try {
-      const seriesData = {
-        ...formData,
-        id: formData.id || "",
-        name: formData.name || "",
-        floorArea: formData.floorArea || "",
-        loftReady: formData.loftReady || false,
-        description: formData.description || "",
-        longDescription: formData.longDescription || "",
-        features: formData.features || [],
-        specifications: formData.specifications || {},
-        basePrice: Number(formData.basePrice) || 0,
-        floorPlanImage: formData.floorPlanImage || "",
-        imageUrl: formData.imageUrl || "",
-        developer: formData.developer || "",
-        developerColor: formData.developerColor || "#000000",
-        project: formData.project || "",
-        units: formData.units || [],
-      } as ModelHouseSeries
-
-      if (isNewSeries) {
-        addModelHouseSeries(seriesData)
-      } else {
-        updateModelHouseSeries(params.id, seriesData)
-      }
-
-      router.push("/admin/model-houses")
-    } catch (error) {
-      console.error("Error saving model house series:", error)
-    } finally {
-      setIsSubmitting(false)
+    if (!formData.id || !formData.name || !formData.floorArea) {
+      alert("Please fill in all required fields")
+      return
     }
+
+    const seriesData = {
+      ...formData,
+      units: formData.units || [],
+    } as ModelHouseSeries
+
+    if (isNewSeries) {
+      addModelHouseSeries(seriesData)
+    } else {
+      updateModelHouseSeries(params.id, seriesData)
+    }
+
+    router.push("/admin/model-houses")
   }
 
   return (
-    <div className="container mx-auto py-8">
-      <div className="flex items-center mb-6">
-        <Link href="/admin/model-houses">
-          <Button variant="ghost" size="sm">
-            <ArrowLeft className="mr-2 h-4 w-4" /> Back to Model Houses
+    <div className="container mx-auto max-w-4xl">
+      <div className="flex justify-between items-center mb-6">
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="icon" asChild>
+            <Link href="/admin/model-houses">
+              <ArrowLeft className="h-4 w-4" />
+            </Link>
           </Button>
-        </Link>
-        <h1 className="text-3xl font-bold ml-4">
-          {isNewSeries ? "Add New Model House Series" : `Edit ${initialSeries?.name || "Series"}`}
-        </h1>
+          <h1 className="text-3xl font-bold">{isNewSeries ? "Add New Series" : "Edit Series"}</h1>
+        </div>
       </div>
 
       <form onSubmit={handleSubmit}>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Basic Information</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <Label htmlFor="id">ID (used in URLs)</Label>
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle>Basic Information</CardTitle>
+          </CardHeader>
+          <CardContent className="grid gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="id">ID (unique identifier) *</Label>
                 <Input
                   id="id"
                   name="id"
-                  value={formData.id || ""}
+                  value={formData.id}
                   onChange={handleInputChange}
+                  required
                   disabled={!isNewSeries}
-                  className={errors.id ? "border-red-500" : ""}
+                  placeholder="e.g., chelsea-81"
                 />
-                {errors.id && <p className="text-red-500 text-sm mt-1">{errors.id}</p>}
               </div>
 
-              <div>
-                <Label htmlFor="name">Name</Label>
+              <div className="space-y-2">
+                <Label htmlFor="name">Name *</Label>
                 <Input
                   id="name"
                   name="name"
-                  value={formData.name || ""}
+                  value={formData.name}
                   onChange={handleInputChange}
-                  className={errors.name ? "border-red-500" : ""}
+                  required
+                  placeholder="e.g., Chelsea 81 Series"
                 />
-                {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
               </div>
 
-              <div>
-                <Label htmlFor="floorArea">Floor Area</Label>
+              <div className="space-y-2">
+                <Label htmlFor="floorArea">Floor Area *</Label>
                 <Input
                   id="floorArea"
                   name="floorArea"
-                  value={formData.floorArea || ""}
+                  value={formData.floorArea}
                   onChange={handleInputChange}
-                  placeholder="e.g., 72 sqm"
-                  className={errors.floorArea ? "border-red-500" : ""}
-                />
-                {errors.floorArea && <p className="text-red-500 text-sm mt-1">{errors.floorArea}</p>}
-              </div>
-
-              <div className="flex items-center space-x-2">
-                <Switch id="loftReady" checked={formData.loftReady || false} onCheckedChange={handleSwitchChange} />
-                <Label htmlFor="loftReady">Loft Ready</Label>
-              </div>
-
-              <div>
-                <Label htmlFor="description">Short Description</Label>
-                <Textarea
-                  id="description"
-                  name="description"
-                  value={formData.description || ""}
-                  onChange={handleInputChange}
-                  className={errors.description ? "border-red-500" : ""}
-                />
-                {errors.description && <p className="text-red-500 text-sm mt-1">{errors.description}</p>}
-              </div>
-
-              <div>
-                <Label htmlFor="longDescription">Long Description</Label>
-                <Textarea
-                  id="longDescription"
-                  name="longDescription"
-                  value={formData.longDescription || ""}
-                  onChange={handleInputChange}
-                  rows={5}
+                  required
+                  placeholder="e.g., 81 sqm"
                 />
               </div>
-            </CardContent>
-          </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Features</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex space-x-2 mb-4">
+              <div className="space-y-2">
+                <Label htmlFor="basePrice">Base Price *</Label>
+                <Input
+                  id="basePrice"
+                  name="basePrice"
+                  type="number"
+                  value={formData.basePrice}
+                  onChange={handleInputChange}
+                  required
+                  placeholder="e.g., 3000000"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="developer">Developer *</Label>
+                <Input
+                  id="developer"
+                  name="developer"
+                  value={formData.developer}
+                  onChange={handleInputChange}
+                  required
+                  placeholder="e.g., Aman Engineering"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="developerColor">Developer Color</Label>
+                <Input
+                  id="developerColor"
+                  name="developerColor"
+                  type="color"
+                  value={formData.developerColor}
+                  onChange={handleInputChange}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="project">Project *</Label>
+                <Input
+                  id="project"
+                  name="project"
+                  value={formData.project}
+                  onChange={handleInputChange}
+                  required
+                  placeholder="e.g., Parkview Naga Urban Residence"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="loftReady" className="flex items-center gap-2 cursor-pointer">
+                  <Checkbox id="loftReady" checked={formData.loftReady} onCheckedChange={handleCheckboxChange} />
+                  Loft Ready
+                </Label>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="description">Short Description *</Label>
+              <Textarea
+                id="description"
+                name="description"
+                value={formData.description}
+                onChange={handleInputChange}
+                required
+                placeholder="Brief description of the model house series"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="longDescription">Long Description</Label>
+              <Textarea
+                id="longDescription"
+                name="longDescription"
+                value={formData.longDescription}
+                onChange={handleInputChange}
+                placeholder="Detailed description of the model house series"
+                rows={5}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="imageUrl">Image URL</Label>
+              <Input
+                id="imageUrl"
+                name="imageUrl"
+                value={formData.imageUrl}
+                onChange={handleInputChange}
+                placeholder="URL to the main image"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="floorPlanImage">Floor Plan Image URL</Label>
+              <Input
+                id="floorPlanImage"
+                name="floorPlanImage"
+                value={formData.floorPlanImage}
+                onChange={handleInputChange}
+                placeholder="URL to the floor plan image"
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle>Features</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="flex gap-2">
                 <Input value={newFeature} onChange={(e) => setNewFeature(e.target.value)} placeholder="Add a feature" />
-                <Button type="button" onClick={handleAddFeature}>
-                  <Plus className="h-4 w-4" />
+                <Button type="button" onClick={addFeature}>
+                  Add
                 </Button>
               </div>
 
               <div className="space-y-2">
                 {formData.features?.map((feature, index) => (
-                  <div key={index} className="flex items-center justify-between bg-muted p-2 rounded-md">
+                  <div key={index} className="flex justify-between items-center p-2 bg-muted rounded">
                     <span>{feature}</span>
-                    <Button type="button" variant="ghost" size="sm" onClick={() => handleRemoveFeature(index)}>
-                      <X className="h-4 w-4" />
+                    <Button type="button" variant="ghost" size="sm" onClick={() => removeFeature(index)}>
+                      Remove
                     </Button>
                   </div>
                 ))}
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </CardContent>
+        </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Specifications</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <Label htmlFor="foundation">Foundation</Label>
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle>Specifications</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Input
-                  id="foundation"
-                  name="foundation"
-                  value={formData.specifications?.foundation || ""}
-                  onChange={handleSpecificationChange}
+                  value={newSpecKey}
+                  onChange={(e) => setNewSpecKey(e.target.value)}
+                  placeholder="Specification name"
+                />
+                <Input
+                  value={newSpecValue}
+                  onChange={(e) => setNewSpecValue(e.target.value)}
+                  placeholder="Specification value"
                 />
               </div>
+              <Button type="button" onClick={addSpecification} className="w-full">
+                Add Specification
+              </Button>
 
-              <div>
-                <Label htmlFor="walls">Walls</Label>
-                <Input
-                  id="walls"
-                  name="walls"
-                  value={formData.specifications?.walls || ""}
-                  onChange={handleSpecificationChange}
-                />
+              <div className="space-y-2">
+                {Object.entries(formData.specifications || {}).map(([key, value]) => (
+                  <div key={key} className="flex justify-between items-center p-2 bg-muted rounded">
+                    <div>
+                      <span className="font-medium">{key}:</span> {value}
+                    </div>
+                    <Button type="button" variant="ghost" size="sm" onClick={() => removeSpecification(key)}>
+                      Remove
+                    </Button>
+                  </div>
+                ))}
               </div>
+            </div>
+          </CardContent>
+        </Card>
 
-              <div>
-                <Label htmlFor="roofing">Roofing</Label>
-                <Input
-                  id="roofing"
-                  name="roofing"
-                  value={formData.specifications?.roofing || ""}
-                  onChange={handleSpecificationChange}
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="ceiling">Ceiling</Label>
-                <Input
-                  id="ceiling"
-                  name="ceiling"
-                  value={formData.specifications?.ceiling || ""}
-                  onChange={handleSpecificationChange}
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="windows">Windows</Label>
-                <Input
-                  id="windows"
-                  name="windows"
-                  value={formData.specifications?.windows || ""}
-                  onChange={handleSpecificationChange}
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="doors">Doors</Label>
-                <Input
-                  id="doors"
-                  name="doors"
-                  value={formData.specifications?.doors || ""}
-                  onChange={handleSpecificationChange}
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="flooring">Flooring</Label>
-                <Input
-                  id="flooring"
-                  name="flooring"
-                  value={formData.specifications?.flooring || ""}
-                  onChange={handleSpecificationChange}
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="kitchen">Kitchen</Label>
-                <Input
-                  id="kitchen"
-                  name="kitchen"
-                  value={formData.specifications?.kitchen || ""}
-                  onChange={handleSpecificationChange}
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="bathroom">Bathroom</Label>
-                <Input
-                  id="bathroom"
-                  name="bathroom"
-                  value={formData.specifications?.bathroom || ""}
-                  onChange={handleSpecificationChange}
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="electrical">Electrical</Label>
-                <Input
-                  id="electrical"
-                  name="electrical"
-                  value={formData.specifications?.electrical || ""}
-                  onChange={handleSpecificationChange}
-                />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Additional Information</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <Label htmlFor="basePrice">Base Price</Label>
-                <Input
-                  id="basePrice"
-                  name="basePrice"
-                  type="number"
-                  value={formData.basePrice || 0}
-                  onChange={handleInputChange}
-                  className={errors.basePrice ? "border-red-500" : ""}
-                />
-                {errors.basePrice && <p className="text-red-500 text-sm mt-1">{errors.basePrice}</p>}
-              </div>
-
-              <div>
-                <Label htmlFor="floorPlanImage">Floor Plan Image URL</Label>
-                <Input
-                  id="floorPlanImage"
-                  name="floorPlanImage"
-                  value={formData.floorPlanImage || ""}
-                  onChange={handleInputChange}
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="imageUrl">Image URL</Label>
-                <Input id="imageUrl" name="imageUrl" value={formData.imageUrl || ""} onChange={handleInputChange} />
-              </div>
-
-              <div>
-                <Label htmlFor="developer">Developer</Label>
-                <Input
-                  id="developer"
-                  name="developer"
-                  value={formData.developer || ""}
-                  onChange={handleInputChange}
-                  className={errors.developer ? "border-red-500" : ""}
-                />
-                {errors.developer && <p className="text-red-500 text-sm mt-1">{errors.developer}</p>}
-              </div>
-
-              <div>
-                <Label htmlFor="developerColor">Developer Color</Label>
-                <div className="flex space-x-2">
-                  <Input
-                    id="developerColor"
-                    name="developerColor"
-                    value={formData.developerColor || "#000000"}
-                    onChange={handleInputChange}
-                  />
-                  <div
-                    className="w-10 h-10 rounded-md border"
-                    style={{ backgroundColor: formData.developerColor || "#000000" }}
-                  />
-                </div>
-              </div>
-
-              <div>
-                <Label htmlFor="project">Project</Label>
-                <Input
-                  id="project"
-                  name="project"
-                  value={formData.project || ""}
-                  onChange={handleInputChange}
-                  className={errors.project ? "border-red-500" : ""}
-                />
-                {errors.project && <p className="text-red-500 text-sm mt-1">{errors.project}</p>}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        <div className="mt-6 flex justify-end space-x-4">
-          <Link href="/admin/model-houses">
-            <Button variant="outline" type="button">
-              Cancel
-            </Button>
-          </Link>
-          <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {isNewSeries ? "Create Series" : "Update Series"}
+        <div className="flex justify-end gap-4">
+          <Button variant="outline" type="button" asChild>
+            <Link href="/admin/model-houses">Cancel</Link>
+          </Button>
+          <Button type="submit">
+            <Save className="mr-2 h-4 w-4" />
+            Save Series
           </Button>
         </div>
       </form>

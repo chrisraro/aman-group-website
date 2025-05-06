@@ -1,10 +1,13 @@
 "use client"
 
-import { useState } from "react"
-import Link from "next/link"
+import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
 import { useModelHousesContext } from "@/lib/context/ModelHousesContext"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { ArrowLeft, PlusCircle, Edit, Trash2 } from "lucide-react"
+import Link from "next/link"
+import { Badge } from "@/components/ui/badge"
 import {
   Dialog,
   DialogContent,
@@ -13,126 +16,120 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { Loader2, ArrowLeft, Plus, Pencil, Trash2 } from "lucide-react"
-import { Badge } from "@/components/ui/badge"
 
-export default function UnitsManagementPage({ params }: { params: { id: string } }) {
-  const { modelHouses, deleteUnit, loading } = useModelHousesContext()
+export default function ManageUnitsPage({ params }: { params: { id: string } }) {
+  const router = useRouter()
+  const { getModelHouseSeriesById, deleteModelHouseUnit } = useModelHousesContext()
+
+  const [series, setSeries] = useState(getModelHouseSeriesById(params.id))
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
-  const [unitIdToDelete, setUnitIdToDelete] = useState<string | null>(null)
+  const [unitToDelete, setUnitToDelete] = useState<string | null>(null)
 
-  const series = modelHouses[params.id]
+  useEffect(() => {
+    const seriesData = getModelHouseSeriesById(params.id)
+    if (!seriesData) {
+      router.push("/admin/model-houses")
+    } else {
+      setSeries(seriesData)
+    }
+  }, [params.id, getModelHouseSeriesById, router])
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <span className="ml-2">Loading units data...</span>
-      </div>
-    )
-  }
-
-  if (!series) {
-    return (
-      <div className="container mx-auto py-8">
-        <div className="flex items-center mb-6">
-          <Link href="/admin/model-houses">
-            <Button variant="ghost" size="sm">
-              <ArrowLeft className="mr-2 h-4 w-4" /> Back to Model Houses
-            </Button>
-          </Link>
-        </div>
-        <div className="text-center py-12">
-          <h2 className="text-2xl font-bold">Series not found</h2>
-          <p className="mt-2">The model house series you're looking for doesn't exist.</p>
-        </div>
-      </div>
-    )
-  }
-
-  const handleDeleteClick = (unitId: string) => {
-    setUnitIdToDelete(unitId)
+  const confirmDelete = (unitId: string) => {
+    setUnitToDelete(unitId)
     setDeleteDialogOpen(true)
   }
 
-  const confirmDelete = () => {
-    if (unitIdToDelete) {
-      deleteUnit(params.id, unitIdToDelete)
-      setDeleteDialogOpen(false)
-      setUnitIdToDelete(null)
-    }
+  const handleDelete = () => {
+    if (!unitToDelete) return
+
+    deleteModelHouseUnit(params.id, unitToDelete)
+    setDeleteDialogOpen(false)
+    setUnitToDelete(null)
+
+    // Refresh series data
+    setSeries(getModelHouseSeriesById(params.id))
+  }
+
+  if (!series) {
+    return <div>Loading...</div>
   }
 
   return (
-    <div className="container mx-auto py-8">
-      <div className="flex items-center mb-6">
-        <Link href="/admin/model-houses">
-          <Button variant="ghost" size="sm">
-            <ArrowLeft className="mr-2 h-4 w-4" /> Back to Model Houses
+    <div className="container mx-auto max-w-6xl">
+      <div className="flex justify-between items-center mb-6">
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="icon" asChild>
+            <Link href="/admin/model-houses">
+              <ArrowLeft className="h-4 w-4" />
+            </Link>
           </Button>
-        </Link>
-        <h1 className="text-3xl font-bold ml-4">Units for {series.name}</h1>
-      </div>
-
-      <div className="flex justify-end mb-6">
-        <Link href={`/admin/model-houses/series/${params.id}/units/new`}>
-          <Button>
-            <Plus className="mr-2 h-4 w-4" /> Add New Unit
-          </Button>
-        </Link>
+          <h1 className="text-3xl font-bold">Manage Units: {series.name}</h1>
+        </div>
+        <Button asChild>
+          <Link href={`/admin/model-houses/series/${params.id}/units/new`}>
+            <PlusCircle className="mr-2 h-4 w-4" />
+            Add New Unit
+          </Link>
+        </Button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {series.units.map((unit) => (
-          <Card key={unit.id}>
-            <CardHeader>
+          <Card key={unit.id} className="overflow-hidden">
+            <CardHeader className="pb-3">
               <div className="flex justify-between items-start">
-                <CardTitle>{unit.name}</CardTitle>
-                {unit.isRFO && <Badge>RFO</Badge>}
+                <div>
+                  <CardTitle>{unit.name}</CardTitle>
+                  <div className="text-sm text-muted-foreground">{unit.location}</div>
+                </div>
+                <div className="flex gap-2">
+                  <Button variant="ghost" size="icon" asChild>
+                    <Link href={`/admin/model-houses/series/${params.id}/units/${unit.id}`}>
+                      <Edit className="h-4 w-4" />
+                    </Link>
+                  </Button>
+                  <Button variant="ghost" size="icon" onClick={() => confirmDelete(unit.id)}>
+                    <Trash2 className="h-4 w-4 text-destructive" />
+                  </Button>
+                </div>
               </div>
             </CardHeader>
             <CardContent>
-              <div className="aspect-video bg-muted rounded-md overflow-hidden mb-4">
-                <img
-                  src={unit.imageUrl || "/placeholder.svg?height=400&width=600"}
-                  alt={unit.name}
-                  className="w-full h-full object-cover"
-                />
+              <div className="grid grid-cols-2 gap-2 mb-3">
+                <div className="text-sm">
+                  <span className="font-medium">Price:</span> ₱{unit.price.toLocaleString()}
+                </div>
+                <div className="text-sm">
+                  <span className="font-medium">Status:</span> {unit.status}
+                </div>
+                <div className="text-sm">
+                  <span className="font-medium">Lot Price:</span> ₱{unit.lotOnlyPrice.toLocaleString()}
+                </div>
+                <div className="text-sm">
+                  <span className="font-medium">House Price:</span> ₱{unit.houseConstructionPrice.toLocaleString()}
+                </div>
               </div>
-              <p className="text-sm line-clamp-2">{unit.description}</p>
-              <div className="mt-2">
-                <span className="text-sm font-medium">Price: </span>
-                <span className="text-sm">₱{unit.price.toLocaleString()}</span>
-              </div>
-              <div className="mt-1">
-                <span className="text-sm font-medium">Status: </span>
-                <span className="text-sm">{unit.status}</span>
+              <div className="flex gap-2 mt-2">
+                {unit.isRFO && <Badge variant="secondary">RFO</Badge>}
+                <Badge variant="outline">{unit.status}</Badge>
               </div>
             </CardContent>
-            <CardFooter className="flex justify-between">
-              <Button variant="outline" size="sm" onClick={() => handleDeleteClick(unit.id)}>
-                <Trash2 className="mr-2 h-4 w-4" /> Delete
-              </Button>
-              <Link href={`/admin/model-houses/series/${params.id}/units/${unit.id}`}>
-                <Button size="sm">
-                  <Pencil className="mr-2 h-4 w-4" /> Edit
-                </Button>
-              </Link>
-            </CardFooter>
           </Card>
         ))}
       </div>
 
       {series.units.length === 0 && (
-        <div className="text-center py-12 bg-muted rounded-lg">
-          <h2 className="text-xl font-medium">No units found</h2>
-          <p className="mt-2">This series doesn't have any units yet.</p>
-          <Link href={`/admin/model-houses/series/${params.id}/units/new`} className="mt-4 inline-block">
-            <Button>
-              <Plus className="mr-2 h-4 w-4" /> Add First Unit
+        <Card className="mt-6">
+          <CardContent className="flex flex-col items-center justify-center py-10">
+            <p className="text-muted-foreground mb-4">No units found for this series</p>
+            <Button asChild>
+              <Link href={`/admin/model-houses/series/${params.id}/units/new`}>
+                <PlusCircle className="mr-2 h-4 w-4" />
+                Add First Unit
+              </Link>
             </Button>
-          </Link>
-        </div>
+          </CardContent>
+        </Card>
       )}
 
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
@@ -147,7 +144,7 @@ export default function UnitsManagementPage({ params }: { params: { id: string }
             <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>
               Cancel
             </Button>
-            <Button variant="destructive" onClick={confirmDelete}>
+            <Button variant="destructive" onClick={handleDelete}>
               Delete
             </Button>
           </DialogFooter>
