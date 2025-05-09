@@ -1,15 +1,46 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import Image from "next/image"
-import { ArrowLeft, Home } from "lucide-react"
+import { ArrowLeft, Home, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { getModelHouseSeriesById } from "@/data/model-houses"
+import { useModelHousesContext } from "@/lib/context/ModelHousesContext"
 import ScheduleViewingButton from "@/components/schedule-viewing-button"
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert"
+import type { ModelHouseSeries } from "@/lib/hooks/useModelHouses"
 
 export default function ModelHouseSeriesPage({ params }: { params: { seriesId: string } }) {
   const { seriesId } = params
-  const series = getModelHouseSeriesById(seriesId)
+  const { getModelHouseSeriesById, isLoading, error, refreshData } = useModelHousesContext()
+  const [series, setSeries] = useState<ModelHouseSeries | null>(null)
+
+  useEffect(() => {
+    setSeries(getModelHouseSeriesById(seriesId))
+  }, [seriesId, getModelHouseSeriesById])
+
+  if (isLoading) {
+    return (
+      <div className="container mx-auto px-4 py-12 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+          <p className="text-lg">Loading model house series...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="container mx-auto px-4 py-12">
+        <Alert variant="destructive" className="mb-6">
+          <AlertTitle>Error Loading Data</AlertTitle>
+          <AlertDescription>{error.message || "There was a problem loading the model house series."}</AlertDescription>
+        </Alert>
+        <Button onClick={refreshData}>Try Again</Button>
+      </div>
+    )
+  }
 
   if (!series) {
     return <div className="container mx-auto px-4 py-12">Model house series not found</div>
@@ -129,7 +160,7 @@ export default function ModelHouseSeriesPage({ params }: { params: { seriesId: s
                             <Image
                               src={
                                 unit.imageUrl ||
-                                `/placeholder.svg?height=300&width=400&text=${series.name}+${unit.name}`
+                                `/placeholder.svg?height=300&width=400&text=${series.name || "/placeholder.svg"}+${unit.name}`
                               }
                               alt={`${series.name} ${unit.name}`}
                               fill
@@ -190,7 +221,7 @@ export default function ModelHouseSeriesPage({ params }: { params: { seriesId: s
                             <Image
                               src={
                                 unit.imageUrl ||
-                                `/placeholder.svg?height=300&width=400&text=${series.name}+${unit.name}`
+                                `/placeholder.svg?height=300&width=400&text=${series.name || "/placeholder.svg"}+${unit.name}`
                               }
                               alt={`${series.name} ${unit.name}`}
                               fill

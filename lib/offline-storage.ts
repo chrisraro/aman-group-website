@@ -1,45 +1,62 @@
-// Utility functions for storing form data offline and syncing when online
+/**
+ * Utility functions for storing form data offline and syncing when online
+ */
 
-// Check if IndexedDB is available
-const isIndexedDBAvailable = () => {
-  return "indexedDB" in window
+// Database configuration
+const DB_NAME = "AmanGroupOfflineDB"
+const DB_VERSION = 1
+const STORES = {
+  contactForms: "contactForms",
+  viewingRequests: "viewingRequests",
 }
 
-// Open the database
+/**
+ * Check if IndexedDB is available in the current browser
+ */
+const isIndexedDBAvailable = (): boolean => {
+  return typeof window !== "undefined" && "indexedDB" in window
+}
+
+/**
+ * Open the IndexedDB database
+ */
 const openDatabase = (): Promise<IDBDatabase> => {
   return new Promise((resolve, reject) => {
     if (!isIndexedDBAvailable()) {
-      reject("IndexedDB not available")
+      reject(new Error("IndexedDB not available"))
       return
     }
 
-    const request = indexedDB.open("AmanGroupOfflineDB", 1)
+    const request = indexedDB.open(DB_NAME, DB_VERSION)
 
-    request.onerror = (event) => {
-      reject("Error opening database")
+    request.onerror = () => {
+      reject(new Error("Error opening database"))
     }
 
-    request.onsuccess = (event) => {
+    request.onsuccess = () => {
       resolve(request.result)
     }
 
     request.onupgradeneeded = (event) => {
       const db = request.result
-      // Create object stores for different types of forms
-      if (!db.objectStoreNames.contains("contactForms")) {
-        db.createObjectStore("contactForms", { keyPath: "id", autoIncrement: true })
-      }
-      if (!db.objectStoreNames.contains("viewingRequests")) {
-        db.createObjectStore("viewingRequests", { keyPath: "id", autoIncrement: true })
-      }
+
+      // Create object stores for different types of forms if they don't exist
+      Object.values(STORES).forEach((storeName) => {
+        if (!db.objectStoreNames.contains(storeName)) {
+          db.createObjectStore(storeName, { keyPath: "id", autoIncrement: true })
+        }
+      })
     }
   })
 }
 
-// Store form data for offline use
+/**
+ * Store form data for offline use
+ */
 export const storeFormData = async (storeName: string, data: any): Promise<number> => {
   try {
     const db = await openDatabase()
+
     return new Promise((resolve, reject) => {
       const transaction = db.transaction(storeName, "readwrite")
       const store = transaction.objectStore(storeName)
@@ -57,7 +74,7 @@ export const storeFormData = async (storeName: string, data: any): Promise<numbe
       }
 
       request.onerror = () => {
-        reject("Error storing form data")
+        reject(new Error("Error storing form data"))
       }
     })
   } catch (error) {
@@ -66,10 +83,13 @@ export const storeFormData = async (storeName: string, data: any): Promise<numbe
   }
 }
 
-// Get all stored form data
+/**
+ * Get all stored form data
+ */
 export const getStoredFormData = async (storeName: string): Promise<any[]> => {
   try {
     const db = await openDatabase()
+
     return new Promise((resolve, reject) => {
       const transaction = db.transaction(storeName, "readonly")
       const store = transaction.objectStore(storeName)
@@ -80,7 +100,7 @@ export const getStoredFormData = async (storeName: string): Promise<any[]> => {
       }
 
       request.onerror = () => {
-        reject("Error retrieving form data")
+        reject(new Error("Error retrieving form data"))
       }
     })
   } catch (error) {
@@ -89,10 +109,13 @@ export const getStoredFormData = async (storeName: string): Promise<any[]> => {
   }
 }
 
-// Delete form data after successful submission
+/**
+ * Delete form data after successful submission
+ */
 export const deleteFormData = async (storeName: string, id: number): Promise<void> => {
   try {
     const db = await openDatabase()
+
     return new Promise((resolve, reject) => {
       const transaction = db.transaction(storeName, "readwrite")
       const store = transaction.objectStore(storeName)
@@ -103,7 +126,7 @@ export const deleteFormData = async (storeName: string, id: number): Promise<voi
       }
 
       request.onerror = () => {
-        reject("Error deleting form data")
+        reject(new Error("Error deleting form data"))
       }
     })
   } catch (error) {
@@ -112,7 +135,9 @@ export const deleteFormData = async (storeName: string, id: number): Promise<voi
   }
 }
 
-// Register for background sync if available
+/**
+ * Register for background sync if available
+ */
 export const registerBackgroundSync = async (syncTag: string): Promise<boolean> => {
   if ("serviceWorker" in navigator && "SyncManager" in window) {
     try {
@@ -127,7 +152,9 @@ export const registerBackgroundSync = async (syncTag: string): Promise<boolean> 
   return false
 }
 
-// Submit form data with background sync fallback
+/**
+ * Submit form data with offline support
+ */
 export const submitFormWithOfflineSupport = async (
   endpoint: string,
   data: any,

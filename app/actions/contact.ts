@@ -29,6 +29,9 @@ export type ContactFormData = {
   _source?: string
 }
 
+/**
+ * Submit contact form data to Formspree
+ */
 export async function submitContactForm(formData: FormData | ContactFormData) {
   try {
     // Get the Formspree form ID

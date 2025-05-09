@@ -1,5 +1,4 @@
-// Storage keys
-const BROKERAGE_INFO_KEY = "aman-group-brokerage-info"
+import { BROKERAGE } from "@/lib/constants"
 
 // Interface for stored brokerage info
 export interface StoredBrokerageInfo {
@@ -26,14 +25,14 @@ export function storeBrokerageInfo(brokerageInfo: Omit<StoredBrokerageInfo, "tim
     // Calculate expiration date (15 days from now)
     const now = new Date()
     const expirationDate = new Date(now)
-    expirationDate.setDate(now.getDate() + 15) // 15 days validity
+    expirationDate.setDate(now.getDate() + BROKERAGE.referralValidityDays)
 
     const infoWithTimestamp: StoredBrokerageInfo = {
       ...brokerageInfo,
       timestamp: Date.now(),
       expirationDate: expirationDate.toISOString(),
     }
-    localStorage.setItem(BROKERAGE_INFO_KEY, JSON.stringify(infoWithTimestamp))
+    localStorage.setItem(BROKERAGE.storageKey, JSON.stringify(infoWithTimestamp))
   } catch (error) {
     console.error("Failed to store brokerage info:", error)
   }
@@ -46,7 +45,7 @@ export function getStoredBrokerageInfo(): StoredBrokerageInfo | null {
   if (typeof window === "undefined") return null
 
   try {
-    const storedInfo = localStorage.getItem(BROKERAGE_INFO_KEY)
+    const storedInfo = localStorage.getItem(BROKERAGE.storageKey)
     if (!storedInfo) return null
 
     const info = JSON.parse(storedInfo) as StoredBrokerageInfo
@@ -117,7 +116,7 @@ export function clearBrokerageInfo(): void {
   if (typeof window === "undefined") return
 
   try {
-    localStorage.removeItem(BROKERAGE_INFO_KEY)
+    localStorage.removeItem(BROKERAGE.storageKey)
   } catch (error) {
     console.error("Failed to clear brokerage info:", error)
   }

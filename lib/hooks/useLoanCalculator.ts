@@ -46,29 +46,39 @@ export function useLoanCalculator() {
     annualInterestRate: number,
     years: number,
   ): AmortizationResult => {
-    const monthlyInterestRate = annualInterestRate / 100 / 12
-    const numberOfPayments = years * 12
+    // Ensure we have valid numbers
+    const validLoanAmount = isNaN(loanAmount) || loanAmount < 0 ? 0 : loanAmount
+    const validInterestRate = isNaN(annualInterestRate) ? 0 : annualInterestRate
+    const validYears = isNaN(years) || years <= 0 ? 1 : years
+
+    const monthlyInterestRate = validInterestRate / 100 / 12
+    const numberOfPayments = validYears * 12
 
     let monthlyPayment: number
 
-    if (monthlyInterestRate === 0) {
-      // If interest rate is 0, simply divide principal by number of payments
-      monthlyPayment = loanAmount / numberOfPayments
+    if (monthlyInterestRate === 0 || validLoanAmount === 0) {
+      // If interest rate is 0 or loan amount is 0, simply divide principal by number of payments
+      monthlyPayment = validLoanAmount / numberOfPayments
     } else {
       monthlyPayment =
-        (loanAmount * monthlyInterestRate * Math.pow(1 + monthlyInterestRate, numberOfPayments)) /
+        (validLoanAmount * monthlyInterestRate * Math.pow(1 + monthlyInterestRate, numberOfPayments)) /
         (Math.pow(1 + monthlyInterestRate, numberOfPayments) - 1)
     }
 
+    // Handle potential NaN or Infinity results
+    if (isNaN(monthlyPayment) || !isFinite(monthlyPayment)) {
+      monthlyPayment = 0
+    }
+
     const totalPayment = monthlyPayment * numberOfPayments
-    const totalInterest = totalPayment - loanAmount
+    const totalInterest = totalPayment - validLoanAmount
 
     return {
       monthlyPayment,
       totalPayment,
       totalInterest,
-      loanAmount,
-      interestRate: annualInterestRate,
+      loanAmount: validLoanAmount,
+      interestRate: validInterestRate,
     }
   }
 
@@ -82,7 +92,11 @@ export function useLoanCalculator() {
     setIsCalculating(true)
 
     try {
-      const loanAmount = propertyPrice - downPayment
+      // Ensure we have valid numbers
+      const validPropertyPrice = isNaN(propertyPrice) ? 0 : propertyPrice
+      const validDownPayment = isNaN(downPayment) ? 0 : downPayment
+
+      const loanAmount = validPropertyPrice - validDownPayment
       const interestRate = getInterestRate(financingOption, paymentTerm)
       const calculationResult = calculateMonthlyAmortization(loanAmount, interestRate, paymentTerm)
 

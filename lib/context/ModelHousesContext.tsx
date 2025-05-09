@@ -1,17 +1,21 @@
 "use client"
 
 import type React from "react"
-import { createContext, useContext, useState, useEffect, useCallback } from "react"
+import { createContext, useContext, useState, useEffect, useCallback, useMemo } from "react"
 import type { ModelHouseSeries, ModelHouseUnit } from "@/lib/hooks/useModelHouses"
 import type { RFOUnit } from "@/lib/hooks/useRFOUnits"
-import { modelHouseSeries as initialModelHouseSeries, getAllRFOUnits } from "@/data/model-houses"
+import { modelHouseSeries as initialModelHouseSeries } from "@/data/model-houses"
 
 // Storage keys
 const MODEL_HOUSES_STORAGE_KEY = "modelHouses"
+const STORAGE_VERSION_KEY = "modelHousesVersion"
+const CURRENT_VERSION = "1.0.1" // Increment this when data structure changes
 
 type ModelHousesContextType = {
   modelHouses: Record<string, ModelHouseSeries>
   rfoUnits: RFOUnit[]
+  isLoading: boolean
+  error: Error | null
   addModelHouseSeries: (series: ModelHouseSeries) => void
   updateModelHouseSeries: (id: string, series: ModelHouseSeries) => void
   deleteModelHouseSeries: (id: string) => void
@@ -23,7 +27,11 @@ type ModelHousesContextType = {
   getModelHouseSeriesById: (id: string) => ModelHouseSeries | null
   getModelHouseUnitById: (seriesId: string, unitId: string) => ModelHouseUnit | null
   getRFOUnitById: (unitId: string) => RFOUnit | null
+  getModelHousesByProject: (project: string) => ModelHouseSeries[]
+  getAllProjects: () => string[]
+  getAllRFOUnits: () => RFOUnit[]
   resetToDefaultData: () => void
+  refreshData: () => void
 }
 
 const ModelHousesContext = createContext<ModelHousesContextType | undefined>(undefined)
@@ -31,63 +39,26 @@ const ModelHousesContext = createContext<ModelHousesContextType | undefined>(und
 export const ModelHousesProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [modelHouses, setModelHouses] = useState<Record<string, ModelHouseSeries>>({})
   const [rfoUnits, setRFOUnits] = useState<RFOUnit[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<Error | null>(null)
   const [isInitialized, setIsInitialized] = useState(false)
 
-  // Function to save model houses to localStorage
+  // Function to save model houses to localStorage with versioning
   const saveModelHousesToStorage = useCallback((data: Record<string, ModelHouseSeries>) => {
     if (typeof window === "undefined") return
 
     try {
       localStorage.setItem(MODEL_HOUSES_STORAGE_KEY, JSON.stringify(data))
+      localStorage.setItem(STORAGE_VERSION_KEY, CURRENT_VERSION)
       console.log("Model houses data saved to localStorage")
     } catch (error) {
       console.error("Failed to save model houses data to localStorage:", error)
+      setError(error instanceof Error ? error : new Error("Failed to save data"))
     }
   }, [])
 
-  // Initialize data from localStorage or default data
-  useEffect(() => {
-    if (typeof window !== "undefined" && !isInitialized) {
-      try {
-        const storedModelHouses = localStorage.getItem(MODEL_HOUSES_STORAGE_KEY)
-
-        if (storedModelHouses) {
-          const parsedData = JSON.parse(storedModelHouses)
-          setModelHouses(parsedData)
-          console.log("Loaded model houses data from localStorage")
-
-          // Derive RFO units from the loaded model houses
-          const derivedRFOUnits = deriveRFOUnitsFromModelHouses(parsedData)
-          setRFOUnits(derivedRFOUnits)
-        } else {
-          console.log("No stored data found, using initial data")
-          setModelHouses(initialModelHouseSeries)
-
-          // Initialize RFO units from default data
-          const initialRFOUnits = getAllRFOUnits()
-          setRFOUnits(initialRFOUnits)
-        }
-      } catch (error) {
-        console.error("Error loading data from localStorage:", error)
-        // Fallback to initial data if there's an error
-        setModelHouses(initialModelHouseSeries)
-        const initialRFOUnits = getAllRFOUnits()
-        setRFOUnits(initialRFOUnits)
-      }
-
-      setIsInitialized(true)
-    }
-  }, [isInitialized])
-
-  // Save to localStorage whenever data changes
-  useEffect(() => {
-    if (isInitialized && typeof window !== "undefined") {
-      saveModelHousesToStorage(modelHouses)
-    }
-  }, [modelHouses, isInitialized, saveModelHousesToStorage])
-
   // Helper function to derive RFO units from model houses
-  const deriveRFOUnitsFromModelHouses = (houses: Record<string, ModelHouseSeries>): RFOUnit[] => {
+  const deriveRFOUnitsFromModelHouses = useCallback((houses: Record<string, ModelHouseSeries>): RFOUnit[] => {
     const rfoUnits: RFOUnit[] = []
 
     Object.values(houses).forEach((series) => {
@@ -108,18 +79,117 @@ export const ModelHousesProvider: React.FC<{ children: React.ReactNode }> = ({ c
     })
 
     return rfoUnits
-  }
+  }, [])
+
+  // Initialize data from localStorage or default data
+  const initializeData = useCallback(() => {
+    if (typeof window === "undefined" || isInitialized) return
+
+    setIsLoading(true)
+    setError(null)
+
+    try {
+      const storedVersion = localStorage.getItem(STORAGE_VERSION_KEY)
+      const storedModelHouses = localStorage.getItem(MODEL_HOUSES_STORAGE_KEY)
+
+      // If version mismatch or no stored data, use initial data
+      if (storedVersion !== CURRENT_VERSION || !storedModelHouses) {
+        console.log("Using initial data (version mismatch or no stored data)")
+        setModelHouses(initialModelHouseSeries)
+
+        // Derive RFO units from the initial data
+        const derivedRFOUnits = deriveRFOUnitsFromModelHouses(initialModelHouseSeries)
+        setRFOUnits(derivedRFOUnits)
+
+        saveModelHousesToStorage(initialModelHouseSeries)
+      } else {
+        // Use stored data
+        const parsedData = JSON.parse(storedModelHouses)
+        setModelHouses(parsedData)
+        console.log("Loaded model houses data from localStorage")
+
+        // Derive RFO units from the loaded model houses
+        const derivedRFOUnits = deriveRFOUnitsFromModelHouses(parsedData)
+        setRFOUnits(derivedRFOUnits)
+      }
+    } catch (error) {
+      console.error("Error loading data from localStorage:", error)
+      setError(error instanceof Error ? error : new Error("Failed to load data"))
+
+      // Fallback to initial data if there's an error
+      setModelHouses(initialModelHouseSeries)
+      const derivedRFOUnits = deriveRFOUnitsFromModelHouses(initialModelHouseSeries)
+      setRFOUnits(derivedRFOUnits)
+      saveModelHousesToStorage(initialModelHouseSeries)
+    } finally {
+      setIsLoading(false)
+      setIsInitialized(true)
+    }
+  }, [isInitialized, saveModelHousesToStorage, deriveRFOUnitsFromModelHouses])
+
+  // Initialize data on component mount
+  useEffect(() => {
+    initializeData()
+  }, [initializeData])
+
+  // Listen for storage events (for cross-tab synchronization)
+  useEffect(() => {
+    const handleStorageChange = (event: StorageEvent) => {
+      if (event.key === MODEL_HOUSES_STORAGE_KEY && event.newValue) {
+        try {
+          const newData = JSON.parse(event.newValue)
+
+          // Update model houses
+          setModelHouses(newData)
+
+          // Derive RFO units from the new data
+          const derivedRFOUnits = deriveRFOUnitsFromModelHouses(newData)
+          setRFOUnits(derivedRFOUnits)
+
+          console.log("Updated data from another tab")
+        } catch (error) {
+          console.error("Error parsing storage event data:", error)
+        }
+      }
+    }
+
+    window.addEventListener("storage", handleStorageChange)
+    return () => {
+      window.removeEventListener("storage", handleStorageChange)
+    }
+  }, [deriveRFOUnitsFromModelHouses])
+
+  // Save to localStorage whenever data changes
+  useEffect(() => {
+    if (isInitialized && typeof window !== "undefined") {
+      saveModelHousesToStorage(modelHouses)
+    }
+  }, [modelHouses, isInitialized, saveModelHousesToStorage])
+
+  // Function to refresh data (useful for syncing between tabs)
+  const refreshData = useCallback(() => {
+    setIsInitialized(false)
+    initializeData()
+  }, [initializeData])
 
   // Reset to default data
-  const resetToDefaultData = () => {
-    setModelHouses(initialModelHouseSeries)
-    const initialRFOUnits = getAllRFOUnits()
-    setRFOUnits(initialRFOUnits)
-    saveModelHousesToStorage(initialModelHouseSeries)
-  }
+  const resetToDefaultData = useCallback(() => {
+    setIsLoading(true)
+    try {
+      setModelHouses(initialModelHouseSeries)
+      const derivedRFOUnits = deriveRFOUnitsFromModelHouses(initialModelHouseSeries)
+      setRFOUnits(derivedRFOUnits)
+      saveModelHousesToStorage(initialModelHouseSeries)
+      setError(null)
+    } catch (error) {
+      setError(error instanceof Error ? error : new Error("Failed to reset data"))
+    } finally {
+      setIsLoading(false)
+    }
+  }, [saveModelHousesToStorage, deriveRFOUnitsFromModelHouses])
 
   // CRUD operations for model house series
-  const addModelHouseSeries = (series: ModelHouseSeries) => {
+  const addModelHouseSeries = useCallback((series: ModelHouseSeries) => {
     setModelHouses((prev) => {
       const updated = {
         ...prev,
@@ -127,9 +197,9 @@ export const ModelHousesProvider: React.FC<{ children: React.ReactNode }> = ({ c
       }
       return updated
     })
-  }
+  }, [])
 
-  const updateModelHouseSeries = (id: string, series: ModelHouseSeries) => {
+  const updateModelHouseSeries = useCallback((id: string, series: ModelHouseSeries) => {
     setModelHouses((prev) => {
       // Preserve units if not provided in the update
       const updatedSeries = {
@@ -145,29 +215,18 @@ export const ModelHousesProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
       return updated
     })
-  }
+  }, [])
 
-  const deleteModelHouseSeries = (id: string) => {
+  const deleteModelHouseSeries = useCallback((id: string) => {
     setModelHouses((prev) => {
       const newModelHouses = { ...prev }
-
-      // Check if any units in this series are RFO before deleting
-      const seriesUnits = prev[id]?.units || []
-      const rfoUnitIds = seriesUnits.filter((unit) => unit.isRFO).map((unit) => unit.id)
-
-      // Remove RFO units from the RFO units list
-      if (rfoUnitIds.length > 0) {
-        setRFOUnits((prevRFOUnits) => prevRFOUnits.filter((unit) => !rfoUnitIds.includes(unit.id)))
-      }
-
-      // Delete the series
       delete newModelHouses[id]
       return newModelHouses
     })
-  }
+  }, [])
 
   // CRUD operations for model house units
-  const addModelHouseUnit = (seriesId: string, unit: ModelHouseUnit) => {
+  const addModelHouseUnit = useCallback((seriesId: string, unit: ModelHouseUnit) => {
     setModelHouses((prev) => {
       if (!prev[seriesId]) return prev
 
@@ -183,31 +242,9 @@ export const ModelHousesProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
       return updated
     })
+  }, [])
 
-    // Update RFO units if the new unit is RFO
-    if (unit.isRFO) {
-      setModelHouses((currentModelHouses) => {
-        const series = currentModelHouses[seriesId]
-        if (series) {
-          const newRFOUnit: RFOUnit = {
-            ...unit,
-            seriesId,
-            seriesName: series.name.split(" ")[0],
-            floorArea: series.floorArea,
-            loftReady: series.loftReady,
-            developer: series.developer,
-            developerColor: series.developerColor || "#000000",
-            project: series.project,
-          }
-
-          setRFOUnits((prev) => [...prev, newRFOUnit])
-        }
-        return currentModelHouses
-      })
-    }
-  }
-
-  const updateModelHouseUnit = (seriesId: string, unitId: string, unit: ModelHouseUnit) => {
+  const updateModelHouseUnit = useCallback((seriesId: string, unitId: string, unit: ModelHouseUnit) => {
     setModelHouses((prev) => {
       if (!prev[seriesId]) return prev
 
@@ -225,88 +262,36 @@ export const ModelHousesProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
       return updated
     })
+  }, [])
 
-    // Update RFO units if needed
-    setModelHouses((currentModelHouses) => {
-      const wasRFO = currentModelHouses[seriesId]?.units.find((u) => u.id === unitId)?.isRFO
+  const deleteModelHouseUnit = useCallback((seriesId: string, unitId: string) => {
+    setModelHouses((prev) => {
+      if (!prev[seriesId]) return prev
 
-      if (unit.isRFO || wasRFO) {
-        // If the unit is now RFO or was RFO, we need to update the RFO units
-        const series = currentModelHouses[seriesId]
-        if (series) {
-          if (unit.isRFO) {
-            // Add or update RFO unit
-            const updatedUnit = {
-              ...currentModelHouses[seriesId].units.find((u) => u.id === unitId),
-              ...unit,
-            }
-
-            const newRFOUnit: RFOUnit = {
-              ...(updatedUnit as ModelHouseUnit),
-              seriesId,
-              seriesName: series.name.split(" ")[0],
-              floorArea: series.floorArea,
-              loftReady: series.loftReady,
-              developer: series.developer,
-              developerColor: series.developerColor || "#000000",
-              project: series.project,
-            }
-
-            setRFOUnits((prev) => {
-              const existingIndex = prev.findIndex((u) => u.id === unitId)
-              if (existingIndex >= 0) {
-                // Update existing RFO unit
-                const newRFOUnits = [...prev]
-                newRFOUnits[existingIndex] = newRFOUnit
-                return newRFOUnits
-              } else {
-                // Add new RFO unit
-                return [...prev, newRFOUnit]
-              }
-            })
-          } else if (wasRFO && !unit.isRFO) {
-            // Remove from RFO units if it's no longer RFO
-            setRFOUnits((prev) => prev.filter((u) => u.id !== unitId))
-          }
-        }
-      }
-
-      return currentModelHouses
-    })
-  }
-
-  const deleteModelHouseUnit = (seriesId: string, unitId: string) => {
-    // Check if the unit is RFO before deleting
-    setModelHouses((currentModelHouses) => {
-      const isRFO = currentModelHouses[seriesId]?.units.find((u) => u.id === unitId)?.isRFO
-
-      if (isRFO) {
-        // Remove from RFO units if it was an RFO unit
-        setRFOUnits((prev) => prev.filter((u) => u.id !== unitId))
-      }
-
-      // Remove the unit from the series
       const updated = {
-        ...currentModelHouses,
+        ...prev,
         [seriesId]: {
-          ...currentModelHouses[seriesId],
-          units: currentModelHouses[seriesId].units.filter((u) => u.id !== unitId),
+          ...prev[seriesId],
+          units: prev[seriesId].units.filter((u) => u.id !== unitId),
         },
       }
 
       return updated
     })
-  }
+  }, [])
 
   // Update RFO unit directly
-  const updateRFOUnit = (unitId: string, updatedUnit: Partial<RFOUnit>) => {
-    // Find the RFO unit
-    const rfoUnit = rfoUnits.find((u) => u.id === unitId)
-    if (!rfoUnit) return
+  const updateRFOUnit = useCallback(
+    (unitId: string, updatedUnit: Partial<RFOUnit>) => {
+      // Find the RFO unit
+      const rfoUnit = rfoUnits.find((u) => u.id === unitId)
+      if (!rfoUnit) return
 
-    // Update the model house unit first
-    updateModelHouseUnit(rfoUnit.seriesId, unitId, { ...rfoUnit, ...updatedUnit } as ModelHouseUnit)
-  }
+      // Update the model house unit first
+      updateModelHouseUnit(rfoUnit.seriesId, unitId, { ...rfoUnit, ...updatedUnit } as ModelHouseUnit)
+    },
+    [rfoUnits, updateModelHouseUnit],
+  )
 
   // Getter functions
   const getAllModelHouseSeries = useCallback(() => Object.values(modelHouses), [modelHouses])
@@ -327,22 +312,73 @@ export const ModelHousesProvider: React.FC<{ children: React.ReactNode }> = ({ c
     [rfoUnits],
   )
 
-  const value = {
-    modelHouses,
-    rfoUnits,
-    addModelHouseSeries,
-    updateModelHouseSeries,
-    deleteModelHouseSeries,
-    addModelHouseUnit,
-    updateModelHouseUnit,
-    deleteModelHouseUnit,
-    updateRFOUnit,
-    getAllModelHouseSeries,
-    getModelHouseSeriesById,
-    getModelHouseUnitById,
-    getRFOUnitById,
-    resetToDefaultData,
-  }
+  // New functions to replace direct imports from data files
+  const getModelHousesByProject = useCallback(
+    (project: string) => {
+      return getAllModelHouseSeries().filter((series) => series.project === project)
+    },
+    [getAllModelHouseSeries],
+  )
+
+  const getAllProjects = useCallback(() => {
+    const projects = new Set<string>()
+    getAllModelHouseSeries().forEach((series) => {
+      if (series.project) {
+        projects.add(series.project)
+      }
+    })
+    return Array.from(projects)
+  }, [getAllModelHouseSeries])
+
+  const getAllRFOUnits = useCallback(() => rfoUnits, [rfoUnits])
+
+  // Memoize the context value to prevent unnecessary re-renders
+  const value = useMemo(
+    () => ({
+      modelHouses,
+      rfoUnits,
+      isLoading,
+      error,
+      addModelHouseSeries,
+      updateModelHouseSeries,
+      deleteModelHouseSeries,
+      addModelHouseUnit,
+      updateModelHouseUnit,
+      deleteModelHouseUnit,
+      updateRFOUnit,
+      getAllModelHouseSeries,
+      getModelHouseSeriesById,
+      getModelHouseUnitById,
+      getRFOUnitById,
+      getModelHousesByProject,
+      getAllProjects,
+      getAllRFOUnits,
+      resetToDefaultData,
+      refreshData,
+    }),
+    [
+      modelHouses,
+      rfoUnits,
+      isLoading,
+      error,
+      addModelHouseSeries,
+      updateModelHouseSeries,
+      deleteModelHouseSeries,
+      addModelHouseUnit,
+      updateModelHouseUnit,
+      deleteModelHouseUnit,
+      updateRFOUnit,
+      getAllModelHouseSeries,
+      getModelHouseSeriesById,
+      getModelHouseUnitById,
+      getRFOUnitById,
+      getModelHousesByProject,
+      getAllProjects,
+      getAllRFOUnits,
+      resetToDefaultData,
+      refreshData,
+    ],
+  )
 
   return <ModelHousesContext.Provider value={value}>{children}</ModelHousesContext.Provider>
 }

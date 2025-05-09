@@ -1,17 +1,20 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import Image from "next/image"
-import { ArrowLeft, Home, MapPin } from "lucide-react"
+import { ArrowLeft, Home, MapPin, Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { getModelHouseSeriesById, getModelHouseUnitById } from "@/data/model-houses"
+import { useModelHousesContext } from "@/lib/context/ModelHousesContext"
 import { LoanCalculatorButton } from "@/components/loan-calculator-button"
 import { PDFViewer } from "@/components/pdf-viewer"
 import { Badge } from "@/components/ui/badge"
 import ScheduleViewingButton from "@/components/schedule-viewing-button"
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert"
+import type { ModelHouseSeries, ModelHouseUnit } from "@/lib/hooks/useModelHouses"
 
 export default function ModelHouseUnitPage({
   params,
@@ -19,8 +22,37 @@ export default function ModelHouseUnitPage({
   params: { seriesId: string; unitId: string }
 }) {
   const { seriesId, unitId } = params
-  const series = getModelHouseSeriesById(seriesId)
-  const unit = getModelHouseUnitById(seriesId, unitId)
+  const { getModelHouseSeriesById, getModelHouseUnitById, isLoading, error, refreshData } = useModelHousesContext()
+  const [series, setSeries] = useState<ModelHouseSeries | null>(null)
+  const [unit, setUnit] = useState<ModelHouseUnit | null>(null)
+
+  useEffect(() => {
+    setSeries(getModelHouseSeriesById(seriesId))
+    setUnit(getModelHouseUnitById(seriesId, unitId))
+  }, [seriesId, unitId, getModelHouseSeriesById, getModelHouseUnitById])
+
+  if (isLoading) {
+    return (
+      <div className="container mx-auto px-4 py-12 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+          <p className="text-lg">Loading model house unit...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="container mx-auto px-4 py-12">
+        <Alert variant="destructive" className="mb-6">
+          <AlertTitle>Error Loading Data</AlertTitle>
+          <AlertDescription>{error.message || "There was a problem loading the model house unit."}</AlertDescription>
+        </Alert>
+        <Button onClick={refreshData}>Try Again</Button>
+      </div>
+    )
+  }
 
   if (!series || !unit) {
     return <div className="container mx-auto px-4 py-12">Model house unit not found</div>

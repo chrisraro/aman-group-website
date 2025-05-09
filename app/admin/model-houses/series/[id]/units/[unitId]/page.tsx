@@ -76,7 +76,9 @@ export default function EditUnitPage({
     setFormData((prev) => ({
       ...prev,
       [name]: ["price", "lotOnlyPrice", "houseConstructionPrice", "constructionProgress"].includes(name)
-        ? Number.parseFloat(value)
+        ? value
+          ? Number.parseFloat(value)
+          : 0
         : value,
     }))
   }
@@ -254,7 +256,7 @@ export default function EditUnitPage({
                   id="price"
                   name="price"
                   type="number"
-                  value={formData.price}
+                  value={formData.price || 0}
                   onChange={handleInputChange}
                   required
                   placeholder="e.g., 3000000"
@@ -267,7 +269,7 @@ export default function EditUnitPage({
                   id="lotOnlyPrice"
                   name="lotOnlyPrice"
                   type="number"
-                  value={formData.lotOnlyPrice}
+                  value={formData.lotOnlyPrice || 0}
                   onChange={handleInputChange}
                   required
                   placeholder="e.g., 1000000"
@@ -280,7 +282,7 @@ export default function EditUnitPage({
                   id="houseConstructionPrice"
                   name="houseConstructionPrice"
                   type="number"
-                  value={formData.houseConstructionPrice}
+                  value={formData.houseConstructionPrice || 0}
                   onChange={handleInputChange}
                   placeholder="e.g., 2000000"
                 />
@@ -406,7 +408,7 @@ export default function EditUnitPage({
                   type="number"
                   min="0"
                   max="100"
-                  value={formData.constructionProgress}
+                  value={formData.constructionProgress || 0}
                   onChange={handleInputChange}
                   placeholder="e.g., 75"
                 />

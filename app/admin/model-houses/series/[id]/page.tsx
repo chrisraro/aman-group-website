@@ -59,7 +59,7 @@ export default function EditModelHouseSeriesPage({ params }: { params: { id: str
     const { name, value } = e.target
     setFormData((prev) => ({
       ...prev,
-      [name]: name === "basePrice" ? Number.parseFloat(value) : value,
+      [name]: name === "basePrice" ? (value ? Number.parseFloat(value) : 0) : value,
     }))
   }
 
@@ -228,7 +228,7 @@ export default function EditModelHouseSeriesPage({ params }: { params: { id: str
                   id="basePrice"
                   name="basePrice"
                   type="number"
-                  value={formData.basePrice}
+                  value={formData.basePrice || 0}
                   onChange={handleInputChange}
                   required
                   placeholder="e.g., 3000000"

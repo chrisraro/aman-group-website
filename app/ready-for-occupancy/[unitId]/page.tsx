@@ -1,18 +1,54 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import Image from "next/image"
-import { ArrowLeft, Home, MapPin } from "lucide-react"
+import { ArrowLeft, Home, MapPin, Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { LoanCalculatorButton } from "@/components/loan-calculator-button"
-import { getRFOUnitById, getAllRFOUnits } from "@/data/model-houses"
+import { useModelHousesContext } from "@/lib/context/ModelHousesContext"
 import ScheduleViewingButton from "@/components/schedule-viewing-button"
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert"
+import type { RFOUnit } from "@/lib/hooks/useRFOUnits"
 
 export default function RFOUnitDetailPage({ params }: { params: { unitId: string } }) {
   const { unitId } = params
-  const unit = getRFOUnitById(unitId)
+  const { getRFOUnitById, getAllRFOUnits, isLoading, error, refreshData } = useModelHousesContext()
+  const [unit, setUnit] = useState<RFOUnit | null>(null)
+  const [similarUnits, setSimilarUnits] = useState<RFOUnit[]>([])
+
+  useEffect(() => {
+    setUnit(getRFOUnitById(unitId))
+
+    // Get similar units (excluding current unit)
+    const allRFOUnits = getAllRFOUnits()
+    setSimilarUnits(allRFOUnits.filter((item) => item.id !== unitId).slice(0, 3))
+  }, [unitId, getRFOUnitById, getAllRFOUnits])
+
+  if (isLoading) {
+    return (
+      <div className="container mx-auto px-4 py-12 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+          <p className="text-lg">Loading RFO unit...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="container mx-auto px-4 py-12">
+        <Alert variant="destructive" className="mb-6">
+          <AlertTitle>Error Loading Data</AlertTitle>
+          <AlertDescription>{error.message || "There was a problem loading the RFO unit."}</AlertDescription>
+        </Alert>
+        <Button onClick={refreshData}>Try Again</Button>
+      </div>
+    )
+  }
 
   if (!unit) {
     return <div className="container mx-auto px-4 py-12">Unit not found</div>
@@ -307,59 +343,56 @@ export default function RFOUnitDetailPage({ params }: { params: { unitId: string
       <section>
         <h2 className="text-2xl font-bold mb-8">Similar Units</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {getAllRFOUnits()
-            .filter((item) => item.id !== unit.id)
-            .slice(0, 3)
-            .map((similarUnit) => {
-              const similarUnitColorClass = similarUnit.developerColor === "#65932D" ? "bg-[#65932D]" : "bg-[#04009D]"
-              return (
-                <div
-                  key={similarUnit.id}
-                  className="bg-white rounded-lg shadow-sm border overflow-hidden hover:shadow-md transition-shadow"
-                >
-                  <div className="relative h-48">
-                    <Image
-                      src={`/placeholder.svg?height=300&width=400&text=${similarUnit.seriesName}+${similarUnit.name}`}
-                      alt={`${similarUnit.seriesName} ${similarUnit.name}`}
-                      fill
-                      className="object-cover"
-                    />
-                    <div
-                      className={cn("absolute top-0 right-0 px-3 py-1 font-semibold text-white", similarUnitColorClass)}
-                    >
-                      {similarUnit.status}
-                    </div>
-                  </div>
-                  <div className="p-6">
-                    <div className="flex justify-between items-start mb-2">
-                      <h3 className="text-xl font-bold">
-                        {similarUnit.seriesName} {similarUnit.name}
-                      </h3>
-                      <div className="bg-primary/10 text-primary px-3 py-1 rounded-full text-sm font-medium">
-                        ₱{similarUnit.price.toLocaleString()}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-1 mb-1 text-sm text-muted-foreground">
-                      <MapPin className="h-3 w-3" />
-                      <span>{similarUnit.location}</span>
-                    </div>
-                    <div className="flex gap-4 my-3">
-                      <div>
-                        <span className="text-sm font-medium">{similarUnit.loftReady ? "Loft Ready" : "Standard"}</span>
-                        <span className="text-xs text-muted-foreground"> design</span>
-                      </div>
-                      <div>
-                        <span className="text-sm font-medium">{similarUnit.floorArea}</span>
-                        <span className="text-xs text-muted-foreground"> area</span>
-                      </div>
-                    </div>
-                    <Link href={`/ready-for-occupancy/${similarUnit.id}`}>
-                      <Button className={cn("w-full", similarUnitColorClass)}>View Details</Button>
-                    </Link>
+          {similarUnits.map((similarUnit) => {
+            const similarUnitColorClass = similarUnit.developerColor === "#65932D" ? "bg-[#65932D]" : "bg-[#04009D]"
+            return (
+              <div
+                key={similarUnit.id}
+                className="bg-white rounded-lg shadow-sm border overflow-hidden hover:shadow-md transition-shadow"
+              >
+                <div className="relative h-48">
+                  <Image
+                    src={`/placeholder.svg?height=300&width=400&text=${similarUnit.seriesName}+${similarUnit.name}`}
+                    alt={`${similarUnit.seriesName} ${similarUnit.name}`}
+                    fill
+                    className="object-cover"
+                  />
+                  <div
+                    className={cn("absolute top-0 right-0 px-3 py-1 font-semibold text-white", similarUnitColorClass)}
+                  >
+                    {similarUnit.status}
                   </div>
                 </div>
-              )
-            })}
+                <div className="p-6">
+                  <div className="flex justify-between items-start mb-2">
+                    <h3 className="text-xl font-bold">
+                      {similarUnit.seriesName} {similarUnit.name}
+                    </h3>
+                    <div className="bg-primary/10 text-primary px-3 py-1 rounded-full text-sm font-medium">
+                      ₱{similarUnit.price.toLocaleString()}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1 mb-1 text-sm text-muted-foreground">
+                    <MapPin className="h-3 w-3" />
+                    <span>{similarUnit.location}</span>
+                  </div>
+                  <div className="flex gap-4 my-3">
+                    <div>
+                      <span className="text-sm font-medium">{similarUnit.loftReady ? "Loft Ready" : "Standard"}</span>
+                      <span className="text-xs text-muted-foreground"> design</span>
+                    </div>
+                    <div>
+                      <span className="text-sm font-medium">{similarUnit.floorArea}</span>
+                      <span className="text-xs text-muted-foreground"> area</span>
+                    </div>
+                  </div>
+                  <Link href={`/ready-for-occupancy/${similarUnit.id}`}>
+                    <Button className={cn("w-full", similarUnitColorClass)}>View Details</Button>
+                  </Link>
+                </div>
+              </div>
+            )
+          })}
         </div>
       </section>
     </div>

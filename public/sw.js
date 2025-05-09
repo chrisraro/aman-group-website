@@ -1,9 +1,12 @@
-// Ensure this file is served as JavaScript
-// Add proper MIME type hint at the top
+// Service Worker for Aman Group Website
 // @ts-check
 
 const CACHE_NAME = "aman-group-cache-v1"
-const urlsToCache = [
+const OFFLINE_PAGE = "/offline"
+const OFFLINE_IMAGE = "/icons/offline-image.png"
+
+// URLs to cache on install
+const STATIC_ASSETS = [
   "/",
   "/enjoy-realty",
   "/aman-engineering",
@@ -11,92 +14,79 @@ const urlsToCache = [
   "/ready-for-occupancy",
   "/loan-calculator",
   "/contact",
-  "/offline",
+  OFFLINE_PAGE,
   "/icons/icon-192x192.png",
   "/icons/icon-384x384.png",
   "/icons/icon-512x512.png",
   "/manifest.json",
+  OFFLINE_IMAGE,
 ]
 
-// Install a service worker
+// Install event handler
 self.addEventListener("install", (event) => {
-  // Perform install steps
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      console.log("Opened cache")
-      return cache.addAll(urlsToCache)
-    }),
-  )
-  // Force the waiting service worker to become the active service worker
-  self.skipWaiting()
-})
-
-// Cache and return requests
-self.addEventListener("fetch", (event) => {
-  event.respondWith(
-    caches.match(event.request).then((response) => {
-      // Cache hit - return response
-      if (response) {
-        return response
-      }
-
-      // Clone the request because it's a one-time use stream
-      const fetchRequest = event.request.clone()
-
-      return fetch(fetchRequest)
-        .then((response) => {
-          // Check if we received a valid response
-          if (!response || response.status !== 200 || response.type !== "basic") {
-            return response
-          }
-
-          // Clone the response because it's a one-time use stream
-          const responseToCache = response.clone()
-
-          caches.open(CACHE_NAME).then((cache) => {
-            // Don't cache responses with query strings or POST requests
-            if (event.request.url.indexOf("?") === -1 && event.request.method === "GET") {
-              cache.put(event.request, responseToCache)
-            }
-          })
-
-          return response
-        })
-        .catch(() => {
-          // If the request is for a page, return the offline page
-          if (event.request.mode === "navigate") {
-            return caches.match("/offline")
-          }
-
-          // For image requests, you could return a default offline image
-          if (event.request.destination === "image") {
-            return caches.match("/icons/offline-image.png")
-          }
-        })
-    }),
+    caches
+      .open(CACHE_NAME)
+      .then((cache) => {
+        console.log("Opened cache")
+        return cache.addAll(STATIC_ASSETS)
+      })
+      .then(() => self.skipWaiting()), // Force activation
   )
 })
 
-// Update a service worker
+// Activate event handler
 self.addEventListener("activate", (event) => {
-  const cacheWhitelist = [CACHE_NAME]
   event.waitUntil(
     caches
       .keys()
       .then((cacheNames) => {
         return Promise.all(
-          cacheNames.map((cacheName) => {
-            if (cacheWhitelist.indexOf(cacheName) === -1) {
-              // Delete old caches
-              return caches.delete(cacheName)
-            }
-          }),
+          cacheNames.filter((cacheName) => cacheName !== CACHE_NAME).map((cacheName) => caches.delete(cacheName)),
         )
       })
-      .then(() => {
-        // Claim clients so the service worker is in control immediately
-        return self.clients.claim()
-      }),
+      .then(() => self.clients.claim()), // Take control immediately
+  )
+})
+
+// Fetch event handler with improved offline fallback
+self.addEventListener("fetch", (event) => {
+  event.respondWith(
+    caches.match(event.request).then((cachedResponse) => {
+      // Return cached response if available
+      if (cachedResponse) {
+        return cachedResponse
+      }
+
+      // Otherwise try to fetch from network
+      return fetch(event.request.clone())
+        .then((response) => {
+          // Don't cache if not a valid response or not a GET request
+          if (!response || response.status !== 200 || response.type !== "basic" || event.request.method !== "GET") {
+            return response
+          }
+
+          // Cache valid responses without query strings
+          if (event.request.url.indexOf("?") === -1) {
+            const responseToCache = response.clone()
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(event.request, responseToCache)
+            })
+          }
+
+          return response
+        })
+        .catch(() => {
+          // Provide appropriate fallbacks for different request types
+          if (event.request.mode === "navigate") {
+            return caches.match(OFFLINE_PAGE)
+          }
+
+          if (event.request.destination === "image") {
+            return caches.match(OFFLINE_IMAGE)
+          }
+        })
+    }),
   )
 })
 

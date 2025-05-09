@@ -15,6 +15,7 @@ import { getBrokerageFromParams } from "@/lib/brokerage-links"
 import { getStoredBrokerageInfo, getReferralExpirationDate, getDaysUntilExpiration } from "@/lib/storage-utils"
 import { Calendar } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { PROJECT_LOCATIONS, PROPERTY_INTEREST_TYPES } from "@/lib/constants"
 
 // Form validation schema
 const formSchema = z.object({
@@ -41,17 +42,20 @@ const formSchema = z.object({
   agentClassification: z.enum(["Broker", "Salesperson"]).optional(),
 })
 
+interface BrokerageInfo {
+  id: string
+  name: string
+  agency: string
+  department: string
+  hash: string
+  agentId?: string
+  agentName?: string
+  agentClassification?: "Broker" | "Salesperson"
+  expirationDate?: string
+}
+
 interface ContactFormProps {
-  brokerageInfo?: {
-    id: string
-    name: string
-    agency: string
-    department: string
-    hash: string
-    agentId?: string
-    agentName?: string
-    agentClassification?: "Broker" | "Salesperson"
-  } | null
+  brokerageInfo?: BrokerageInfo | null
 }
 
 export function ContactForm({ brokerageInfo }: ContactFormProps) {
@@ -63,17 +67,7 @@ export function ContactForm({ brokerageInfo }: ContactFormProps) {
   const [availableSeries, setAvailableSeries] = useState<any[]>([])
   const [availableUnits, setAvailableUnits] = useState<any[]>([])
   const [initialValuesSet, setInitialValuesSet] = useState(false)
-  const [brokerageLink, setBrokerageLink] = useState<{
-    id: string
-    name: string
-    agency: string
-    department: string
-    hash: string
-    expirationDate?: string
-    agentId?: string
-    agentName?: string
-    agentClassification?: "Broker" | "Salesperson"
-  } | null>(null)
+  const [brokerageLink, setBrokerageLink] = useState<BrokerageInfo | null>(null)
   const [daysRemaining, setDaysRemaining] = useState<number>(0)
 
   // Get query parameters
@@ -93,7 +87,7 @@ export function ContactForm({ brokerageInfo }: ContactFormProps) {
     resolver: zodResolver(formSchema),
     defaultValues: {
       propertyInterest: "Model House",
-      projectLocation: "Palm Village",
+      projectLocation: PROJECT_LOCATIONS[0],
       hasInteractedWithBroker: false,
       fromBrokerageLink: false,
     },
@@ -104,8 +98,48 @@ export function ContactForm({ brokerageInfo }: ContactFormProps) {
   const projectLocation = watch("projectLocation")
   const hasInteractedWithBroker = watch("hasInteractedWithBroker")
 
-  // Check for brokerage link parameters
+  // Initialize brokerage information
   useEffect(() => {
+    initializeBrokerageInfo()
+  }, [searchParams, brokerageInfo])
+
+  // Load model house series data based on selected project
+  useEffect(() => {
+    if (projectLocation) {
+      const seriesForProject = getModelHousesByProject(projectLocation)
+      setAvailableSeries(seriesForProject)
+    } else {
+      setAvailableSeries([])
+    }
+  }, [projectLocation])
+
+  // Set initial values from query parameters
+  useEffect(() => {
+    if (!initialValuesSet) {
+      setInitialFormValues()
+    }
+  }, [queryPropertyInterest, queryModelHousesSeries, queryProjectLocation, queryUnitId, initialValuesSet])
+
+  // Handle property interest change
+  useEffect(() => {
+    setShowModelSeries(propertyInterest === "Model House" || propertyInterest === "Ready for Occupancy")
+
+    if (!showModelSeries) {
+      setValue("modelHousesSeries", "")
+      setValue("modelHousesUnit", "")
+      setShowModelUnit(false)
+    }
+  }, [propertyInterest, setValue, showModelSeries])
+
+  // Handle model series change
+  useEffect(() => {
+    updateAvailableUnits()
+  }, [modelHousesSeries, propertyInterest])
+
+  /**
+   * Initialize brokerage information from various sources
+   */
+  const initializeBrokerageInfo = () => {
     // First check if brokerageInfo prop is provided (from URL parameters)
     if (brokerageInfo) {
       setBrokerageLink(brokerageInfo)
@@ -140,9 +174,11 @@ export function ContactForm({ brokerageInfo }: ContactFormProps) {
       // Set days remaining
       setDaysRemaining(getDaysUntilExpiration())
     }
-  }, [searchParams, setValue, brokerageInfo])
+  }
 
-  // Helper function to set brokerage fields
+  /**
+   * Set brokerage fields in the form
+   */
   const setBrokerageFields = (brokerage: {
     agency: string
     department: string
@@ -169,59 +205,40 @@ export function ContactForm({ brokerageInfo }: ContactFormProps) {
     }
   }
 
-  // Load model house series data based on selected project
-  useEffect(() => {
-    if (projectLocation) {
-      const seriesForProject = getModelHousesByProject(projectLocation)
-      setAvailableSeries(seriesForProject)
-    } else {
-      setAvailableSeries([])
+  /**
+   * Set initial form values from query parameters
+   */
+  const setInitialFormValues = () => {
+    if (queryPropertyInterest) {
+      setValue("propertyInterest", queryPropertyInterest)
     }
-  }, [projectLocation])
 
-  // Set initial values from query parameters
-  useEffect(() => {
-    if (!initialValuesSet) {
-      if (queryPropertyInterest) {
-        setValue("propertyInterest", queryPropertyInterest)
-      }
+    if (queryProjectLocation) {
+      setValue("projectLocation", queryProjectLocation)
+    }
 
-      if (queryProjectLocation) {
-        setValue("projectLocation", queryProjectLocation)
-      }
+    if (queryModelHousesSeries) {
+      setValue("modelHousesSeries", queryModelHousesSeries)
 
-      if (queryModelHousesSeries) {
-        setValue("modelHousesSeries", queryModelHousesSeries)
-
-        // If there's a unit ID, set it after the series is loaded
-        if (queryUnitId) {
-          const series = getModelHouseSeriesById(queryModelHousesSeries)
-          if (series) {
-            const unitExists = series.units.some((unit) => unit.id === queryUnitId)
-            if (unitExists) {
-              setValue("modelHousesUnit", queryUnitId)
-            }
+      // If there's a unit ID, set it after the series is loaded
+      if (queryUnitId) {
+        const series = getModelHouseSeriesById(queryModelHousesSeries)
+        if (series) {
+          const unitExists = series.units.some((unit) => unit.id === queryUnitId)
+          if (unitExists) {
+            setValue("modelHousesUnit", queryUnitId)
           }
         }
       }
-
-      setInitialValuesSet(true)
     }
-  }, [queryPropertyInterest, queryModelHousesSeries, queryProjectLocation, queryUnitId, setValue, initialValuesSet])
 
-  // Handle property interest change
-  useEffect(() => {
-    setShowModelSeries(propertyInterest === "Model House" || propertyInterest === "Ready for Occupancy")
+    setInitialValuesSet(true)
+  }
 
-    if (!showModelSeries) {
-      setValue("modelHousesSeries", "")
-      setValue("modelHousesUnit", "")
-      setShowModelUnit(false)
-    }
-  }, [propertyInterest, setValue, showModelSeries])
-
-  // Handle model series change
-  useEffect(() => {
+  /**
+   * Update available units based on selected series and property interest
+   */
+  const updateAvailableUnits = () => {
     if (modelHousesSeries) {
       const selectedSeries = getModelHouseSeriesById(modelHousesSeries)
 
@@ -243,8 +260,11 @@ export function ContactForm({ brokerageInfo }: ContactFormProps) {
       setShowModelUnit(false)
       setValue("modelHousesUnit", "")
     }
-  }, [modelHousesSeries, propertyInterest, setValue])
+  }
 
+  /**
+   * Handle form submission
+   */
   const onSubmit = async (data: ContactFormData) => {
     setIsSubmitting(true)
     setFormStatus(null)
@@ -337,6 +357,7 @@ export function ContactForm({ brokerageInfo }: ContactFormProps) {
       )}
 
       <div className="space-y-4">
+        {/* Personal Information */}
         <div>
           <Label htmlFor="name">
             Name <span className="text-red-500">*</span>
@@ -358,6 +379,7 @@ export function ContactForm({ brokerageInfo }: ContactFormProps) {
           <Input id="phone" {...register("phone")} />
         </div>
 
+        {/* Property Information */}
         <div>
           <Label htmlFor="projectLocation">
             Project Location <span className="text-red-500">*</span>
@@ -367,8 +389,11 @@ export function ContactForm({ brokerageInfo }: ContactFormProps) {
             {...register("projectLocation")}
             className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            <option value="Palm Village">Palm Village</option>
-            <option value="Parkview Naga Urban Residence">Parkview Naga Urban Residence</option>
+            {PROJECT_LOCATIONS.map((location) => (
+              <option key={location} value={location}>
+                {location}
+              </option>
+            ))}
           </select>
         </div>
 
@@ -381,13 +406,15 @@ export function ContactForm({ brokerageInfo }: ContactFormProps) {
             {...register("propertyInterest")}
             className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            <option value="Model House">Model House</option>
-            <option value="Ready for Occupancy">Ready for Occupancy</option>
-            <option value="Lot Only">Lot Only</option>
-            <option value="Other">Other</option>
+            {PROPERTY_INTEREST_TYPES.map((type) => (
+              <option key={type} value={type}>
+                {type}
+              </option>
+            ))}
           </select>
         </div>
 
+        {/* Model Houses Series (conditional) */}
         {showModelSeries && (
           <div>
             <Label htmlFor="modelHousesSeries">
@@ -408,6 +435,7 @@ export function ContactForm({ brokerageInfo }: ContactFormProps) {
           </div>
         )}
 
+        {/* Model Houses Unit (conditional) */}
         {showModelUnit && (
           <div>
             <Label htmlFor="modelHousesUnit">

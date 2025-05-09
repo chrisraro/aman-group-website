@@ -386,7 +386,7 @@ export function LoanCalculatorForm({ initialPrice, returnUrl = "/model-houses", 
                           id="propertyPrice"
                           type="text"
                           disabled={!!initialPrice}
-                          value={formatNumberWithCommas(form.getValues("propertyPrice"))}
+                          value={formatNumberWithCommas(form.getValues("propertyPrice") || 0)}
                           onChange={(e) => {
                             // Remove commas and convert to number
                             const rawValue = e.target.value.replace(/,/g, "")
@@ -449,7 +449,7 @@ export function LoanCalculatorForm({ initialPrice, returnUrl = "/model-houses", 
                             id="downPayment"
                             type="text"
                             disabled={!!initialPrice}
-                            value={formatNumberWithCommas(form.getValues("downPayment"))}
+                            value={formatNumberWithCommas(form.getValues("downPayment") || 0)}
                             onChange={(e) => {
                               // Remove commas and convert to number
                               const rawValue = e.target.value.replace(/,/g, "")
