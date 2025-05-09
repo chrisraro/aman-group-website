@@ -1,39 +1,42 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import useSWR from "swr"
-import { API_ENDPOINTS } from "@/lib/constants"
+import { useModelHousesContext } from "@/lib/context/ModelHousesContext"
 import type { ModelHouseUnit } from "./useModelHouses"
 
+// Define the RFO unit type
 export interface RFOUnit extends ModelHouseUnit {
   seriesId: string
+  seriesName: string
+  floorArea: string
+  loftReady: boolean
   developer: string
   developerColor: string
   project: string
-  loftReady: boolean
+  lotArea?: string
+  reservationFee?: number
+  financingOptions?: string
+  downPaymentPercentage?: number
+  downPaymentTerms?: string
 }
-
-// Fetcher function for SWR
-const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
 // Custom hook for fetching all RFO units
 export function useRFOUnits() {
-  const { data, error, isLoading, mutate } = useSWR<RFOUnit[]>(API_ENDPOINTS.rfoUnits, fetcher)
+  const { getAllRFOUnits, isLoading, error, refreshData } = useModelHousesContext()
 
   return {
-    rfoUnits: data || [],
+    rfoUnits: getAllRFOUnits(),
     isLoading,
     isError: error,
-    mutate,
+    mutate: refreshData,
   }
 }
 
 // Custom hook for fetching a specific RFO unit by ID
 export function useRFOUnitById(id: string | null) {
-  const { data, error, isLoading } = useSWR<RFOUnit>(id ? `${API_ENDPOINTS.rfoUnits}/${id}` : null, fetcher)
+  const { getRFOUnitById, isLoading, error } = useModelHousesContext()
 
   return {
-    unit: data,
+    unit: id ? getRFOUnitById(id) : null,
     isLoading,
     isError: error,
   }
@@ -41,20 +44,14 @@ export function useRFOUnitById(id: string | null) {
 
 // Custom hook for filtering RFO units by status
 export function useRFOUnitsByStatus(status: string | null) {
-  const { rfoUnits, isLoading, isError } = useRFOUnits()
-  const [filteredUnits, setFilteredUnits] = useState<RFOUnit[]>([])
+  const { getAllRFOUnits, isLoading, error } = useModelHousesContext()
 
-  useEffect(() => {
-    if (rfoUnits && status) {
-      setFilteredUnits(rfoUnits.filter((unit) => unit.status === status))
-    } else if (rfoUnits) {
-      setFilteredUnits(rfoUnits)
-    }
-  }, [rfoUnits, status])
+  const rfoUnits = getAllRFOUnits()
+  const filteredUnits = status ? rfoUnits.filter((unit) => unit.status === status) : rfoUnits
 
   return {
     rfoUnits: filteredUnits,
     isLoading,
-    isError,
+    isError: error,
   }
 }

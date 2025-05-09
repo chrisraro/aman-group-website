@@ -1,8 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import useSWR from "swr"
-import { API_ENDPOINTS } from "@/lib/constants"
+import { useModelHousesContext } from "@/lib/context/ModelHousesContext"
 
 // Define types for model houses data
 export interface ModelHouseSeries {
@@ -44,27 +42,24 @@ export interface ModelHouseUnit {
   constructionProgress?: number
 }
 
-// Fetcher function for SWR
-const fetcher = (url: string) => fetch(url).then((res) => res.json())
-
 // Custom hook for fetching all model house series
 export function useModelHouseSeries() {
-  const { data, error, isLoading, mutate } = useSWR<ModelHouseSeries[]>(API_ENDPOINTS.modelHouses, fetcher)
+  const { getAllModelHouseSeries, isLoading, error, refreshData } = useModelHousesContext()
 
   return {
-    modelHouses: data || [],
+    modelHouses: getAllModelHouseSeries(),
     isLoading,
     isError: error,
-    mutate,
+    mutate: refreshData,
   }
 }
 
 // Custom hook for fetching a specific model house series by ID
 export function useModelHouseSeriesById(id: string | null) {
-  const { data, error, isLoading } = useSWR<ModelHouseSeries>(id ? `${API_ENDPOINTS.modelHouses}/${id}` : null, fetcher)
+  const { getModelHouseSeriesById, isLoading, error } = useModelHousesContext()
 
   return {
-    series: data,
+    series: id ? getModelHouseSeriesById(id) : null,
     isLoading,
     isError: error,
   }
@@ -72,38 +67,26 @@ export function useModelHouseSeriesById(id: string | null) {
 
 // Custom hook for fetching model houses by project
 export function useModelHousesByProject(project: string | null) {
-  const { modelHouses, isLoading, isError } = useModelHouseSeries()
-  const [filteredHouses, setFilteredHouses] = useState<ModelHouseSeries[]>([])
-
-  useEffect(() => {
-    if (modelHouses && project) {
-      setFilteredHouses(modelHouses.filter((series) => series.project === project))
-    }
-  }, [modelHouses, project])
+  const { getModelHousesByProject, isLoading, error } = useModelHousesContext()
 
   return {
-    modelHouses: filteredHouses,
+    modelHouses: project ? getModelHousesByProject(project) : [],
     isLoading,
-    isError,
+    isError: error,
   }
 }
 
 // Custom hook for fetching a specific model house unit
 export function useModelHouseUnit(seriesId: string | null, unitId: string | null) {
-  const { series, isLoading, isError } = useModelHouseSeriesById(seriesId)
-  const [unit, setUnit] = useState<ModelHouseUnit | null>(null)
+  const { getModelHouseSeriesById, getModelHouseUnitById, isLoading, error } = useModelHousesContext()
 
-  useEffect(() => {
-    if (series && unitId) {
-      const foundUnit = series.units.find((u) => u.id === unitId) || null
-      setUnit(foundUnit)
-    }
-  }, [series, unitId])
+  const series = seriesId ? getModelHouseSeriesById(seriesId) : null
+  const unit = seriesId && unitId ? getModelHouseUnitById(seriesId, unitId) : null
 
   return {
     unit,
     series,
     isLoading,
-    isError,
+    isError: error,
   }
 }

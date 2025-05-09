@@ -16,6 +16,7 @@ import { ArrowLeft, Save, Loader2 } from "lucide-react"
 import Link from "next/link"
 import type { ModelHouseUnit } from "@/lib/hooks/useModelHouses"
 import { useToast } from "@/hooks/use-toast"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
 export default function EditUnitPage({
   params,
@@ -24,7 +25,7 @@ export default function EditUnitPage({
 }) {
   const router = useRouter()
   const { toast } = useToast()
-  const { getModelHouseSeriesById, getModelHouseUnitById, addModelHouseUnit, updateModelHouseUnit } =
+  const { getModelHouseSeriesById, getModelHouseUnitById, addModelHouseUnit, updateModelHouseUnit, isLoading, error } =
     useModelHousesContext()
 
   const isNewUnit = params.unitId === "new"
@@ -58,12 +59,13 @@ export default function EditUnitPage({
   const [newSpecKey, setNewSpecKey] = useState("")
   const [newSpecValue, setNewSpecValue] = useState("")
   const [isSaving, setIsSaving] = useState(false)
+  const [formError, setFormError] = useState<string | null>(null)
 
   useEffect(() => {
-    if (!series) {
+    if (!series && !isLoading) {
       router.push("/admin/model-houses")
     }
-  }, [series, router])
+  }, [series, router, isLoading])
 
   useEffect(() => {
     if (existingUnit) {
@@ -144,8 +146,10 @@ export default function EditUnitPage({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setFormError(null)
 
     if (!formData.id || !formData.name || !formData.price) {
+      setFormError("Please fill in all required fields")
       toast({
         title: "Validation Error",
         description: "Please fill in all required fields",
@@ -170,25 +174,24 @@ export default function EditUnitPage({
       } as ModelHouseUnit
 
       if (isNewUnit) {
-        addModelHouseUnit(params.id, unitData)
+        await addModelHouseUnit(params.id, unitData)
         toast({
           title: "Success",
           description: `${unitData.name} unit has been created successfully`,
         })
       } else {
-        updateModelHouseUnit(params.id, params.unitId, unitData)
+        await updateModelHouseUnit(params.id, params.unitId, unitData)
         toast({
           title: "Success",
           description: `${unitData.name} unit has been updated successfully`,
         })
       }
 
-      // Simulate a small delay to ensure localStorage is updated
-      await new Promise((resolve) => setTimeout(resolve, 300))
-
+      // Navigate back to the units page
       router.push(`/admin/model-houses/series/${params.id}/units`)
     } catch (error) {
       console.error("Error saving model house unit:", error)
+      setFormError("There was a problem saving the unit. Please try again.")
       toast({
         title: "Error",
         description: "There was a problem saving the unit. Please try again.",
@@ -199,8 +202,51 @@ export default function EditUnitPage({
     }
   }
 
-  if (!series) {
-    return <div>Loading...</div>
+  if (isLoading && !isNewUnit) {
+    return (
+      <div className="container mx-auto flex items-center justify-center h-[60vh]">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+          <h2 className="text-xl font-semibold">Loading unit data...</h2>
+        </div>
+      </div>
+    )
+  }
+
+  if (error && !isNewUnit) {
+    return (
+      <div className="container mx-auto py-8">
+        <Alert variant="destructive" className="mb-6">
+          <AlertTitle>Error loading data</AlertTitle>
+          <AlertDescription>
+            There was a problem loading the unit data. Please try going back and trying again.
+          </AlertDescription>
+        </Alert>
+        <Button asChild>
+          <Link href={`/admin/model-houses/series/${params.id}/units`}>
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to Units
+          </Link>
+        </Button>
+      </div>
+    )
+  }
+
+  if (!series && !isLoading) {
+    return (
+      <div className="container mx-auto py-8">
+        <Alert variant="destructive" className="mb-6">
+          <AlertTitle>Series not found</AlertTitle>
+          <AlertDescription>The requested model house series could not be found.</AlertDescription>
+        </Alert>
+        <Button asChild>
+          <Link href="/admin/model-houses">
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to Model Houses
+          </Link>
+        </Button>
+      </div>
+    )
   }
 
   return (
@@ -213,10 +259,17 @@ export default function EditUnitPage({
             </Link>
           </Button>
           <h1 className="text-3xl font-bold">
-            {isNewUnit ? "Add New Unit" : "Edit Unit"}: {series.name}
+            {isNewUnit ? "Add New Unit" : "Edit Unit"}: {series?.name}
           </h1>
         </div>
       </div>
+
+      {formError && (
+        <Alert variant="destructive" className="mb-6">
+          <AlertTitle>Error</AlertTitle>
+          <AlertDescription>{formError}</AlertDescription>
+        </Alert>
+      )}
 
       <form onSubmit={handleSubmit}>
         <Card className="mb-6">

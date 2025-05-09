@@ -5,24 +5,23 @@ import { createContext, useContext, useState, useEffect, useCallback, useMemo } 
 import type { ModelHouseSeries, ModelHouseUnit } from "@/lib/hooks/useModelHouses"
 import type { RFOUnit } from "@/lib/hooks/useRFOUnits"
 import { modelHouseSeries as initialModelHouseSeries } from "@/data/model-houses"
+import useSWR from "swr"
 
-// Storage keys
-const MODEL_HOUSES_STORAGE_KEY = "modelHouses"
-const STORAGE_VERSION_KEY = "modelHousesVersion"
-const CURRENT_VERSION = "1.0.1" // Increment this when data structure changes
+// API endpoints
+const MODEL_HOUSES_API = "/api/model-houses"
 
 type ModelHousesContextType = {
   modelHouses: Record<string, ModelHouseSeries>
   rfoUnits: RFOUnit[]
   isLoading: boolean
   error: Error | null
-  addModelHouseSeries: (series: ModelHouseSeries) => void
-  updateModelHouseSeries: (id: string, series: ModelHouseSeries) => void
-  deleteModelHouseSeries: (id: string) => void
-  addModelHouseUnit: (seriesId: string, unit: ModelHouseUnit) => void
-  updateModelHouseUnit: (seriesId: string, unitId: string, unit: ModelHouseUnit) => void
-  deleteModelHouseUnit: (seriesId: string, unitId: string) => void
-  updateRFOUnit: (unitId: string, unit: Partial<RFOUnit>) => void
+  addModelHouseSeries: (series: ModelHouseSeries) => Promise<void>
+  updateModelHouseSeries: (id: string, series: ModelHouseSeries) => Promise<void>
+  deleteModelHouseSeries: (id: string) => Promise<void>
+  addModelHouseUnit: (seriesId: string, unit: ModelHouseUnit) => Promise<void>
+  updateModelHouseUnit: (seriesId: string, unitId: string, unit: ModelHouseUnit) => Promise<void>
+  deleteModelHouseUnit: (seriesId: string, unitId: string) => Promise<void>
+  updateRFOUnit: (unitId: string, unit: Partial<RFOUnit>) => Promise<void>
   getAllModelHouseSeries: () => ModelHouseSeries[]
   getModelHouseSeriesById: (id: string) => ModelHouseSeries | null
   getModelHouseUnitById: (seriesId: string, unitId: string) => ModelHouseUnit | null
@@ -30,38 +29,50 @@ type ModelHousesContextType = {
   getModelHousesByProject: (project: string) => ModelHouseSeries[]
   getAllProjects: () => string[]
   getAllRFOUnits: () => RFOUnit[]
-  resetToDefaultData: () => void
-  refreshData: () => void
+  resetToDefaultData: () => Promise<void>
+  refreshData: () => Promise<void>
 }
 
 const ModelHousesContext = createContext<ModelHousesContextType | undefined>(undefined)
 
-export const ModelHousesProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [modelHouses, setModelHouses] = useState<Record<string, ModelHouseSeries>>({})
-  const [rfoUnits, setRFOUnits] = useState<RFOUnit[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<Error | null>(null)
-  const [isInitialized, setIsInitialized] = useState(false)
-
-  // Function to save model houses to localStorage with versioning
-  const saveModelHousesToStorage = useCallback((data: Record<string, ModelHouseSeries>) => {
-    if (typeof window === "undefined") return
-
-    try {
-      localStorage.setItem(MODEL_HOUSES_STORAGE_KEY, JSON.stringify(data))
-      localStorage.setItem(STORAGE_VERSION_KEY, CURRENT_VERSION)
-      console.log("Model houses data saved to localStorage")
-    } catch (error) {
-      console.error("Failed to save model houses data to localStorage:", error)
-      setError(error instanceof Error ? error : new Error("Failed to save data"))
+// Fetcher function for SWR with error handling
+const fetcher = async (url: string) => {
+  try {
+    const response = await fetch(url)
+    if (!response.ok) {
+      throw new Error(`Failed to fetch: ${response.status} ${response.statusText}`)
     }
-  }, [])
+    return response.json()
+  } catch (error) {
+    console.error("Fetch error:", error)
+    throw error
+  }
+}
+
+export const ModelHousesProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  // Use SWR for data fetching with fallback to initial data
+  const { data, error, isLoading, mutate } = useSWR<Record<string, ModelHouseSeries>>(MODEL_HOUSES_API, fetcher, {
+    revalidateOnFocus: false,
+    revalidateOnReconnect: true,
+    dedupingInterval: 5000, // 5 seconds
+    fallbackData: initialModelHouseSeries, // Provide fallback data to avoid null/undefined
+    onError: (err) => {
+      console.error("SWR Error:", err)
+    },
+  })
+
+  const [rfoUnits, setRFOUnits] = useState<RFOUnit[]>([])
+
+  // Ensure modelHouses is never undefined
+  const modelHouses = data || {}
 
   // Helper function to derive RFO units from model houses
   const deriveRFOUnitsFromModelHouses = useCallback((houses: Record<string, ModelHouseSeries>): RFOUnit[] => {
     const rfoUnits: RFOUnit[] = []
 
     Object.values(houses).forEach((series) => {
+      if (!series.units) return // Skip if units is undefined
+
       series.units
         .filter((unit) => unit.isRFO)
         .forEach((unit) => {
@@ -81,234 +92,250 @@ export const ModelHousesProvider: React.FC<{ children: React.ReactNode }> = ({ c
     return rfoUnits
   }, [])
 
-  // Initialize data from localStorage or default data
-  const initializeData = useCallback(() => {
-    if (typeof window === "undefined" || isInitialized) return
-
-    setIsLoading(true)
-    setError(null)
-
-    try {
-      const storedVersion = localStorage.getItem(STORAGE_VERSION_KEY)
-      const storedModelHouses = localStorage.getItem(MODEL_HOUSES_STORAGE_KEY)
-
-      // If version mismatch or no stored data, use initial data
-      if (storedVersion !== CURRENT_VERSION || !storedModelHouses) {
-        console.log("Using initial data (version mismatch or no stored data)")
-        setModelHouses(initialModelHouseSeries)
-
-        // Derive RFO units from the initial data
-        const derivedRFOUnits = deriveRFOUnitsFromModelHouses(initialModelHouseSeries)
-        setRFOUnits(derivedRFOUnits)
-
-        saveModelHousesToStorage(initialModelHouseSeries)
-      } else {
-        // Use stored data
-        const parsedData = JSON.parse(storedModelHouses)
-        setModelHouses(parsedData)
-        console.log("Loaded model houses data from localStorage")
-
-        // Derive RFO units from the loaded model houses
-        const derivedRFOUnits = deriveRFOUnitsFromModelHouses(parsedData)
-        setRFOUnits(derivedRFOUnits)
-      }
-    } catch (error) {
-      console.error("Error loading data from localStorage:", error)
-      setError(error instanceof Error ? error : new Error("Failed to load data"))
-
-      // Fallback to initial data if there's an error
-      setModelHouses(initialModelHouseSeries)
-      const derivedRFOUnits = deriveRFOUnitsFromModelHouses(initialModelHouseSeries)
+  // Update RFO units whenever model houses data changes
+  useEffect(() => {
+    if (data) {
+      const derivedRFOUnits = deriveRFOUnitsFromModelHouses(data)
       setRFOUnits(derivedRFOUnits)
-      saveModelHousesToStorage(initialModelHouseSeries)
-    } finally {
-      setIsLoading(false)
-      setIsInitialized(true)
     }
-  }, [isInitialized, saveModelHousesToStorage, deriveRFOUnitsFromModelHouses])
+  }, [data, deriveRFOUnitsFromModelHouses])
 
-  // Initialize data on component mount
-  useEffect(() => {
-    initializeData()
-  }, [initializeData])
+  // Function to save model houses to the API with error handling
+  const saveModelHousesToAPI = useCallback(
+    async (data: Record<string, ModelHouseSeries>) => {
+      try {
+        const response = await fetch(MODEL_HOUSES_API, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(data),
+        })
 
-  // Listen for storage events (for cross-tab synchronization)
-  useEffect(() => {
-    const handleStorageChange = (event: StorageEvent) => {
-      if (event.key === MODEL_HOUSES_STORAGE_KEY && event.newValue) {
-        try {
-          const newData = JSON.parse(event.newValue)
-
-          // Update model houses
-          setModelHouses(newData)
-
-          // Derive RFO units from the new data
-          const derivedRFOUnits = deriveRFOUnitsFromModelHouses(newData)
-          setRFOUnits(derivedRFOUnits)
-
-          console.log("Updated data from another tab")
-        } catch (error) {
-          console.error("Error parsing storage event data:", error)
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}))
+          throw new Error(`Failed to save: ${response.status} ${response.statusText} ${JSON.stringify(errorData)}`)
         }
+
+        // Update the local cache
+        await mutate(data, false)
+
+        console.log("Model houses data saved to API")
+      } catch (error) {
+        console.error("Failed to save model houses data to API:", error)
+        throw error
       }
-    }
+    },
+    [mutate],
+  )
 
-    window.addEventListener("storage", handleStorageChange)
-    return () => {
-      window.removeEventListener("storage", handleStorageChange)
+  // Function to refresh data
+  const refreshData = useCallback(async () => {
+    try {
+      await mutate()
+    } catch (error) {
+      console.error("Error refreshing data:", error)
+      throw error
     }
-  }, [deriveRFOUnitsFromModelHouses])
-
-  // Save to localStorage whenever data changes
-  useEffect(() => {
-    if (isInitialized && typeof window !== "undefined") {
-      saveModelHousesToStorage(modelHouses)
-    }
-  }, [modelHouses, isInitialized, saveModelHousesToStorage])
-
-  // Function to refresh data (useful for syncing between tabs)
-  const refreshData = useCallback(() => {
-    setIsInitialized(false)
-    initializeData()
-  }, [initializeData])
+  }, [mutate])
 
   // Reset to default data
-  const resetToDefaultData = useCallback(() => {
-    setIsLoading(true)
+  const resetToDefaultData = useCallback(async () => {
     try {
-      setModelHouses(initialModelHouseSeries)
-      const derivedRFOUnits = deriveRFOUnitsFromModelHouses(initialModelHouseSeries)
-      setRFOUnits(derivedRFOUnits)
-      saveModelHousesToStorage(initialModelHouseSeries)
-      setError(null)
+      const response = await fetch(MODEL_HOUSES_API, {
+        method: "PUT", // Use PUT for reset operation
+      })
+
+      if (!response.ok) {
+        throw new Error(`Failed to reset data: ${response.status} ${response.statusText}`)
+      }
+
+      await mutate()
     } catch (error) {
-      setError(error instanceof Error ? error : new Error("Failed to reset data"))
-    } finally {
-      setIsLoading(false)
+      console.error("Error resetting data:", error)
+      throw error
     }
-  }, [saveModelHousesToStorage, deriveRFOUnitsFromModelHouses])
+  }, [mutate])
 
   // CRUD operations for model house series
-  const addModelHouseSeries = useCallback((series: ModelHouseSeries) => {
-    setModelHouses((prev) => {
-      const updated = {
-        ...prev,
-        [series.id]: series,
+  const addModelHouseSeries = useCallback(
+    async (series: ModelHouseSeries) => {
+      try {
+        const updatedModelHouses = {
+          ...modelHouses,
+          [series.id]: series,
+        }
+        await saveModelHousesToAPI(updatedModelHouses)
+      } catch (error) {
+        console.error("Error adding model house series:", error)
+        throw error
       }
-      return updated
-    })
-  }, [])
+    },
+    [modelHouses, saveModelHousesToAPI],
+  )
 
-  const updateModelHouseSeries = useCallback((id: string, series: ModelHouseSeries) => {
-    setModelHouses((prev) => {
-      // Preserve units if not provided in the update
-      const updatedSeries = {
-        ...prev[id],
-        ...series,
-        units: series.units || prev[id]?.units || [],
+  const updateModelHouseSeries = useCallback(
+    async (id: string, series: ModelHouseSeries) => {
+      try {
+        // Preserve units if not provided in the update
+        const updatedSeries = {
+          ...modelHouses[id],
+          ...series,
+          units: series.units || modelHouses[id]?.units || [],
+        }
+
+        const updatedModelHouses = {
+          ...modelHouses,
+          [id]: updatedSeries,
+        }
+
+        await saveModelHousesToAPI(updatedModelHouses)
+      } catch (error) {
+        console.error("Error updating model house series:", error)
+        throw error
       }
+    },
+    [modelHouses, saveModelHousesToAPI],
+  )
 
-      const updated = {
-        ...prev,
-        [id]: updatedSeries,
+  const deleteModelHouseSeries = useCallback(
+    async (id: string) => {
+      try {
+        const newModelHouses = { ...modelHouses }
+        delete newModelHouses[id]
+        await saveModelHousesToAPI(newModelHouses)
+      } catch (error) {
+        console.error("Error deleting model house series:", error)
+        throw error
       }
-
-      return updated
-    })
-  }, [])
-
-  const deleteModelHouseSeries = useCallback((id: string) => {
-    setModelHouses((prev) => {
-      const newModelHouses = { ...prev }
-      delete newModelHouses[id]
-      return newModelHouses
-    })
-  }, [])
+    },
+    [modelHouses, saveModelHousesToAPI],
+  )
 
   // CRUD operations for model house units
-  const addModelHouseUnit = useCallback((seriesId: string, unit: ModelHouseUnit) => {
-    setModelHouses((prev) => {
-      if (!prev[seriesId]) return prev
+  const addModelHouseUnit = useCallback(
+    async (seriesId: string, unit: ModelHouseUnit) => {
+      try {
+        if (!modelHouses[seriesId]) throw new Error("Series not found")
 
-      const updatedSeries = {
-        ...prev[seriesId],
-        units: [...prev[seriesId].units, unit],
+        const updatedSeries = {
+          ...modelHouses[seriesId],
+          units: [...(modelHouses[seriesId].units || []), unit],
+        }
+
+        const updatedModelHouses = {
+          ...modelHouses,
+          [seriesId]: updatedSeries,
+        }
+
+        await saveModelHousesToAPI(updatedModelHouses)
+      } catch (error) {
+        console.error("Error adding model house unit:", error)
+        throw error
       }
+    },
+    [modelHouses, saveModelHousesToAPI],
+  )
 
-      const updated = {
-        ...prev,
-        [seriesId]: updatedSeries,
+  const updateModelHouseUnit = useCallback(
+    async (seriesId: string, unitId: string, unit: ModelHouseUnit) => {
+      try {
+        if (!modelHouses[seriesId]) throw new Error("Series not found")
+        if (!modelHouses[seriesId].units) {
+          modelHouses[seriesId].units = []
+        }
+
+        const updatedUnits = modelHouses[seriesId].units.map((u) => (u.id === unitId ? { ...u, ...unit } : u))
+
+        const updatedSeries = {
+          ...modelHouses[seriesId],
+          units: updatedUnits,
+        }
+
+        const updatedModelHouses = {
+          ...modelHouses,
+          [seriesId]: updatedSeries,
+        }
+
+        await saveModelHousesToAPI(updatedModelHouses)
+      } catch (error) {
+        console.error("Error updating model house unit:", error)
+        throw error
       }
+    },
+    [modelHouses, saveModelHousesToAPI],
+  )
 
-      return updated
-    })
-  }, [])
+  const deleteModelHouseUnit = useCallback(
+    async (seriesId: string, unitId: string) => {
+      try {
+        if (!modelHouses[seriesId]) throw new Error("Series not found")
+        if (!modelHouses[seriesId].units) {
+          modelHouses[seriesId].units = []
+        }
 
-  const updateModelHouseUnit = useCallback((seriesId: string, unitId: string, unit: ModelHouseUnit) => {
-    setModelHouses((prev) => {
-      if (!prev[seriesId]) return prev
+        const updatedSeries = {
+          ...modelHouses[seriesId],
+          units: modelHouses[seriesId].units.filter((u) => u.id !== unitId),
+        }
 
-      const updatedUnits = prev[seriesId].units.map((u) => (u.id === unitId ? { ...u, ...unit } : u))
+        const updatedModelHouses = {
+          ...modelHouses,
+          [seriesId]: updatedSeries,
+        }
 
-      const updatedSeries = {
-        ...prev[seriesId],
-        units: updatedUnits,
+        await saveModelHousesToAPI(updatedModelHouses)
+      } catch (error) {
+        console.error("Error deleting model house unit:", error)
+        throw error
       }
-
-      const updated = {
-        ...prev,
-        [seriesId]: updatedSeries,
-      }
-
-      return updated
-    })
-  }, [])
-
-  const deleteModelHouseUnit = useCallback((seriesId: string, unitId: string) => {
-    setModelHouses((prev) => {
-      if (!prev[seriesId]) return prev
-
-      const updated = {
-        ...prev,
-        [seriesId]: {
-          ...prev[seriesId],
-          units: prev[seriesId].units.filter((u) => u.id !== unitId),
-        },
-      }
-
-      return updated
-    })
-  }, [])
+    },
+    [modelHouses, saveModelHousesToAPI],
+  )
 
   // Update RFO unit directly
   const updateRFOUnit = useCallback(
-    (unitId: string, updatedUnit: Partial<RFOUnit>) => {
-      // Find the RFO unit
-      const rfoUnit = rfoUnits.find((u) => u.id === unitId)
-      if (!rfoUnit) return
+    async (unitId: string, updatedUnit: Partial<RFOUnit>) => {
+      try {
+        // Find the RFO unit
+        const rfoUnit = rfoUnits.find((u) => u.id === unitId)
+        if (!rfoUnit) throw new Error("RFO unit not found")
 
-      // Update the model house unit first
-      updateModelHouseUnit(rfoUnit.seriesId, unitId, { ...rfoUnit, ...updatedUnit } as ModelHouseUnit)
+        // Update the model house unit
+        await updateModelHouseUnit(rfoUnit.seriesId, unitId, { ...rfoUnit, ...updatedUnit } as ModelHouseUnit)
+      } catch (error) {
+        console.error("Error updating RFO unit:", error)
+        throw error
+      }
     },
     [rfoUnits, updateModelHouseUnit],
   )
 
-  // Getter functions
-  const getAllModelHouseSeries = useCallback(() => Object.values(modelHouses), [modelHouses])
+  // Getter functions with null checks
+  const getAllModelHouseSeries = useCallback(() => {
+    return Object.values(modelHouses || {})
+  }, [modelHouses])
 
-  const getModelHouseSeriesById = useCallback((id: string) => modelHouses[id] || null, [modelHouses])
+  const getModelHouseSeriesById = useCallback(
+    (id: string) => {
+      return modelHouses?.[id] || null
+    },
+    [modelHouses],
+  )
 
   const getModelHouseUnitById = useCallback(
     (seriesId: string, unitId: string) => {
-      const series = modelHouses[seriesId]
-      if (!series) return null
+      const series = modelHouses?.[seriesId]
+      if (!series || !series.units) return null
       return series.units.find((unit) => unit.id === unitId) || null
     },
     [modelHouses],
   )
 
   const getRFOUnitById = useCallback(
-    (unitId: string) => rfoUnits.find((unit) => unit.id === unitId) || null,
+    (unitId: string) => {
+      return rfoUnits.find((unit) => unit.id === unitId) || null
+    },
     [rfoUnits],
   )
 
@@ -338,7 +365,7 @@ export const ModelHousesProvider: React.FC<{ children: React.ReactNode }> = ({ c
       modelHouses,
       rfoUnits,
       isLoading,
-      error,
+      error: error ? new Error(error.message) : null,
       addModelHouseSeries,
       updateModelHouseSeries,
       deleteModelHouseSeries,

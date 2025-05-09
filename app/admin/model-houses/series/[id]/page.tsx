@@ -15,11 +15,13 @@ import { ArrowLeft, Save, Loader2 } from "lucide-react"
 import Link from "next/link"
 import type { ModelHouseSeries } from "@/lib/hooks/useModelHouses"
 import { useToast } from "@/hooks/use-toast"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
 export default function EditModelHouseSeriesPage({ params }: { params: { id: string } }) {
   const router = useRouter()
   const { toast } = useToast()
-  const { getModelHouseSeriesById, addModelHouseSeries, updateModelHouseSeries } = useModelHousesContext()
+  const { getModelHouseSeriesById, addModelHouseSeries, updateModelHouseSeries, isLoading, error } =
+    useModelHousesContext()
 
   const isNewSeries = params.id === "new"
   const existingSeries = !isNewSeries ? getModelHouseSeriesById(params.id) : null
@@ -48,6 +50,7 @@ export default function EditModelHouseSeriesPage({ params }: { params: { id: str
   const [newSpecKey, setNewSpecKey] = useState("")
   const [newSpecValue, setNewSpecValue] = useState("")
   const [isSaving, setIsSaving] = useState(false)
+  const [formError, setFormError] = useState<string | null>(null)
 
   useEffect(() => {
     if (existingSeries) {
@@ -117,8 +120,10 @@ export default function EditModelHouseSeriesPage({ params }: { params: { id: str
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setFormError(null)
 
     if (!formData.id || !formData.name || !formData.floorArea) {
+      setFormError("Please fill in all required fields")
       toast({
         title: "Validation Error",
         description: "Please fill in all required fields",
@@ -136,25 +141,24 @@ export default function EditModelHouseSeriesPage({ params }: { params: { id: str
       } as ModelHouseSeries
 
       if (isNewSeries) {
-        addModelHouseSeries(seriesData)
+        await addModelHouseSeries(seriesData)
         toast({
           title: "Success",
           description: `${seriesData.name} has been created successfully`,
         })
       } else {
-        updateModelHouseSeries(params.id, seriesData)
+        await updateModelHouseSeries(params.id, seriesData)
         toast({
           title: "Success",
           description: `${seriesData.name} has been updated successfully`,
         })
       }
 
-      // Simulate a small delay to ensure localStorage is updated
-      await new Promise((resolve) => setTimeout(resolve, 300))
-
+      // Navigate back to the model houses admin page
       router.push("/admin/model-houses")
     } catch (error) {
       console.error("Error saving model house series:", error)
+      setFormError("There was a problem saving the model house series. Please try again.")
       toast({
         title: "Error",
         description: "There was a problem saving the model house series. Please try again.",
@@ -163,6 +167,36 @@ export default function EditModelHouseSeriesPage({ params }: { params: { id: str
     } finally {
       setIsSaving(false)
     }
+  }
+
+  if (isLoading && !isNewSeries) {
+    return (
+      <div className="container mx-auto flex items-center justify-center h-[60vh]">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+          <h2 className="text-xl font-semibold">Loading series data...</h2>
+        </div>
+      </div>
+    )
+  }
+
+  if (error && !isNewSeries) {
+    return (
+      <div className="container mx-auto py-8">
+        <Alert variant="destructive" className="mb-6">
+          <AlertTitle>Error loading data</AlertTitle>
+          <AlertDescription>
+            There was a problem loading the series data. Please try going back and trying again.
+          </AlertDescription>
+        </Alert>
+        <Button asChild>
+          <Link href="/admin/model-houses">
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to Model Houses
+          </Link>
+        </Button>
+      </div>
+    )
   }
 
   return (
@@ -177,6 +211,13 @@ export default function EditModelHouseSeriesPage({ params }: { params: { id: str
           <h1 className="text-3xl font-bold">{isNewSeries ? "Add New Series" : "Edit Series"}</h1>
         </div>
       </div>
+
+      {formError && (
+        <Alert variant="destructive" className="mb-6">
+          <AlertTitle>Error</AlertTitle>
+          <AlertDescription>{formError}</AlertDescription>
+        </Alert>
+      )}
 
       <form onSubmit={handleSubmit}>
         <Card className="mb-6">

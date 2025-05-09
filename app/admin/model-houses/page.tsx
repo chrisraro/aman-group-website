@@ -6,7 +6,7 @@ import { useModelHousesContext } from "@/lib/context/ModelHousesContext"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { PlusCircle, Edit, Trash2, RefreshCw, Database } from "lucide-react"
+import { PlusCircle, Edit, Trash2, RefreshCw, Database, Loader2 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import {
   Dialog,
@@ -17,15 +17,25 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { useToast } from "@/hooks/use-toast"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
 export default function ModelHousesAdminPage() {
-  const { getAllModelHouseSeries, rfoUnits, deleteModelHouseSeries, deleteModelHouseUnit, resetToDefaultData } =
-    useModelHousesContext()
+  const {
+    getAllModelHouseSeries,
+    rfoUnits,
+    deleteModelHouseSeries,
+    deleteModelHouseUnit,
+    resetToDefaultData,
+    refreshData,
+    isLoading,
+    error,
+  } = useModelHousesContext()
   const { toast } = useToast()
 
   const [activeTab, setActiveTab] = useState("model-houses")
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [resetDialogOpen, setResetDialogOpen] = useState(false)
+  const [isProcessing, setIsProcessing] = useState(false)
   const [itemToDelete, setItemToDelete] = useState<{
     type: "series" | "unit"
     seriesId: string
@@ -34,18 +44,19 @@ export default function ModelHousesAdminPage() {
 
   const modelHouses = getAllModelHouseSeries()
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!itemToDelete) return
 
+    setIsProcessing(true)
     try {
       if (itemToDelete.type === "series") {
-        deleteModelHouseSeries(itemToDelete.seriesId)
+        await deleteModelHouseSeries(itemToDelete.seriesId)
         toast({
           title: "Success",
           description: "Model house series deleted successfully",
         })
       } else if (itemToDelete.type === "unit" && itemToDelete.unitId) {
-        deleteModelHouseUnit(itemToDelete.seriesId, itemToDelete.unitId)
+        await deleteModelHouseUnit(itemToDelete.seriesId, itemToDelete.unitId)
         toast({
           title: "Success",
           description: "Unit deleted successfully",
@@ -58,10 +69,11 @@ export default function ModelHousesAdminPage() {
         description: "There was a problem deleting the item. Please try again.",
         variant: "destructive",
       })
+    } finally {
+      setIsProcessing(false)
+      setDeleteDialogOpen(false)
+      setItemToDelete(null)
     }
-
-    setDeleteDialogOpen(false)
-    setItemToDelete(null)
   }
 
   const confirmDelete = (type: "series" | "unit", seriesId: string, unitId?: string) => {
@@ -69,9 +81,10 @@ export default function ModelHousesAdminPage() {
     setDeleteDialogOpen(true)
   }
 
-  const handleResetData = () => {
+  const handleResetData = async () => {
+    setIsProcessing(true)
     try {
-      resetToDefaultData()
+      await resetToDefaultData()
       toast({
         title: "Success",
         description: "Data has been reset to default values",
@@ -83,8 +96,58 @@ export default function ModelHousesAdminPage() {
         description: "There was a problem resetting the data. Please try again.",
         variant: "destructive",
       })
+    } finally {
+      setIsProcessing(false)
+      setResetDialogOpen(false)
     }
-    setResetDialogOpen(false)
+  }
+
+  const handleRefreshData = async () => {
+    setIsProcessing(true)
+    try {
+      await refreshData()
+      toast({
+        title: "Success",
+        description: "Data has been refreshed",
+      })
+    } catch (error) {
+      console.error("Error refreshing data:", error)
+      toast({
+        title: "Error",
+        description: "There was a problem refreshing the data. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsProcessing(false)
+    }
+  }
+
+  if (isLoading) {
+    return (
+      <div className="container mx-auto flex items-center justify-center h-[60vh]">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+          <h2 className="text-xl font-semibold">Loading model houses data...</h2>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="container mx-auto py-8">
+        <Alert variant="destructive" className="mb-6">
+          <AlertTitle>Error loading data</AlertTitle>
+          <AlertDescription>
+            There was a problem loading the model houses data. Please try refreshing the page.
+          </AlertDescription>
+        </Alert>
+        <Button onClick={handleRefreshData} disabled={isProcessing}>
+          {isProcessing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
+          Retry
+        </Button>
+      </div>
+    )
   }
 
   return (
@@ -105,7 +168,7 @@ export default function ModelHousesAdminPage() {
         <CardHeader>
           <CardTitle>Data Management</CardTitle>
           <CardDescription>
-            Manage your model houses and RFO units data. All changes are saved to your browser's local storage.
+            Manage your model houses and RFO units data. All changes are saved to the server and visible to all users.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -130,21 +193,13 @@ export default function ModelHousesAdminPage() {
           </div>
         </CardContent>
         <CardFooter className="flex justify-between">
-          <Button variant="outline" onClick={() => setResetDialogOpen(true)}>
-            <RefreshCw className="mr-2 h-4 w-4" />
+          <Button variant="outline" onClick={() => setResetDialogOpen(true)} disabled={isProcessing}>
+            {isProcessing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
             Reset to Default Data
           </Button>
-          <Button
-            variant="secondary"
-            onClick={() => {
-              toast({
-                title: "Data Saved",
-                description: "All changes are automatically saved to local storage",
-              })
-            }}
-          >
-            <Database className="mr-2 h-4 w-4" />
-            Data Saved to Local Storage
+          <Button variant="secondary" onClick={handleRefreshData} disabled={isProcessing}>
+            {isProcessing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Database className="mr-2 h-4 w-4" />}
+            Refresh Data
           </Button>
         </CardFooter>
       </Card>
@@ -173,7 +228,12 @@ export default function ModelHousesAdminPage() {
                           <Edit className="h-4 w-4" />
                         </Link>
                       </Button>
-                      <Button variant="ghost" size="icon" onClick={() => confirmDelete("series", series.id)}>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => confirmDelete("series", series.id)}
+                        disabled={isProcessing}
+                      >
                         <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>
                     </div>
@@ -256,11 +316,11 @@ export default function ModelHousesAdminPage() {
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>
+            <Button variant="outline" onClick={() => setDeleteDialogOpen(false)} disabled={isProcessing}>
               Cancel
             </Button>
-            <Button variant="destructive" onClick={handleDelete}>
-              Delete
+            <Button variant="destructive" onClick={handleDelete} disabled={isProcessing}>
+              {isProcessing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Delete"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -276,11 +336,11 @@ export default function ModelHousesAdminPage() {
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setResetDialogOpen(false)}>
+            <Button variant="outline" onClick={() => setResetDialogOpen(false)} disabled={isProcessing}>
               Cancel
             </Button>
-            <Button variant="destructive" onClick={handleResetData}>
-              Reset Data
+            <Button variant="destructive" onClick={handleResetData} disabled={isProcessing}>
+              {isProcessing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Reset Data"}
             </Button>
           </DialogFooter>
         </DialogContent>
