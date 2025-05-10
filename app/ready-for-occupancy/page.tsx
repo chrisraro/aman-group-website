@@ -10,6 +10,7 @@ import { useModelHousesContext } from "@/lib/context/ModelHousesContext"
 import ScheduleViewingButton from "@/components/schedule-viewing-button"
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert"
 import type { RFOUnit } from "@/lib/hooks/useRFOUnits"
+import { Badge } from "@/components/ui/badge"
 
 export default function ReadyForOccupancyPage() {
   const { getAllRFOUnits, isLoading, error, refreshData } = useModelHousesContext()
@@ -20,7 +21,17 @@ export default function ReadyForOccupancyPage() {
   useEffect(() => {
     const units = getAllRFOUnits()
     setRfoUnits(units)
-    setFullyConstructedUnits(units.filter((unit) => unit.status === "Fully Constructed"))
+
+    // Group units by status for display sections
+    setFullyConstructedUnits(
+      units.filter(
+        (unit) =>
+          unit.status === "Fully Constructed" ||
+          unit.status === "Available" ||
+          unit.status === "Reserved" ||
+          unit.status === "Sold",
+      ),
+    )
     setOnGoingUnits(units.filter((unit) => unit.status === "On Going"))
   }, [getAllRFOUnits])
 
@@ -54,10 +65,10 @@ export default function ReadyForOccupancyPage() {
 
       {/* Fully Constructed Units */}
       <section className="mb-16">
-        <h2 className="text-2xl font-bold mb-8">Fully Constructed Units</h2>
+        <h2 className="text-2xl font-bold mb-8">Completed Units</h2>
         {fullyConstructedUnits.length === 0 ? (
           <div className="text-center py-8 bg-gray-50 rounded-lg">
-            <p className="text-muted-foreground">No fully constructed units available at the moment.</p>
+            <p className="text-muted-foreground">No completed units available at the moment.</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -104,6 +115,21 @@ export default function ReadyForOccupancyPage() {
                       <div>
                         <span className="text-sm font-medium">{unit.floorArea}</span>
                         <span className="text-xs text-muted-foreground"> area</span>
+                      </div>
+                      <div>
+                        <Badge
+                          variant={
+                            unit.status === "Available"
+                              ? "default"
+                              : unit.status === "Reserved"
+                                ? "secondary"
+                                : unit.status === "Sold"
+                                  ? "destructive"
+                                  : "outline"
+                          }
+                        >
+                          {unit.status}
+                        </Badge>
                       </div>
                     </div>
                     <p className="text-sm text-muted-foreground mb-4 line-clamp-2">{unit.description}</p>
@@ -193,6 +219,9 @@ export default function ReadyForOccupancyPage() {
                       <div>
                         <span className="text-sm font-medium">{unit.floorArea}</span>
                         <span className="text-xs text-muted-foreground"> area</span>
+                      </div>
+                      <div>
+                        <Badge variant="outline">{unit.status}</Badge>
                       </div>
                     </div>
                     {/* Construction Progress */}

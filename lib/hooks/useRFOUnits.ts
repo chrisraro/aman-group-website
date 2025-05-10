@@ -47,7 +47,8 @@ export function useRFOUnitsByStatus(status: string | null) {
   const { getAllRFOUnits, isLoading, error } = useModelHousesContext()
 
   const rfoUnits = getAllRFOUnits()
-  const filteredUnits = status ? rfoUnits.filter((unit) => unit.status === status) : rfoUnits
+  // If status is null or empty, return all units
+  const filteredUnits = status && status.trim() !== "" ? rfoUnits.filter((unit) => unit.status === status) : rfoUnits
 
   return {
     rfoUnits: filteredUnits,

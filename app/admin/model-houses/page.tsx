@@ -204,7 +204,7 @@ export default function ModelHousesAdminPage() {
         </CardFooter>
       </Card>
 
-      <Tabs defaultValue="model-houses" value={activeTab} onValueChange={setActiveTab}>
+      <Tabs defaultValue="model-houses" value={activeTab} onValueChange={setActiveTab} className="mt-6">
         <TabsList className="mb-4">
           <TabsTrigger value="model-houses">Model House Series</TabsTrigger>
           <TabsTrigger value="rfo-units">RFO Units</TabsTrigger>
