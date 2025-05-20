@@ -187,7 +187,13 @@ export default function LotOnlyDetailPage({ params }: LotOnlyDetailPageProps) {
                 </div>
 
                 <div className="mt-6 space-y-3">
-                  <LoanCalculatorButton propertyPrice={property.price} className="w-full" />
+                  <LoanCalculatorButton
+                    modelName={property.name}
+                    floorArea={property.lotArea}
+                    price={property.price}
+                    returnUrl={`/lot-only/${property.id}`}
+                    className="w-full"
+                  />
 
                   <ScheduleViewingButton
                     propertyName={property.name}

@@ -4,29 +4,34 @@ import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
 interface LoanCalculatorButtonProps {
-  modelName: string
-  floorArea: string
-  price: number
+  modelName?: string
+  floorArea?: string
+  price?: number
   lotOnlyPrice?: number
   houseConstructionPrice?: number
-  returnUrl: string
+  returnUrl?: string
   className?: string
+  propertyPrice?: number
 }
 
 function LoanCalculatorButton({
-  modelName,
-  floorArea,
+  modelName = "Property",
+  floorArea = "N/A",
   price,
   lotOnlyPrice,
   houseConstructionPrice,
-  returnUrl,
+  returnUrl = "/",
   className = "",
+  propertyPrice,
 }: LoanCalculatorButtonProps) {
+  // Use propertyPrice as a fallback if price is undefined
+  const finalPrice = price || propertyPrice || 0
+
   // Create URL parameters
   const params = new URLSearchParams()
   params.append("model", modelName)
   params.append("area", floorArea)
-  params.append("price", price.toString())
+  params.append("price", finalPrice.toString())
   params.append("returnUrl", returnUrl)
 
   const href = `/loan-calculator?${params.toString()}`
