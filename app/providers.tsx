@@ -1,27 +1,16 @@
-"use client"
-
 import type React from "react"
-
+// Add the import for LotOnlyProvider
+import { LotOnlyProvider } from "@/lib/context/LotOnlyContext"
 import { ThemeProvider } from "@/components/theme-provider"
 import { ModelHousesProvider } from "@/lib/context/ModelHousesContext"
-import { Toaster } from "@/components/ui/toaster"
-import { SWRConfig } from "swr"
 
+// Update the Providers component to include LotOnlyProvider
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
-    <SWRConfig
-      value={{
-        revalidateOnFocus: false,
-        errorRetryCount: 3,
-        dedupingInterval: 5000,
-      }}
-    >
-      <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
-        <ModelHousesProvider>
-          {children}
-          <Toaster />
-        </ModelHousesProvider>
-      </ThemeProvider>
-    </SWRConfig>
+    <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
+      <ModelHousesProvider>
+        <LotOnlyProvider>{children}</LotOnlyProvider>
+      </ModelHousesProvider>
+    </ThemeProvider>
   )
 }

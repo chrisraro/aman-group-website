@@ -61,3 +61,11 @@ export function getInitials(name: string): string {
 export function formatToTwoDecimals(value: number): number {
   return Math.round(value * 100) / 100
 }
+
+/**
+ * Format a number with commas (e.g., 1,000,000)
+ */
+export function formatNumberWithCommas(value: number | undefined): string {
+  if (value === undefined || isNaN(value)) return "0"
+  return value.toLocaleString("en-US", { maximumFractionDigits: 0 })
+}

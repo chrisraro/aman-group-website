@@ -10,6 +10,8 @@ export function AdminNav() {
   const navItems = [
     { href: "/admin/brokerage-links", label: "Brokerage Links" },
     { href: "/admin/agent-links", label: "Agent Links" },
+    { href: "/admin/model-houses", label: "Model Houses" },
+    { href: "/admin/lot-only", label: "Lot Only" },
   ]
 
   return (

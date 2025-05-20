@@ -1,8 +1,11 @@
 import { modelHouseSeries as initialModelHouseSeries } from "@/data/model-houses"
+import { lotOnlyProperties as initialLotOnlyProperties } from "@/data/lot-only-properties"
 
 // Constants
 const MODEL_HOUSES_KEY = "model_houses_data"
+const LOT_ONLY_KEY = "lot_only_data"
 const DATA_VERSION_KEY = "model_houses_version"
+const LOT_ONLY_VERSION_KEY = "lot_only_version"
 const CURRENT_VERSION = "1.0.0"
 
 // In-memory fallback when KV is not available
@@ -100,6 +103,51 @@ export async function resetModelHousesData() {
     return { success: true }
   } catch (error) {
     console.error("Error resetting model houses data:", error)
+    throw error
+  }
+}
+
+// Get lot-only properties data
+export async function getLotOnlyData() {
+  try {
+    // Check if data exists in storage
+    const storedData = await getValue(LOT_ONLY_KEY)
+    const storedVersion = await getValue(LOT_ONLY_VERSION_KEY)
+
+    // If no data or version mismatch, initialize with default data
+    if (!storedData || storedVersion !== CURRENT_VERSION) {
+      await setValue(LOT_ONLY_KEY, initialLotOnlyProperties)
+      await setValue(LOT_ONLY_VERSION_KEY, CURRENT_VERSION)
+      return initialLotOnlyProperties
+    }
+
+    return storedData
+  } catch (error) {
+    console.error("Error fetching lot-only data:", error)
+    // Return initial data as fallback
+    return initialLotOnlyProperties
+  }
+}
+
+// Save lot-only properties data
+export async function saveLotOnlyData(data: any) {
+  try {
+    await setValue(LOT_ONLY_KEY, data)
+    return { success: true }
+  } catch (error) {
+    console.error("Error saving lot-only data:", error)
+    throw error
+  }
+}
+
+// Reset lot-only properties to default data
+export async function resetLotOnlyData() {
+  try {
+    await setValue(LOT_ONLY_KEY, initialLotOnlyProperties)
+    await setValue(LOT_ONLY_VERSION_KEY, CURRENT_VERSION)
+    return { success: true }
+  } catch (error) {
+    console.error("Error resetting lot-only data:", error)
     throw error
   }
 }

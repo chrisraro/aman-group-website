@@ -13,7 +13,7 @@ interface LoanCalculatorButtonProps {
   className?: string
 }
 
-export function LoanCalculatorButton({
+function LoanCalculatorButton({
   modelName,
   floorArea,
   price,
@@ -39,3 +39,7 @@ export function LoanCalculatorButton({
     </Link>
   )
 }
+
+// Add both named and default exports
+export { LoanCalculatorButton }
+export default LoanCalculatorButton

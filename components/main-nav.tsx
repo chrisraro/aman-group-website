@@ -24,6 +24,7 @@ export function MainNav() {
       items: [
         { href: "/model-houses", label: "Model Houses" },
         { href: "/ready-for-occupancy", label: "Ready For Occupancy" },
+        { href: "/lot-only", label: "Lot Only" },
       ],
     },
     {
@@ -110,8 +111,7 @@ export function MainNav() {
                       whileTap={{ scale: 0.95 }}
                       className={cn(
                         "text-sm font-medium transition-colors hover:text-primary relative px-3 py-2 rounded-md flex items-center",
-                        pathname.startsWith(`/${item.items[0].href?.split("/")[1]}`) ||
-                          pathname.startsWith(`/${item.items[1].href?.split("/")[1]}`)
+                        item.items.some((subItem) => pathname.startsWith(subItem.href))
                           ? "text-primary font-semibold bg-primary/5"
                           : "text-muted-foreground hover:bg-gray-50",
                       )}
@@ -276,8 +276,7 @@ export function MainNav() {
                         <div
                           className={cn(
                             "flex items-center justify-between py-3 px-4 text-base font-medium rounded-md",
-                            pathname.startsWith(`/${item.items[0].href?.split("/")[1]}`) ||
-                              pathname.startsWith(`/${item.items[1].href?.split("/")[1]}`)
+                            item.items.some((subItem) => pathname.startsWith(subItem.href))
                               ? "bg-primary/10 text-primary font-semibold"
                               : "text-muted-foreground",
                           )}

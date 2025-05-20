@@ -30,6 +30,7 @@ export type Developer = keyof typeof DEVELOPER_COLORS
 export const API_ENDPOINTS = {
   modelHouses: "/api/model-houses",
   rfoUnits: "/api/rfo-units",
+  lotOnly: "/api/lot-only",
   projects: "/api/projects",
   contact: "/api/contact",
   calendar: "/api/calendar",

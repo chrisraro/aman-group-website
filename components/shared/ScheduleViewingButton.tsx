@@ -17,7 +17,7 @@ import {
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { formatDate, formatTime } from "@/lib/hooks/useCalendar"
-import { CalendarAvailabilityView } from "@/components/calendar/CalendarAvailabilityView"
+import { CalendarAvailabilityView } from "@/components/calendar-availability-view"
 import { createGoogleCalendarUrl } from "@/lib/hooks/useCalendar"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 
