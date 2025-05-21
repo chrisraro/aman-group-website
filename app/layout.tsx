@@ -1,6 +1,6 @@
 import type React from "react"
 import type { Metadata } from "next"
-import { Inter } from "next/font/google"
+import { Playfair_Display, Noto_Sans } from "next/font/google"
 import "./globals.css"
 import { MainNav } from "@/components/main-nav"
 import { Footer } from "@/components/footer"
@@ -13,7 +13,20 @@ import { PWARegister } from "@/components/pwa-register"
 import { SplashScreen } from "@/components/splash-screen"
 import { Providers } from "./providers"
 
-const inter = Inter({ subsets: ["latin"] })
+// Load Playfair Display for headings
+const playfair = Playfair_Display({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-playfair",
+})
+
+// Load Noto Sans for body text
+const notoSans = Noto_Sans({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  display: "swap",
+  variable: "--font-noto-sans",
+})
 
 export const metadata: Metadata = {
   title: "Aman Group - Real Estate Development",
@@ -29,7 +42,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head />
-      <body className={inter.className}>
+      <body className={`${playfair.variable} ${notoSans.variable} font-sans`}>
         <Providers>
           <SkipToContent />
           <SplashScreen />

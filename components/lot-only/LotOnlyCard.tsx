@@ -28,7 +28,7 @@ export function LotOnlyCard({ property }: LotOnlyCardProps) {
         )}
         <div className="absolute top-2 right-2 flex flex-col gap-1">
           <Badge
-            className="text-xs font-medium"
+            className="text-xs"
             style={{
               backgroundColor:
                 property.status === "Available"
@@ -43,7 +43,7 @@ export function LotOnlyCard({ property }: LotOnlyCardProps) {
           </Badge>
           <Badge
             variant="outline"
-            className="text-xs font-medium bg-white/80 backdrop-blur-sm"
+            className="text-xs bg-white/80 backdrop-blur-sm"
             style={{ borderColor: property.developerColor, color: property.developerColor }}
           >
             {property.developer}
@@ -52,20 +52,20 @@ export function LotOnlyCard({ property }: LotOnlyCardProps) {
       </div>
       <CardContent className="flex-grow flex flex-col p-5">
         <div className="mb-3">
-          <h3 className="text-lg font-semibold line-clamp-1 mb-1">{property.name}</h3>
-          <p className="text-sm text-muted-foreground">{property.location}</p>
+          <h3 className="card-title mb-1 line-clamp-1">{property.name}</h3>
+          <p className="card-subtitle">{property.location}</p>
         </div>
         <div className="grid grid-cols-2 gap-4 mb-4">
           <div className="flex flex-col">
-            <span className="text-xs text-muted-foreground uppercase tracking-wide">Price</span>
-            <span className="text-sm font-medium">₱{formatNumberWithCommas(property.price)}</span>
+            <span className="card-meta">Price</span>
+            <span className="card-price">₱{formatNumberWithCommas(property.price)}</span>
           </div>
           <div className="flex flex-col">
-            <span className="text-xs text-muted-foreground uppercase tracking-wide">Lot Area</span>
-            <span className="text-sm font-medium">{property.lotArea}</span>
+            <span className="card-meta">Lot Area</span>
+            <span className="card-price">{property.lotArea}</span>
           </div>
         </div>
-        <p className="text-sm text-muted-foreground mb-4 flex-grow line-clamp-3">{property.description}</p>
+        <p className="card-content mb-4 flex-grow line-clamp-3">{property.description}</p>
       </CardContent>
       <CardFooter className="p-5 pt-0 mt-auto">
         <div className="flex flex-col sm:flex-row w-full gap-3">
@@ -75,14 +75,14 @@ export function LotOnlyCard({ property }: LotOnlyCardProps) {
             className="w-full h-11 flex-1 border-gray-300 hover:bg-gray-50 hover:border-gray-400 transition-all duration-200"
           >
             <Link href={`/lot-only/${property.id}`} className="flex items-center justify-center gap-2">
-              <span className="font-medium">View Details</span>
+              <span>View Details</span>
               <ArrowRight className="h-4 w-4" />
             </Link>
           </Button>
           <ScheduleViewingButton
             propertyName={property.name}
             propertyType="Lot Only"
-            className="w-full h-11 flex-1 bg-primary hover:bg-primary/90 text-white font-medium flex items-center justify-center gap-2"
+            className="w-full h-11 flex-1 bg-primary hover:bg-primary/90 text-white flex items-center justify-center gap-2"
           >
             <Calendar className="h-4 w-4" />
             <span className="hidden xs:inline">Schedule</span>

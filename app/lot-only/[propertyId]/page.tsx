@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react"
 import { useLotOnlyProperty } from "@/lib/hooks/useLotOnlyProperties"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
+import { Card, CardContent, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Loader2, ArrowLeft, MapPin, Check, AlertCircle, Calendar, Calculator, RefreshCw } from "lucide-react"
 import { formatNumberWithCommas } from "@/lib/utils/format-utils"
@@ -105,7 +105,7 @@ export default function LotOnlyPropertyPage({ params }: { params: { propertyId: 
       <div className="container mx-auto flex items-center justify-center h-[60vh]">
         <div className="text-center">
           <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-          <h2 className="text-xl font-semibold">Loading property details...</h2>
+          <h2 className="text-xl">Loading property details...</h2>
         </div>
       </div>
     )
@@ -152,7 +152,7 @@ export default function LotOnlyPropertyPage({ params }: { params: { propertyId: 
         {isRefreshing && (
           <div className="fixed top-4 right-4 bg-primary text-white px-3 py-2 rounded-md shadow-md flex items-center z-50 animate-pulse">
             <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-            <span className="text-sm font-medium">Syncing data...</span>
+            <span className="text-sm">Syncing data...</span>
           </div>
         )}
 
@@ -177,14 +177,14 @@ export default function LotOnlyPropertyPage({ params }: { params: { propertyId: 
           </div>
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
-              <h1 className="text-3xl md:text-4xl font-bold">{property.name}</h1>
+              <h1 className="text-3xl md:text-4xl">{property.name}</h1>
               <div className="flex items-center mt-2 text-muted-foreground">
                 <MapPin className="h-4 w-4 mr-1 flex-shrink-0" />
                 <span>{property.location}</span>
               </div>
               <div className="flex flex-wrap gap-2 mt-3">
                 <Badge
-                  className="text-sm font-medium"
+                  className="text-sm"
                   style={{
                     backgroundColor:
                       property.status === "Available"
@@ -199,7 +199,7 @@ export default function LotOnlyPropertyPage({ params }: { params: { propertyId: 
                 </Badge>
                 <Badge
                   variant="outline"
-                  className="text-sm font-medium"
+                  className="text-sm"
                   style={{
                     backgroundColor: `${property.developerColor}20`,
                     borderColor: property.developerColor,
@@ -214,7 +214,7 @@ export default function LotOnlyPropertyPage({ params }: { params: { propertyId: 
               <ScheduleViewingButton
                 propertyName={property.name}
                 propertyType="Lot Only"
-                className="h-11 bg-primary hover:bg-primary/90 text-white font-medium flex items-center justify-center gap-2"
+                className="h-11 bg-primary hover:bg-primary/90 text-white flex items-center justify-center gap-2"
               >
                 <Calendar className="h-4 w-4" />
                 <span>Schedule Viewing</span>
@@ -223,7 +223,7 @@ export default function LotOnlyPropertyPage({ params }: { params: { propertyId: 
                 propertyName={property.name}
                 propertyPrice={property.price}
                 propertyType="Lot Only"
-                className="h-11 border-gray-300 hover:bg-gray-50 hover:border-gray-400 font-medium flex items-center justify-center gap-2"
+                className="h-11 border-gray-300 hover:bg-gray-50 hover:border-gray-400 flex items-center justify-center gap-2"
               >
                 <Calculator className="h-4 w-4" />
                 <span>Calculate Loan</span>
@@ -249,12 +249,12 @@ export default function LotOnlyPropertyPage({ params }: { params: { propertyId: 
             </div>
 
             <div className="mb-8">
-              <h2 className="text-2xl font-semibold mb-4">Property Description</h2>
+              <h2 className="text-2xl mb-4">Property Description</h2>
               <p className="text-muted-foreground whitespace-pre-line">{property.description}</p>
             </div>
 
             <div className="mb-8">
-              <h2 className="text-2xl font-semibold mb-4">Features</h2>
+              <h2 className="text-2xl mb-4">Features</h2>
               <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {property.features.map((feature, index) => (
                   <li key={index} className="flex items-start">
@@ -267,7 +267,7 @@ export default function LotOnlyPropertyPage({ params }: { params: { propertyId: 
 
             {property.utilities && property.utilities.length > 0 && (
               <div className="mb-8">
-                <h2 className="text-2xl font-semibold mb-4">Utilities</h2>
+                <h2 className="text-2xl mb-4">Utilities</h2>
                 <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {property.utilities.map((utility, index) => (
                     <li key={index} className="flex items-start">
@@ -281,7 +281,7 @@ export default function LotOnlyPropertyPage({ params }: { params: { propertyId: 
 
             {property.nearbyAmenities && property.nearbyAmenities.length > 0 && (
               <div className="mb-8">
-                <h2 className="text-2xl font-semibold mb-4">Nearby Amenities</h2>
+                <h2 className="text-2xl mb-4">Nearby Amenities</h2>
                 <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {property.nearbyAmenities.map((amenity, index) => (
                     <li key={index} className="flex items-start">
@@ -298,7 +298,7 @@ export default function LotOnlyPropertyPage({ params }: { params: { propertyId: 
             <Card className="sticky top-4">
               <CardContent className="p-6">
                 <div className="mb-6">
-                  <h3 className="text-xl font-semibold mb-4">Property Details</h3>
+                  <CardTitle className="mb-4">Property Details</CardTitle>
                   <div className="space-y-3">
                     <div className="flex justify-between items-center">
                       <span className="text-muted-foreground">Price:</span>
@@ -349,7 +349,7 @@ export default function LotOnlyPropertyPage({ params }: { params: { propertyId: 
                   property.financingOptions ||
                   property.downPaymentTerms) && (
                   <div>
-                    <h3 className="text-xl font-semibold mb-4">Financing Information</h3>
+                    <CardTitle className="mb-4">Financing Information</CardTitle>
                     <div className="space-y-3">
                       {property.reservationFee && (
                         <div className="flex justify-between items-center">

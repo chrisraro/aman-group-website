@@ -74,7 +74,7 @@ export function LotOnlyList() {
       <div className="flex flex-col sm:flex-row gap-4 mb-6">
         <div className="w-full sm:w-1/2 md:w-1/3">
           <Select value={selectedLocation} onValueChange={setSelectedLocation}>
-            <SelectTrigger>
+            <SelectTrigger className="form-input">
               <SelectValue placeholder="Filter by Location" />
             </SelectTrigger>
             <SelectContent>
@@ -89,7 +89,7 @@ export function LotOnlyList() {
         </div>
         <div className="w-full sm:w-1/2 md:w-1/3">
           <Select value={sortBy} onValueChange={setSortBy}>
-            <SelectTrigger>
+            <SelectTrigger className="form-input">
               <SelectValue placeholder="Sort by" />
             </SelectTrigger>
             <SelectContent>
