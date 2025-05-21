@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import { LotOnlyCard } from "./LotOnlyCard"
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner"
 import { ErrorMessage } from "@/components/ui/ErrorMessage"
@@ -42,10 +42,16 @@ export function LotOnlyList({ project, developer }: LotOnlyListProps) {
   const [searchTerm, setSearchTerm] = useState("")
   const [sortOption, setSortOption] = useState("price-asc")
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 2000000])
+  const [locationFilter, setLocationFilter] = useState<string>("all")
 
   // Get min and max prices for the slider
   const minPrice = Math.min(...properties.map((p) => p.price), 0)
   const maxPrice = Math.max(...properties.map((p) => p.price), 2000000)
+
+  // Get unique locations for the dropdown
+  const locations = useMemo(() => {
+    return Array.from(new Set(properties.map((p) => p.location))).sort()
+  }, [properties])
 
   // Filter and sort properties
   const filteredProperties = properties
@@ -56,6 +62,7 @@ export function LotOnlyList({ project, developer }: LotOnlyListProps) {
         property.location.toLowerCase().includes(searchTerm.toLowerCase()),
     )
     .filter((property) => property.price >= priceRange[0] && property.price <= priceRange[1])
+    .filter((property) => (locationFilter === "all" ? true : property.location === locationFilter))
     .sort((a, b) => {
       switch (sortOption) {
         case "price-asc":
@@ -101,7 +108,7 @@ export function LotOnlyList({ project, developer }: LotOnlyListProps) {
       <div className="bg-gray-50 p-6 rounded-lg space-y-4">
         <h3 className="text-lg font-semibold mb-4">Filter Properties</h3>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <Label htmlFor="search">Search</Label>
             <Input
@@ -124,6 +131,23 @@ export function LotOnlyList({ project, developer }: LotOnlyListProps) {
                 <SelectItem value="price-desc">Price: High to Low</SelectItem>
                 <SelectItem value="area-asc">Area: Small to Large</SelectItem>
                 <SelectItem value="area-desc">Area: Large to Small</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
+            <Label htmlFor="location">Location</Label>
+            <Select value={locationFilter} onValueChange={setLocationFilter}>
+              <SelectTrigger id="location">
+                <SelectValue placeholder="All locations" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All locations</SelectItem>
+                {locations.map((location) => (
+                  <SelectItem key={location} value={location}>
+                    {location}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -159,6 +183,12 @@ export function LotOnlyList({ project, developer }: LotOnlyListProps) {
           <LotOnlyCard key={property.id} property={property} />
         ))}
       </div>
+
+      {filteredProperties.length === 0 && (
+        <div className="text-center py-8">
+          <p className="text-lg text-muted-foreground">No properties found matching your criteria.</p>
+        </div>
+      )}
     </div>
   )
 }

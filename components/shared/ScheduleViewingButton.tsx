@@ -133,7 +133,7 @@ Time: ${formatTime(selectedStartTime)}
       }}
     >
       <DialogTrigger asChild>
-        <Button className={className} {...props}>
+        <Button className={`whitespace-nowrap text-ellipsis overflow-hidden ${className}`} {...props}>
           <Calendar className="mr-2 h-4 w-4" /> {children}
         </Button>
       </DialogTrigger>

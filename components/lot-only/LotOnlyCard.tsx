@@ -13,7 +13,7 @@ interface LotOnlyCardProps {
 
 export function LotOnlyCard({ property }: LotOnlyCardProps) {
   return (
-    <Card className="overflow-hidden hover:shadow-md transition-shadow">
+    <Card className="overflow-hidden hover:shadow-md transition-shadow h-full flex flex-col">
       <div className="relative h-48">
         <Image
           src={property.imageUrl || `/placeholder.svg?height=300&width=400&text=${property.name}`}
@@ -25,8 +25,8 @@ export function LotOnlyCard({ property }: LotOnlyCardProps) {
           {property.developer}
         </Badge>
       </div>
-      <CardContent className="p-6">
-        <h3 className="text-2xl font-bold mb-2">{property.name}</h3>
+      <CardContent className="p-6 flex-grow flex flex-col">
+        <h3 className="text-2xl font-bold mb-2 line-clamp-1">{property.name}</h3>
         <div className="grid grid-cols-2 gap-2 mb-4">
           <div>
             <p className="text-sm font-medium">{property.lotArea}</p>
@@ -37,11 +37,11 @@ export function LotOnlyCard({ property }: LotOnlyCardProps) {
             <p className="text-xs text-muted-foreground">Price</p>
           </div>
         </div>
-        <p className="text-muted-foreground mb-6 line-clamp-3">{property.description}</p>
-        <div className="grid grid-cols-2 gap-2">
+        <p className="text-muted-foreground mb-6 line-clamp-3 flex-grow">{property.description}</p>
+        <div className="grid grid-cols-2 gap-2 mt-auto">
           <Link href={`/lot-only/${property.id}`}>
             <Button
-              className="w-full"
+              className="w-full text-xs sm:text-sm whitespace-nowrap"
               style={{ backgroundColor: property.developerColor, borderColor: property.developerColor }}
             >
               View Details
@@ -50,7 +50,7 @@ export function LotOnlyCard({ property }: LotOnlyCardProps) {
           <ScheduleViewingButton
             propertyName={property.name}
             propertyLocation={property.location}
-            className="w-full"
+            className="w-full text-xs sm:text-sm whitespace-nowrap"
             variant="outline"
           />
         </div>
