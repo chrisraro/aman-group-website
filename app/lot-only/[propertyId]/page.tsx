@@ -1,234 +1,319 @@
-import type { Metadata } from "next"
-import Image from "next/image"
-import Link from "next/link"
-import { notFound } from "next/navigation"
-import { ArrowLeft, MapPin, Ruler, Tag } from "lucide-react"
+"use client"
+
+import { useEffect, useState } from "react"
+import { useLotOnlyProperty } from "@/lib/hooks/useLotOnlyProperties"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Loader2, ArrowLeft, MapPin, Check, AlertCircle, Calendar, Calculator } from "lucide-react"
 import { formatNumberWithCommas } from "@/lib/utils/format-utils"
-import { getLotOnlyPropertyById } from "@/data/lot-only-properties"
-import ScheduleViewingButton from "@/components/shared/ScheduleViewingButton"
-import LoanCalculatorButton from "@/components/loan-calculator-button"
+import { ScheduleViewingButton } from "@/components/shared/ScheduleViewingButton"
+import { LoanCalculatorButton } from "@/components/loan-calculator-button"
+import Link from "next/link"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 
-interface LotOnlyDetailPageProps {
-  params: {
-    propertyId: string
-  }
-}
+export default function LotOnlyPropertyPage({ params }: { params: { propertyId: string } }) {
+  const { property, isLoading, error } = useLotOnlyProperty(params.propertyId)
+  const [isRefreshing, setIsRefreshing] = useState(false)
 
-export async function generateMetadata({ params }: LotOnlyDetailPageProps): Promise<Metadata> {
-  const property = getLotOnlyPropertyById(params.propertyId)
+  // Scroll to top on page load
+  useEffect(() => {
+    window.scrollTo(0, 0)
+  }, [])
 
-  if (!property) {
-    return {
-      title: "Property Not Found | Aman Group",
+  // Function to manually refresh data
+  const refreshData = async () => {
+    setIsRefreshing(true)
+    try {
+      // Force a cache-busting fetch
+      const response = await fetch(`/api/lot-only/${params.propertyId}?t=${Date.now()}`)
+      if (!response.ok) throw new Error("Failed to refresh data")
+
+      // Wait a moment to show the loading state
+      await new Promise((resolve) => setTimeout(resolve, 500))
+
+      // Reload the page to get fresh data
+      window.location.reload()
+    } catch (err) {
+      console.error("Error refreshing data:", err)
+      setIsRefreshing(false)
     }
   }
 
-  return {
-    title: `${property.name} | Aman Group`,
-    description: property.description,
+  if (isLoading || isRefreshing) {
+    return (
+      <div className="container mx-auto flex items-center justify-center h-[60vh]">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+          <h2 className="text-xl font-semibold">
+            {isRefreshing ? "Refreshing property data..." : "Loading property details..."}
+          </h2>
+        </div>
+      </div>
+    )
   }
-}
 
-export default function LotOnlyDetailPage({ params }: LotOnlyDetailPageProps) {
-  const property = getLotOnlyPropertyById(params.propertyId)
-
-  if (!property) {
-    notFound()
+  if (error || !property) {
+    return (
+      <div className="container mx-auto py-8 px-4">
+        <Alert variant="destructive" className="mb-6">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            {error ? error.message : "Property not found. Please try another property."}
+          </AlertDescription>
+        </Alert>
+        <div className="flex flex-col sm:flex-row gap-3">
+          <Button asChild variant="outline">
+            <Link href="/lot-only">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back to Properties
+            </Link>
+          </Button>
+          <Button onClick={refreshData} disabled={isRefreshing}>
+            {isRefreshing ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Refreshing...
+              </>
+            ) : (
+              <>Refresh Data</>
+            )}
+          </Button>
+        </div>
+      </div>
+    )
   }
 
   return (
     <main className="container mx-auto px-4 py-12">
       <div className="max-w-5xl mx-auto">
-        <Link href="/lot-only" className="inline-flex items-center text-primary hover:underline mb-6">
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to Lot Only Properties
-        </Link>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Left column - Property details */}
-          <div className="lg:col-span-2 space-y-8">
+        <div className="mb-8">
+          <Button variant="ghost" asChild className="mb-4 hover:bg-gray-100">
+            <Link href="/lot-only">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back to Properties
+            </Link>
+          </Button>
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
-              <div className="relative h-[400px] rounded-lg overflow-hidden">
-                <Image
-                  src={property.imageUrl || `/placeholder.svg?height=800&width=1200&text=${property.name}`}
-                  alt={property.name}
-                  fill
-                  className="object-cover"
-                />
+              <h1 className="text-3xl md:text-4xl font-bold">{property.name}</h1>
+              <div className="flex items-center mt-2 text-muted-foreground">
+                <MapPin className="h-4 w-4 mr-1 flex-shrink-0" />
+                <span>{property.location}</span>
+              </div>
+              <div className="flex flex-wrap gap-2 mt-3">
                 <Badge
-                  className="absolute top-4 right-4 text-sm px-3 py-1"
-                  style={{ backgroundColor: property.developerColor }}
+                  className="text-sm font-medium"
+                  style={{
+                    backgroundColor:
+                      property.status === "Available"
+                        ? "rgb(22, 163, 74)"
+                        : property.status === "Reserved"
+                          ? "rgb(234, 88, 12)"
+                          : "rgb(220, 38, 38)",
+                    color: "white",
+                  }}
+                >
+                  {property.status}
+                </Badge>
+                <Badge
+                  variant="outline"
+                  className="text-sm font-medium"
+                  style={{
+                    backgroundColor: `${property.developerColor}20`,
+                    borderColor: property.developerColor,
+                    color: property.developerColor,
+                  }}
                 >
                   {property.developer}
                 </Badge>
               </div>
             </div>
+            <div className="flex flex-col sm:flex-row gap-3 mt-2 md:mt-0">
+              <ScheduleViewingButton
+                propertyName={property.name}
+                propertyType="Lot Only"
+                className="h-11 bg-primary hover:bg-primary/90 text-white font-medium flex items-center justify-center gap-2"
+              >
+                <Calendar className="h-4 w-4" />
+                <span>Schedule Viewing</span>
+              </ScheduleViewingButton>
+              <LoanCalculatorButton
+                propertyName={property.name}
+                propertyPrice={property.price}
+                propertyType="Lot Only"
+                className="h-11 border-gray-300 hover:bg-gray-50 hover:border-gray-400 font-medium flex items-center justify-center gap-2"
+              >
+                <Calculator className="h-4 w-4" />
+                <span>Calculate Loan</span>
+              </LoanCalculatorButton>
+            </div>
+          </div>
+        </div>
 
-            <div>
-              <h1 className="text-3xl font-bold mb-2">{property.name}</h1>
-              <div className="flex items-center text-muted-foreground mb-4">
-                <MapPin className="h-4 w-4 mr-1" />
-                <span>{property.location}</span>
-              </div>
-
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <div className="flex items-center text-muted-foreground mb-1">
-                    <Tag className="h-4 w-4 mr-1" />
-                    <span className="text-xs">Price</span>
-                  </div>
-                  <p className="font-semibold">₱{formatNumberWithCommas(property.price)}</p>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <div className="md:col-span-2">
+            <div className="aspect-video bg-muted rounded-lg overflow-hidden mb-6">
+              {property.imageUrl ? (
+                <img
+                  src={property.imageUrl || "/placeholder.svg"}
+                  alt={property.name}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center">
+                  <span className="text-muted-foreground">No image available</span>
                 </div>
+              )}
+            </div>
 
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <div className="flex items-center text-muted-foreground mb-1">
-                    <Ruler className="h-4 w-4 mr-1" />
-                    <span className="text-xs">Lot Area</span>
-                  </div>
-                  <p className="font-semibold">{property.lotArea}</p>
-                </div>
+            <div className="mb-8">
+              <h2 className="text-2xl font-semibold mb-4">Property Description</h2>
+              <p className="text-muted-foreground whitespace-pre-line">{property.description}</p>
+            </div>
 
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <div className="flex items-center text-muted-foreground mb-1">
-                    <span className="text-xs">Status</span>
-                  </div>
-                  <p className="font-semibold">{property.status}</p>
-                </div>
-              </div>
+            <div className="mb-8">
+              <h2 className="text-2xl font-semibold mb-4">Features</h2>
+              <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {property.features.map((feature, index) => (
+                  <li key={index} className="flex items-start">
+                    <Check className="h-5 w-5 mr-2 text-primary flex-shrink-0" />
+                    <span>{feature}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
 
-              <div className="prose max-w-none mb-8">
-                <h2 className="text-xl font-semibold mb-2">Description</h2>
-                <p>{property.description}</p>
-              </div>
-
+            {property.utilities && property.utilities.length > 0 && (
               <div className="mb-8">
-                <h2 className="text-xl font-semibold mb-4">Features</h2>
-                <ul className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                  {property.features.map((feature, index) => (
-                    <li key={index} className="flex items-center">
-                      <div className="h-2 w-2 rounded-full bg-primary mr-2"></div>
-                      {feature}
+                <h2 className="text-2xl font-semibold mb-4">Utilities</h2>
+                <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {property.utilities.map((utility, index) => (
+                    <li key={index} className="flex items-start">
+                      <Check className="h-5 w-5 mr-2 text-primary flex-shrink-0" />
+                      <span>{utility}</span>
                     </li>
                   ))}
                 </ul>
               </div>
+            )}
 
-              {property.utilities && (
-                <div className="mb-8">
-                  <h2 className="text-xl font-semibold mb-4">Utilities</h2>
-                  <ul className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                    {property.utilities.map((utility, index) => (
-                      <li key={index} className="flex items-center">
-                        <div className="h-2 w-2 rounded-full bg-primary mr-2"></div>
-                        {utility}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
-              {property.nearbyAmenities && (
-                <div className="mb-8">
-                  <h2 className="text-xl font-semibold mb-4">Nearby Amenities</h2>
-                  <ul className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                    {property.nearbyAmenities.map((amenity, index) => (
-                      <li key={index} className="flex items-center">
-                        <div className="h-2 w-2 rounded-full bg-primary mr-2"></div>
-                        {amenity}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </div>
+            {property.nearbyAmenities && property.nearbyAmenities.length > 0 && (
+              <div className="mb-8">
+                <h2 className="text-2xl font-semibold mb-4">Nearby Amenities</h2>
+                <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {property.nearbyAmenities.map((amenity, index) => (
+                    <li key={index} className="flex items-start">
+                      <Check className="h-5 w-5 mr-2 text-primary flex-shrink-0" />
+                      <span>{amenity}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
 
-          {/* Right column - Contact and financing info */}
-          <div className="space-y-6">
-            <Card>
+          <div>
+            <Card className="sticky top-4">
               <CardContent className="p-6">
-                <h2 className="text-xl font-semibold mb-4">Financing Information</h2>
-
-                <div className="space-y-4">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Price</p>
-                    <p className="font-semibold">₱{formatNumberWithCommas(property.price)}</p>
-                  </div>
-
-                  {property.reservationFee && (
-                    <div>
-                      <p className="text-sm text-muted-foreground">Reservation Fee</p>
-                      <p className="font-semibold">₱{formatNumberWithCommas(property.reservationFee)}</p>
+                <div className="mb-6">
+                  <h3 className="text-xl font-semibold mb-4">Property Details</h3>
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center">
+                      <span className="text-muted-foreground">Price:</span>
+                      <span className="font-medium">₱{formatNumberWithCommas(property.price)}</span>
                     </div>
-                  )}
+                    <div className="flex justify-between items-center">
+                      <span className="text-muted-foreground">Status:</span>
+                      <Badge
+                        style={{
+                          backgroundColor:
+                            property.status === "Available"
+                              ? "rgb(22, 163, 74)"
+                              : property.status === "Reserved"
+                                ? "rgb(234, 88, 12)"
+                                : "rgb(220, 38, 38)",
+                          color: "white",
+                        }}
+                      >
+                        {property.status}
+                      </Badge>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-muted-foreground">Lot Area:</span>
+                      <span>{property.lotArea}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-muted-foreground">Project:</span>
+                      <span>{property.project}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-muted-foreground">Developer:</span>
+                      <Badge
+                        variant="outline"
+                        style={{
+                          backgroundColor: `${property.developerColor}20`,
+                          borderColor: property.developerColor,
+                          color: property.developerColor,
+                        }}
+                      >
+                        {property.developer}
+                      </Badge>
+                    </div>
+                  </div>
+                </div>
 
-                  {property.downPaymentPercentage && (
-                    <div>
-                      <p className="text-sm text-muted-foreground">Down Payment</p>
-                      <p className="font-semibold">
-                        {property.downPaymentPercentage}% (₱
-                        {formatNumberWithCommas((property.price * property.downPaymentPercentage) / 100)})
-                      </p>
+                {(property.reservationFee ||
+                  property.downPaymentPercentage ||
+                  property.financingOptions ||
+                  property.downPaymentTerms) && (
+                  <div>
+                    <h3 className="text-xl font-semibold mb-4">Financing Information</h3>
+                    <div className="space-y-3">
+                      {property.reservationFee && (
+                        <div className="flex justify-between items-center">
+                          <span className="text-muted-foreground">Reservation Fee:</span>
+                          <span>₱{formatNumberWithCommas(property.reservationFee)}</span>
+                        </div>
+                      )}
+                      {property.downPaymentPercentage && (
+                        <div className="flex justify-between items-center">
+                          <span className="text-muted-foreground">Down Payment:</span>
+                          <span>{property.downPaymentPercentage}%</span>
+                        </div>
+                      )}
                       {property.downPaymentTerms && (
-                        <p className="text-xs text-muted-foreground">{property.downPaymentTerms}</p>
+                        <div className="flex justify-between items-center">
+                          <span className="text-muted-foreground">Down Payment Terms:</span>
+                          <span>{property.downPaymentTerms}</span>
+                        </div>
+                      )}
+                      {property.financingOptions && (
+                        <div className="flex justify-between items-center">
+                          <span className="text-muted-foreground">Financing Options:</span>
+                          <span>{property.financingOptions}</span>
+                        </div>
                       )}
                     </div>
-                  )}
+                  </div>
+                )}
 
-                  {property.financingOptions && (
-                    <div>
-                      <p className="text-sm text-muted-foreground">Financing Options</p>
-                      <p className="font-semibold">{property.financingOptions}</p>
-                    </div>
-                  )}
-                </div>
-
-                <div className="mt-6 space-y-3">
-                  <LoanCalculatorButton
-                    modelName={property.name}
-                    floorArea={property.lotArea}
-                    price={property.price}
-                    returnUrl={`/lot-only/${property.id}`}
-                    className="w-full"
-                  />
-
-                  <ScheduleViewingButton
-                    propertyName={property.name}
-                    propertyLocation={property.location}
-                    className="w-full"
-                  />
-
-                  <Button variant="outline" className="w-full">
-                    Contact Agent
+                <div className="mt-6 pt-6 border-t border-gray-200">
+                  <Button
+                    onClick={refreshData}
+                    variant="outline"
+                    className="w-full h-11 border-gray-300 hover:bg-gray-50"
+                    disabled={isRefreshing}
+                  >
+                    {isRefreshing ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Refreshing...
+                      </>
+                    ) : (
+                      <>Refresh Property Data</>
+                    )}
                   </Button>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="p-6">
-                <h2 className="text-xl font-semibold mb-4">Property Details</h2>
-
-                <div className="space-y-4">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Project</p>
-                    <p className="font-semibold">{property.project}</p>
-                  </div>
-
-                  <div>
-                    <p className="text-sm text-muted-foreground">Developer</p>
-                    <p className="font-semibold">{property.developer}</p>
-                  </div>
-
-                  {property.zoning && (
-                    <div>
-                      <p className="text-sm text-muted-foreground">Zoning</p>
-                      <p className="font-semibold">{property.zoning}</p>
-                    </div>
-                  )}
                 </div>
               </CardContent>
             </Card>

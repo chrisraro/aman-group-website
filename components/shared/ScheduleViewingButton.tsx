@@ -27,7 +27,7 @@ interface ScheduleViewingButtonProps extends ButtonProps {
   children?: React.ReactNode
 }
 
-export default function ScheduleViewingButton({
+export function ScheduleViewingButton({
   propertyName,
   propertyLocation = "Naga City",
   children = "Schedule a Viewing",
@@ -220,3 +220,6 @@ Time: ${formatTime(selectedStartTime)}
     </Dialog>
   )
 }
+
+// Add a default export that re-exports the named export for backward compatibility
+export default ScheduleViewingButton

@@ -1,13 +1,10 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import {
-  type LotOnlyProperty,
-  getAllLotOnlyProperties,
-  getLotOnlyPropertiesByProject,
-  getLotOnlyPropertyById,
-  getLotOnlyPropertiesByDeveloper,
-} from "@/data/lot-only-properties"
+import type { LotOnlyProperty } from "@/data/lot-only-properties"
+
+// API endpoints
+const LOT_ONLY_API = "/api/lot-only"
 
 export function useLotOnlyProperties() {
   const [properties, setProperties] = useState<LotOnlyProperty[]>([])
@@ -15,14 +12,26 @@ export function useLotOnlyProperties() {
   const [error, setError] = useState<Error | null>(null)
 
   useEffect(() => {
-    try {
-      const data = getAllLotOnlyProperties()
-      setProperties(data)
-      setIsLoading(false)
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error("Failed to fetch lot-only properties"))
-      setIsLoading(false)
+    const fetchProperties = async () => {
+      try {
+        setIsLoading(true)
+        const response = await fetch(LOT_ONLY_API)
+
+        if (!response.ok) {
+          throw new Error(`Failed to fetch: ${response.status} ${response.statusText}`)
+        }
+
+        const data = await response.json()
+        setProperties(data.properties || [])
+        setIsLoading(false)
+      } catch (err) {
+        console.error("Error fetching lot-only properties:", err)
+        setError(err instanceof Error ? err : new Error("Failed to fetch lot-only properties"))
+        setIsLoading(false)
+      }
     }
+
+    fetchProperties()
   }, [])
 
   return { properties, isLoading, error }
@@ -34,20 +43,35 @@ export function useLotOnlyPropertiesByProject(project: string | null) {
   const [error, setError] = useState<Error | null>(null)
 
   useEffect(() => {
-    if (!project) {
-      setProperties([])
-      setIsLoading(false)
-      return
+    const fetchProperties = async () => {
+      if (!project) {
+        setProperties([])
+        setIsLoading(false)
+        return
+      }
+
+      try {
+        setIsLoading(true)
+        const response = await fetch(LOT_ONLY_API)
+
+        if (!response.ok) {
+          throw new Error(`Failed to fetch: ${response.status} ${response.statusText}`)
+        }
+
+        const data = await response.json()
+        const filteredProperties = (data.properties || []).filter(
+          (property: LotOnlyProperty) => property.project === project,
+        )
+        setProperties(filteredProperties)
+        setIsLoading(false)
+      } catch (err) {
+        console.error("Error fetching lot-only properties by project:", err)
+        setError(err instanceof Error ? err : new Error("Failed to fetch lot-only properties"))
+        setIsLoading(false)
+      }
     }
 
-    try {
-      const data = getLotOnlyPropertiesByProject(project)
-      setProperties(data)
-      setIsLoading(false)
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error("Failed to fetch lot-only properties"))
-      setIsLoading(false)
-    }
+    fetchProperties()
   }, [project])
 
   return { properties, isLoading, error }
@@ -59,20 +83,32 @@ export function useLotOnlyProperty(id: string | null) {
   const [error, setError] = useState<Error | null>(null)
 
   useEffect(() => {
-    if (!id) {
-      setProperty(null)
-      setIsLoading(false)
-      return
+    const fetchProperty = async () => {
+      if (!id) {
+        setProperty(null)
+        setIsLoading(false)
+        return
+      }
+
+      try {
+        setIsLoading(true)
+        const response = await fetch(`${LOT_ONLY_API}/${id}`)
+
+        if (!response.ok) {
+          throw new Error(`Failed to fetch: ${response.status} ${response.statusText}`)
+        }
+
+        const data = await response.json()
+        setProperty(data.property || null)
+        setIsLoading(false)
+      } catch (err) {
+        console.error("Error fetching lot-only property:", err)
+        setError(err instanceof Error ? err : new Error("Failed to fetch lot-only property"))
+        setIsLoading(false)
+      }
     }
 
-    try {
-      const data = getLotOnlyPropertyById(id)
-      setProperty(data)
-      setIsLoading(false)
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error("Failed to fetch lot-only property"))
-      setIsLoading(false)
-    }
+    fetchProperty()
   }, [id])
 
   return { property, isLoading, error }
@@ -84,20 +120,35 @@ export function useLotOnlyPropertiesByDeveloper(developer: string | null) {
   const [error, setError] = useState<Error | null>(null)
 
   useEffect(() => {
-    if (!developer) {
-      setProperties([])
-      setIsLoading(false)
-      return
+    const fetchProperties = async () => {
+      if (!developer) {
+        setProperties([])
+        setIsLoading(false)
+        return
+      }
+
+      try {
+        setIsLoading(true)
+        const response = await fetch(LOT_ONLY_API)
+
+        if (!response.ok) {
+          throw new Error(`Failed to fetch: ${response.status} ${response.statusText}`)
+        }
+
+        const data = await response.json()
+        const filteredProperties = (data.properties || []).filter(
+          (property: LotOnlyProperty) => property.developer === developer,
+        )
+        setProperties(filteredProperties)
+        setIsLoading(false)
+      } catch (err) {
+        console.error("Error fetching lot-only properties by developer:", err)
+        setError(err instanceof Error ? err : new Error("Failed to fetch lot-only properties"))
+        setIsLoading(false)
+      }
     }
 
-    try {
-      const data = getLotOnlyPropertiesByDeveloper(developer)
-      setProperties(data)
-      setIsLoading(false)
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error("Failed to fetch lot-only properties"))
-      setIsLoading(false)
-    }
+    fetchProperties()
   }, [developer])
 
   return { properties, isLoading, error }
