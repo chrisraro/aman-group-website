@@ -16,10 +16,30 @@ export default function LotOnlyPropertyPage({ params }: { params: { propertyId: 
   const { property, isLoading, error, refreshData } = useLotOnlyProperty(params.propertyId)
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [lastRefreshed, setLastRefreshed] = useState<Date>(new Date())
+  const [syncSource, setSyncSource] = useState<string>("Loading...")
 
   // Scroll to top on page load
   useEffect(() => {
     window.scrollTo(0, 0)
+  }, [])
+
+  // Check data source on load
+  useEffect(() => {
+    const checkDataSource = async () => {
+      try {
+        // Make a request to check if we're using KV or static data
+        const response = await fetch(`/api/lot-only/source?t=${Date.now()}`)
+        if (response.ok) {
+          const data = await response.json()
+          setSyncSource(data.source || "Unknown")
+        }
+      } catch (err) {
+        console.error("Error checking data source:", err)
+        setSyncSource("Static Data (Fallback)")
+      }
+    }
+
+    checkDataSource()
   }, [])
 
   // Auto-refresh data every 30 seconds if the page is visible
@@ -58,6 +78,18 @@ export default function LotOnlyPropertyPage({ params }: { params: { propertyId: 
     setIsRefreshing(true)
     try {
       await refreshData()
+
+      // Check data source again after refresh
+      try {
+        const response = await fetch(`/api/lot-only/source?t=${Date.now()}`)
+        if (response.ok) {
+          const data = await response.json()
+          setSyncSource(data.source || "Unknown")
+        }
+      } catch (err) {
+        console.error("Error checking data source:", err)
+      }
+
       setLastRefreshed(new Date())
       // Wait a moment to show the loading state
       await new Promise((resolve) => setTimeout(resolve, 500))
@@ -116,13 +148,33 @@ export default function LotOnlyPropertyPage({ params }: { params: { propertyId: 
   return (
     <main className="container mx-auto px-4 py-12">
       <div className="max-w-5xl mx-auto">
+        {/* Data synchronization indicator */}
+        {isRefreshing && (
+          <div className="fixed top-4 right-4 bg-primary text-white px-3 py-2 rounded-md shadow-md flex items-center z-50 animate-pulse">
+            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            <span className="text-sm font-medium">Syncing data...</span>
+          </div>
+        )}
+
         <div className="mb-8">
-          <Button variant="ghost" asChild className="mb-4 hover:bg-gray-100">
-            <Link href="/lot-only">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Properties
-            </Link>
-          </Button>
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+            <Button variant="ghost" asChild className="hover:bg-gray-100">
+              <Link href="/lot-only">
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back to Properties
+              </Link>
+            </Button>
+
+            <div className="flex items-center">
+              <div className="text-sm text-muted-foreground mr-3">
+                <span className="mr-2">Source: {syncSource}</span>
+                <span>Last synced: {lastRefreshed.toLocaleTimeString()}</span>
+              </div>
+              <Button size="sm" variant="outline" onClick={handleRefresh} disabled={isRefreshing} className="h-9 px-3">
+                {isRefreshing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+              </Button>
+            </div>
+          </div>
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
               <h1 className="text-3xl md:text-4xl font-bold">{property.name}</h1>

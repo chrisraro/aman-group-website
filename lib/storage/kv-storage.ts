@@ -1,5 +1,6 @@
 import { modelHouseSeries as initialModelHouseSeries } from "@/data/model-houses"
 import { lotOnlyProperties as initialLotOnlyProperties } from "@/data/lot-only-properties"
+import { kv } from "@vercel/kv"
 
 // Constants
 const MODEL_HOUSES_KEY = "model_houses_data"
@@ -11,35 +12,15 @@ const CURRENT_VERSION = "1.0.0"
 // In-memory fallback when KV is not available
 const inMemoryStorage: Record<string, any> = {}
 
-// Check if Vercel KV is available
-let kvClient: any
-
-try {
-  // Dynamic import to avoid issues in environments where KV is not available
-  const importKV = async () => {
-    try {
-      const { kv } = await import("@vercel/kv")
-      return kv
-    } catch (error) {
-      console.warn("Vercel KV not available, using in-memory storage instead")
-      return null
-    }
-  }
-
-  // Initialize KV client
-  importKV().then((client) => {
-    kvClient = client
-  })
-} catch (error) {
-  console.warn("Vercel KV not available, using in-memory storage instead")
-}
-
 // Helper function to get value from storage
 export async function getValue(key: string): Promise<any> {
   try {
-    if (kvClient) {
-      return await kvClient.get(key)
-    } else {
+    // Try to use Vercel KV (Upstash)
+    try {
+      return await kv.get(key)
+    } catch (kvError) {
+      console.warn("Vercel KV access error:", kvError)
+      // Fall back to in-memory storage
       return inMemoryStorage[key]
     }
   } catch (error) {
@@ -51,9 +32,12 @@ export async function getValue(key: string): Promise<any> {
 // Helper function to set value in storage
 export async function setValue(key: string, value: any): Promise<void> {
   try {
-    if (kvClient) {
-      await kvClient.set(key, value)
-    } else {
+    // Try to use Vercel KV (Upstash)
+    try {
+      await kv.set(key, value)
+    } catch (kvError) {
+      console.warn("Vercel KV access error:", kvError)
+      // Fall back to in-memory storage
       inMemoryStorage[key] = value
     }
   } catch (error) {

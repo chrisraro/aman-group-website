@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { getLotOnlyPropertyById } from "@/data/lot-only-properties"
-import { kv } from "@vercel/kv"
+import { getLotOnlyData } from "@/lib/storage/kv-storage"
 
 export async function GET(request: Request, { params }: { params: { id: string } }) {
   try {
@@ -8,7 +8,7 @@ export async function GET(request: Request, { params }: { params: { id: string }
     let property = null
 
     try {
-      const kvData = await kv.get("lot-only-properties")
+      const kvData = await getLotOnlyData()
       if (kvData && Array.isArray(kvData)) {
         property = kvData.find((p: any) => p.id === params.id)
       }
