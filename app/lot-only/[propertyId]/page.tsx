@@ -1,11 +1,11 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useCallback } from "react"
 import { useLotOnlyProperty } from "@/lib/hooks/useLotOnlyProperties"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Loader2, ArrowLeft, MapPin, Check, AlertCircle, Calendar, Calculator } from "lucide-react"
+import { Loader2, ArrowLeft, MapPin, Check, AlertCircle, Calendar, Calculator, RefreshCw } from "lucide-react"
 import { formatNumberWithCommas } from "@/lib/utils/format-utils"
 import { ScheduleViewingButton } from "@/components/shared/ScheduleViewingButton"
 import { LoanCalculatorButton } from "@/components/loan-calculator-button"
@@ -13,41 +13,67 @@ import Link from "next/link"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 
 export default function LotOnlyPropertyPage({ params }: { params: { propertyId: string } }) {
-  const { property, isLoading, error } = useLotOnlyProperty(params.propertyId)
+  const { property, isLoading, error, refreshData } = useLotOnlyProperty(params.propertyId)
   const [isRefreshing, setIsRefreshing] = useState(false)
+  const [lastRefreshed, setLastRefreshed] = useState<Date>(new Date())
 
   // Scroll to top on page load
   useEffect(() => {
     window.scrollTo(0, 0)
   }, [])
 
+  // Auto-refresh data every 30 seconds if the page is visible
+  useEffect(() => {
+    let intervalId: NodeJS.Timeout | null = null
+
+    if (document.visibilityState === "visible") {
+      intervalId = setInterval(() => {
+        refreshData()
+        setLastRefreshed(new Date())
+      }, 30000) // 30 seconds
+    }
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible" && !intervalId) {
+        intervalId = setInterval(() => {
+          refreshData()
+          setLastRefreshed(new Date())
+        }, 30000)
+      } else if (document.visibilityState === "hidden" && intervalId) {
+        clearInterval(intervalId)
+        intervalId = null
+      }
+    }
+
+    document.addEventListener("visibilitychange", handleVisibilityChange)
+
+    return () => {
+      if (intervalId) clearInterval(intervalId)
+      document.removeEventListener("visibilitychange", handleVisibilityChange)
+    }
+  }, [refreshData])
+
   // Function to manually refresh data
-  const refreshData = async () => {
+  const handleRefresh = useCallback(async () => {
     setIsRefreshing(true)
     try {
-      // Force a cache-busting fetch
-      const response = await fetch(`/api/lot-only/${params.propertyId}?t=${Date.now()}`)
-      if (!response.ok) throw new Error("Failed to refresh data")
-
+      await refreshData()
+      setLastRefreshed(new Date())
       // Wait a moment to show the loading state
       await new Promise((resolve) => setTimeout(resolve, 500))
-
-      // Reload the page to get fresh data
-      window.location.reload()
     } catch (err) {
       console.error("Error refreshing data:", err)
+    } finally {
       setIsRefreshing(false)
     }
-  }
+  }, [refreshData])
 
-  if (isLoading || isRefreshing) {
+  if (isLoading) {
     return (
       <div className="container mx-auto flex items-center justify-center h-[60vh]">
         <div className="text-center">
           <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-          <h2 className="text-xl font-semibold">
-            {isRefreshing ? "Refreshing property data..." : "Loading property details..."}
-          </h2>
+          <h2 className="text-xl font-semibold">Loading property details...</h2>
         </div>
       </div>
     )
@@ -69,14 +95,17 @@ export default function LotOnlyPropertyPage({ params }: { params: { propertyId: 
               Back to Properties
             </Link>
           </Button>
-          <Button onClick={refreshData} disabled={isRefreshing}>
+          <Button onClick={handleRefresh} disabled={isRefreshing}>
             {isRefreshing ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 Refreshing...
               </>
             ) : (
-              <>Refresh Data</>
+              <>
+                <RefreshCw className="mr-2 h-4 w-4" />
+                Refresh Data
+              </>
             )}
           </Button>
         </div>
@@ -156,7 +185,7 @@ export default function LotOnlyPropertyPage({ params }: { params: { propertyId: 
             <div className="aspect-video bg-muted rounded-lg overflow-hidden mb-6">
               {property.imageUrl ? (
                 <img
-                  src={property.imageUrl || "/placeholder.svg"}
+                  src={`${property.imageUrl || "/placeholder.svg"}?t=${Date.now()}`}
                   alt={property.name}
                   className="w-full h-full object-cover"
                 />
@@ -299,8 +328,12 @@ export default function LotOnlyPropertyPage({ params }: { params: { propertyId: 
                 )}
 
                 <div className="mt-6 pt-6 border-t border-gray-200">
+                  <div className="flex justify-between items-center mb-4">
+                    <span className="text-sm text-muted-foreground">Last updated:</span>
+                    <span className="text-sm">{lastRefreshed.toLocaleTimeString()}</span>
+                  </div>
                   <Button
-                    onClick={refreshData}
+                    onClick={handleRefresh}
                     variant="outline"
                     className="w-full h-11 border-gray-300 hover:bg-gray-50"
                     disabled={isRefreshing}
@@ -311,7 +344,10 @@ export default function LotOnlyPropertyPage({ params }: { params: { propertyId: 
                         Refreshing...
                       </>
                     ) : (
-                      <>Refresh Property Data</>
+                      <>
+                        <RefreshCw className="mr-2 h-4 w-4" />
+                        Refresh Property Data
+                      </>
                     )}
                   </Button>
                 </div>

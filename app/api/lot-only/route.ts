@@ -4,7 +4,19 @@ import { getLotOnlyData, saveLotOnlyData, resetLotOnlyData } from "@/lib/storage
 export async function GET(request: Request) {
   try {
     const properties = await getLotOnlyData()
-    return NextResponse.json({ properties })
+
+    // Set cache control headers to prevent caching
+    const headers = new Headers()
+    headers.set("Cache-Control", "no-store, max-age=0")
+    headers.set("Pragma", "no-cache")
+
+    return NextResponse.json(
+      { properties },
+      {
+        headers,
+        status: 200,
+      },
+    )
   } catch (error) {
     console.error("Error fetching lot-only properties:", error)
     return NextResponse.json({ error: "Failed to fetch lot-only properties" }, { status: 500 })
