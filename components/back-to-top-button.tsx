@@ -2,26 +2,14 @@
 
 import { useState, useEffect } from "react"
 import { ArrowUp } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { cn } from "@/lib/utils"
+import { FloatingActionButton } from "@/components/ui/floating-action-button"
 
 export function BackToTopButton() {
   const [isVisible, setIsVisible] = useState(false)
-  const [isMobile, setIsMobile] = useState(false)
 
   useEffect(() => {
-    // Check if mobile on mount and on resize
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768)
-    }
-
-    checkMobile()
-    window.addEventListener("resize", checkMobile)
-
     const toggleVisibility = () => {
-      // Show button when page is scrolled more than 500px on mobile, 1000px on desktop
-      const scrollThreshold = isMobile ? 500 : 1000
-      if (window.scrollY > scrollThreshold) {
+      if (window.pageYOffset > 300) {
         setIsVisible(true)
       } else {
         setIsVisible(false)
@@ -30,11 +18,8 @@ export function BackToTopButton() {
 
     window.addEventListener("scroll", toggleVisibility)
 
-    return () => {
-      window.removeEventListener("scroll", toggleVisibility)
-      window.removeEventListener("resize", checkMobile)
-    }
-  }, [isMobile])
+    return () => window.removeEventListener("scroll", toggleVisibility)
+  }, [])
 
   const scrollToTop = () => {
     window.scrollTo({
@@ -46,15 +31,13 @@ export function BackToTopButton() {
   if (!isVisible) return null
 
   return (
-    <Button
+    <FloatingActionButton
       onClick={scrollToTop}
-      className={cn(
-        "fixed z-50 shadow-md",
-        isMobile ? "bottom-20 right-4 h-12 w-12 rounded-full" : "bottom-8 right-8 h-10 w-10 rounded-full",
-      )}
-      aria-label="Back to top"
-    >
-      <ArrowUp className={cn(isMobile ? "h-6 w-6" : "h-5 w-5")} />
-    </Button>
+      aria-label="Scroll to top"
+      icon={<ArrowUp className="h-5 w-5" />}
+      position="bottom-right"
+      size="default"
+      className="animate-fade-in"
+    />
   )
 }

@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useState, useEffect } from "react"
-import { Menu, X } from "lucide-react"
+import { Menu, X, ChevronDown } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 
 import { cn } from "@/lib/utils"
@@ -14,6 +14,7 @@ export function MainNav() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
   const [hoveredItem, setHoveredItem] = useState<string | null>(null)
+  const [expandedMobileItems, setExpandedMobileItems] = useState<string[]>([])
 
   const navItems = [
     { href: "/", label: "Home" },
@@ -55,10 +56,15 @@ export function MainNav() {
   // Close menu when route changes
   useEffect(() => {
     setIsMenuOpen(false)
+    setExpandedMobileItems([])
   }, [pathname])
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen)
+  }
+
+  const toggleMobileExpand = (label: string) => {
+    setExpandedMobileItems((prev) => (prev.includes(label) ? prev.filter((item) => item !== label) : [...prev, label]))
   }
 
   return (
@@ -68,7 +74,7 @@ export function MainNav() {
       transition={{ duration: 0.3 }}
       className={cn(
         "sticky top-0 z-30 w-full border-b bg-white transition-all duration-300",
-        scrolled ? "shadow-md" : "",
+        scrolled ? "shadow-elevation-1" : "",
       )}
     >
       <div className="container mx-auto px-4">
@@ -117,27 +123,17 @@ export function MainNav() {
                       )}
                     >
                       {item.label}
-                      <motion.svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        className="ml-1 h-4 w-4"
+                      <motion.div
                         animate={{ rotate: hoveredItem === item.label ? 180 : 0 }}
                         transition={{ duration: 0.2 }}
                       >
-                        <path d="m6 9 6 6 6-6" />
-                      </motion.svg>
+                        <ChevronDown className="ml-1 h-4 w-4" />
+                      </motion.div>
                     </motion.button>
                     <AnimatePresence>
                       {hoveredItem === item.label && (
                         <motion.div
-                          className="absolute left-0 mt-1 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50"
+                          className="absolute left-0 mt-1 w-48 rounded-md shadow-elevation-2 bg-white ring-1 ring-black ring-opacity-5 z-50"
                           initial={{ opacity: 0, y: 10, height: 0 }}
                           animate={{ opacity: 1, y: 0, height: "auto" }}
                           exit={{ opacity: 0, y: 10, height: 0 }}
@@ -154,7 +150,7 @@ export function MainNav() {
                                 <Link
                                   href={subItem.href}
                                   className={cn(
-                                    "block px-4 py-2 text-sm hover:bg-gray-100",
+                                    "block px-4 py-2 text-sm hover:bg-gray-100 m3-state-layer",
                                     pathname === subItem.href ? "text-primary font-semibold" : "text-gray-700",
                                   )}
                                 >
@@ -182,7 +178,7 @@ export function MainNav() {
                     <Link
                       href={item.href}
                       className={cn(
-                        "text-sm font-medium transition-colors hover:text-primary relative px-3 py-2 rounded-md",
+                        "text-sm font-medium transition-colors hover:text-primary relative px-3 py-2 rounded-md m3-state-layer",
                         pathname === item.href
                           ? "text-primary font-semibold bg-primary/5"
                           : "text-muted-foreground hover:bg-gray-50",
@@ -249,12 +245,12 @@ export function MainNav() {
             animate={{ x: 0 }}
             exit={{ x: "100%" }}
             transition={{ type: "tween", duration: 0.3 }}
-            className="fixed inset-0 bg-white z-40 md:hidden"
+            className="fixed inset-0 bg-white z-40 md:hidden overflow-y-auto"
             style={{ top: "64px" }}
           >
-            <div className="container mx-auto px-4 py-3 h-full overflow-y-auto">
+            <div className="container mx-auto px-4 py-3 pb-32">
               <motion.div
-                className="space-y-1 pb-32"
+                className="space-y-1"
                 initial="hidden"
                 animate="visible"
                 variants={{
@@ -264,56 +260,62 @@ export function MainNav() {
                 {navItems.map((item) => {
                   // Check if the item has a dropdown
                   if (item.items) {
+                    const isExpanded = expandedMobileItems.includes(item.label)
                     return (
                       <motion.div
                         key={item.label}
-                        className="mb-2"
+                        className="mb-2 rounded-lg overflow-hidden border border-gray-100"
                         variants={{
                           hidden: { opacity: 0, y: 20 },
                           visible: { opacity: 1, y: 0, transition: { duration: 0.3 } },
                         }}
                       >
-                        <div
+                        <button
+                          onClick={() => toggleMobileExpand(item.label)}
                           className={cn(
-                            "flex items-center justify-between py-3 px-4 text-base font-medium rounded-md",
+                            "flex items-center justify-between w-full py-3 px-4 text-base font-medium rounded-t-lg",
                             item.items.some((subItem) => pathname.startsWith(subItem.href))
                               ? "bg-primary/10 text-primary font-semibold"
                               : "text-muted-foreground",
                           )}
                         >
-                          {item.label}
-                        </div>
-                        <motion.div
-                          className="pl-4 mt-1 space-y-1 border-l-2 border-gray-200 ml-4"
-                          initial="hidden"
-                          animate="visible"
-                          variants={{
-                            visible: { transition: { staggerChildren: 0.05, delayChildren: 0.1 } },
-                          }}
-                        >
-                          {item.items.map((subItem) => (
+                          <span>{item.label}</span>
+                          <ChevronDown
+                            className={cn(
+                              "h-5 w-5 transition-transform duration-200",
+                              isExpanded ? "transform rotate-180" : "",
+                            )}
+                          />
+                        </button>
+                        <AnimatePresence>
+                          {isExpanded && (
                             <motion.div
-                              key={subItem.href}
-                              variants={{
-                                hidden: { opacity: 0, x: -10 },
-                                visible: { opacity: 1, x: 0, transition: { duration: 0.3 } },
-                              }}
+                              initial={{ height: 0, opacity: 0 }}
+                              animate={{ height: "auto", opacity: 1 }}
+                              exit={{ height: 0, opacity: 0 }}
+                              transition={{ duration: 0.2 }}
+                              className="overflow-hidden"
                             >
-                              <Link
-                                href={subItem.href}
-                                className={cn(
-                                  "flex items-center py-2 px-4 text-sm rounded-md transition-all",
-                                  pathname === subItem.href
-                                    ? "bg-primary/10 text-primary font-semibold"
-                                    : "text-muted-foreground hover:bg-gray-50",
-                                )}
-                                onClick={() => setIsMenuOpen(false)}
-                              >
-                                {subItem.label}
-                              </Link>
+                              <div className="bg-gray-50 py-2">
+                                {item.items.map((subItem) => (
+                                  <Link
+                                    key={subItem.href}
+                                    href={subItem.href}
+                                    className={cn(
+                                      "flex items-center py-2 px-8 text-sm transition-all",
+                                      pathname === subItem.href
+                                        ? "text-primary font-semibold"
+                                        : "text-muted-foreground",
+                                    )}
+                                    onClick={() => setIsMenuOpen(false)}
+                                  >
+                                    {subItem.label}
+                                  </Link>
+                                ))}
+                              </div>
                             </motion.div>
-                          ))}
-                        </motion.div>
+                          )}
+                        </AnimatePresence>
                       </motion.div>
                     )
                   }

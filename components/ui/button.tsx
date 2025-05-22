@@ -31,10 +31,17 @@ const buttonVariants = cva(
         "fab-small": "h-10 w-10 rounded-full shadow-elevation-3 hover:shadow-elevation-4 active:shadow-elevation-2",
         "fab-large": "h-24 w-24 rounded-full shadow-elevation-3 hover:shadow-elevation-4 active:shadow-elevation-2",
       },
+      position: {
+        default: "",
+        left: "mr-auto",
+        right: "ml-auto",
+        center: "mx-auto",
+      },
     },
     defaultVariants: {
       variant: "default",
       size: "default",
+      position: "default",
     },
   },
 )
@@ -55,7 +62,7 @@ export interface ButtonProps
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant, size, asChild = false, action, calendarEvent, onClick, ...props }, ref) => {
+  ({ className, variant, size, position, asChild = false, action, calendarEvent, onClick, ...props }, ref) => {
     const Comp = asChild ? Slot : "button"
 
     const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
@@ -90,10 +97,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 
     return (
       <Comp
-        className={cn(
-          buttonVariants({ variant, size, className }),
-          "float-right mr-0 ml-auto absolute right-4", // Strong right positioning
-        )}
+        className={cn(buttonVariants({ variant, size, position, className }))}
         onClick={handleClick}
         ref={ref}
         {...props}

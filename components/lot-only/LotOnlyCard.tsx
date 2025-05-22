@@ -13,7 +13,7 @@ interface LotOnlyCardProps {
 
 export function LotOnlyCard({ property }: LotOnlyCardProps) {
   return (
-    <Card className="h-full flex flex-col overflow-hidden transition-all duration-200 hover:shadow-md">
+    <Card className="h-full flex flex-col overflow-hidden transition-all duration-200" isHoverable>
       <div className="aspect-[4/3] relative bg-muted">
         {property.imageUrl ? (
           <img
@@ -50,7 +50,7 @@ export function LotOnlyCard({ property }: LotOnlyCardProps) {
           </Badge>
         </div>
       </div>
-      <CardContent className="flex-grow flex flex-col p-5">
+      <CardContent className="flex-grow flex flex-col p-4 sm:p-5">
         <div className="mb-3">
           <h3 className="card-title mb-1 line-clamp-1">{property.name}</h3>
           <p className="card-subtitle">{property.location}</p>
@@ -67,7 +67,7 @@ export function LotOnlyCard({ property }: LotOnlyCardProps) {
         </div>
         <p className="card-content mb-4 flex-grow line-clamp-3">{property.description}</p>
       </CardContent>
-      <CardFooter className="p-5 pt-0 mt-auto">
+      <CardFooter className="p-4 sm:p-5 pt-0 mt-auto">
         <div className="flex flex-col sm:flex-row w-full gap-3">
           <Button
             asChild

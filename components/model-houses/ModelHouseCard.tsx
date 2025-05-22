@@ -14,17 +14,18 @@ export function ModelHouseCard({ series }: ModelHouseCardProps) {
   const developerColor = isEnjoyRealty ? "#65932D" : "#04009D"
 
   return (
-    <Card className="overflow-hidden hover:shadow-md transition-shadow">
+    <Card className="overflow-hidden transition-all duration-300" isHoverable>
       <div className="relative h-48">
         <Image
           src={series.imageUrl || `/placeholder.svg?height=300&width=400&text=${series.name}`}
           alt={series.name}
           fill
           className="object-cover"
+          sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, 33vw"
         />
       </div>
-      <CardContent className="p-6">
-        <h3 className="text-2xl font-bold mb-2">{series.name}</h3>
+      <CardContent className="p-4 sm:p-6">
+        <h3 className="text-xl sm:text-2xl font-bold mb-2">{series.name}</h3>
         <div className="grid grid-cols-2 gap-2 mb-4">
           <div>
             <p className="text-sm font-medium">{series.loftReady ? "Yes" : "No"}</p>
@@ -36,8 +37,8 @@ export function ModelHouseCard({ series }: ModelHouseCardProps) {
           </div>
         </div>
         <p className="text-muted-foreground mb-6 line-clamp-3">{series.description}</p>
-        <div className="grid grid-cols-2 gap-2">
-          <Link href={`/model-houses/${series.id}`}>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <Link href={`/model-houses/${series.id}`} className="w-full">
             <Button className="w-full" style={{ backgroundColor: developerColor, borderColor: developerColor }}>
               View Units
             </Button>
