@@ -1,57 +1,23 @@
+import { Home, ArrowLeft } from "lucide-react"
 import Link from "next/link"
-import Image from "next/image"
-import { ArrowLeft, Home } from "lucide-react"
-
 import { Button } from "@/components/ui/button"
+import Image from "next/image"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { CanvaEmbed } from "@/components/canva-embed"
-
-// Import the actual getModelHousesByProject function from the data store
 import { getModelHousesByProject } from "@/data/model-houses"
-
-// Project data
-const projects = {
-  "parkview-naga": {
-    name: "Parkview Naga Urban Residence",
-    description: "A premier residential development located in the heart of Naga City.",
-    location: "Naga City, Philippines",
-    propertyType: "Residential Subdivision",
-    lotArea: "120-150 sqm",
-    status: "Ready for Occupancy Available",
-    longDescription:
-      "Parkview Naga Urban Residence is a premier residential development located in the heart of Naga City. Offering modern living spaces with convenient access to essential amenities, it's the perfect place to call home for families and professionals alike. The development features well-designed homes, landscaped parks, and community amenities that promote a balanced lifestyle for residents of all ages. With its strategic location, residents can enjoy the convenience of city living while maintaining a peaceful and comfortable home environment.",
-    amenities: [
-      "24/7 Security",
-      "Community Clubhouse",
-      "Children's Playground",
-      "Landscaped Parks",
-      "Jogging Paths",
-      "Basketball Court",
-    ],
-    features: [
-      "Underground Utilities",
-      "Wide Concrete Roads",
-      "Proper Drainage System",
-      "Street Lights",
-      "Perimeter Fence",
-    ],
-    imageUrl:
-      "https://8ybl2ah7tkcii6tt.public.blob.vercel-storage.com/Project_images/Parkview%20NUR/2025-03-March%20Sales%20Map_NUR_2025-04-01-ZDKIOpOC8r632TSv2dl6zXDVUlLJhR.webp",
-    salesMapCanvaUrl: "https://www.canva.com/design/DAGjj8-RgU8/tQnG_s5M5fzwUdfEKSJS3Q/view?embed",
-    brochureCanvaUrl: "https://www.canva.com/design/DAF-sMYE_Oc/view?embed",
-  },
-}
+import { projects } from "@/data/projects"
+import { YouTubeEmbed } from "@/components/youtube-embed"
 
 export default function ProjectDetailPage({ params }: { params: { projectId: string } }) {
-  const { projectId } = params
-  const project = projects[projectId as keyof typeof projects]
+  const { projectId = "" } = params
+  const project = projects.find((p) => p.id === projectId && p.developer === "Aman Engineering")
 
   if (!project) {
     return <div className="container mx-auto px-4 py-12">Project not found</div>
   }
 
-  // Get actual model houses for this project
-  const modelHouses = getModelHousesByProject("Parkview Naga Urban Residence")
+  // Get model houses for this project
+  const modelHouses = getModelHousesByProject(project.name)
 
   return (
     <div className="container mx-auto px-4 py-12">
@@ -63,7 +29,7 @@ export default function ProjectDetailPage({ params }: { params: { projectId: str
         </Link>
         <span className="mx-2 text-muted-foreground">/</span>
         <Link href="/aman-engineering" className="text-muted-foreground hover:text-primary">
-          Aman Engineering Enterprise
+          Aman Engineering & Development Corporation
         </Link>
         <span className="mx-2 text-muted-foreground">/</span>
         <span className="font-medium">{project.name}</span>
@@ -142,12 +108,12 @@ export default function ProjectDetailPage({ params }: { params: { projectId: str
               <div className="bg-gray-50 rounded-lg p-6 border">
                 <h3 className="text-lg font-semibold mb-4">Interested in this project?</h3>
                 <p className="text-sm text-muted-foreground mb-4">
-                  Contact us to learn more about {project.name} and schedule a site visit.
+                  Contact us to learn more about {project.name} and watch our project video below.
                 </p>
                 <Button className="w-full bg-[#04009D] hover:bg-[#04009D]/90 mb-4">Schedule a Visit</Button>
-                <CanvaEmbed
-                  canvaDesignUrl={project.brochureCanvaUrl}
-                  title={`${project.name} Brochure`}
+                <YouTubeEmbed
+                  videoId={project.youtubeVideoId || "dQw4w9WgXcQ"}
+                  title={`${project.name} Project Video`}
                   primaryColor="#04009D"
                   height="200px"
                 />
@@ -164,7 +130,7 @@ export default function ProjectDetailPage({ params }: { params: { projectId: str
                 <ul className="space-y-3">
                   {project.amenities.map((amenity, index) => (
                     <li key={index} className="flex items-center">
-                      <div className="h-2 w-2 rounded-full bg-[#FE0000] mr-3"></div>
+                      <div className="h-2 w-2 rounded-full bg-[#FFE400] mr-3"></div>
                       {amenity}
                     </li>
                   ))}
@@ -178,7 +144,7 @@ export default function ProjectDetailPage({ params }: { params: { projectId: str
                 <ul className="space-y-3">
                   {project.features.map((feature, index) => (
                     <li key={index} className="flex items-center">
-                      <div className="h-2 w-2 rounded-full bg-[#FE0000] mr-3"></div>
+                      <div className="h-2 w-2 rounded-full bg-[#FFE400] mr-3"></div>
                       {feature}
                     </li>
                   ))}

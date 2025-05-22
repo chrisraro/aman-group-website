@@ -6,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { CanvaEmbed } from "@/components/canva-embed"
 import { getModelHousesByProject } from "@/data/model-houses"
 import { projects } from "@/data/projects"
+import { YouTubeEmbed } from "@/components/youtube-embed"
 
 export default function ProjectDetailPage({ params }: { params: { projectId: string } }) {
   const { projectId = "" } = params
@@ -107,12 +108,12 @@ export default function ProjectDetailPage({ params }: { params: { projectId: str
               <div className="bg-gray-50 rounded-lg p-6 border">
                 <h3 className="text-lg font-semibold mb-4">Interested in this project?</h3>
                 <p className="text-sm text-muted-foreground mb-4">
-                  Contact us to learn more about {project.name} and schedule a site visit.
+                  Contact us to learn more about {project.name} and watch our project video below.
                 </p>
                 <Button className="w-full bg-[#65932D] hover:bg-[#65932D]/90 mb-4">Schedule a Visit</Button>
-                <CanvaEmbed
-                  canvaDesignUrl={project.brochureCanvaUrl}
-                  title={`${project.name} Brochure`}
+                <YouTubeEmbed
+                  videoId={project.youtubeVideoId || "dQw4w9WgXcQ"}
+                  title={`${project.name} Project Video`}
                   primaryColor="#65932D"
                   height="200px"
                 />

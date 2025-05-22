@@ -9,6 +9,7 @@ import { ArrowRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { getBrokerageFromParams } from "@/lib/brokerage-links"
 import { storeBrokerageInfo } from "@/lib/storage-utils"
+import { YouTubeEmbed } from "@/components/youtube-embed"
 
 // Developer data
 const developers = [
@@ -178,6 +179,35 @@ export default function Home() {
             <p className="text-sm md:text-base text-muted-foreground">
               Flexible payment terms and financing options to make homeownership accessible.
             </p>
+          </div>
+        </div>
+      </section>
+
+      {/* Company Profile Video Section */}
+      <section className="py-12 md:py-16 bg-gray-50 rounded-xl mt-12 md:mt-16">
+        <div className="container mx-auto px-4">
+          <div className="max-w-5xl mx-auto">
+            <div className="text-center mb-8 md:mb-10">
+              <h2 className="text-2xl md:text-3xl font-bold mb-4">Our Company Profile</h2>
+              <p className="text-base md:text-lg text-muted-foreground max-w-3xl mx-auto">
+                Discover the story of Aman Group of Companies and our commitment to building quality homes and
+                communities in the Bicol Region. Watch our company profile video to learn more about our vision,
+                mission, and values.
+              </p>
+            </div>
+
+            <div className="bg-white rounded-lg shadow-md overflow-hidden">
+              <YouTubeEmbed
+                videoId="tZsoxfR2TbY"
+                title="Aman Group of Companies Profile"
+                height="h-[250px] md:h-[450px]"
+                autoplay={true}
+                muted={true}
+                loop={true}
+                showControls={true}
+                className="mb-0"
+              />
+            </div>
           </div>
         </div>
       </section>

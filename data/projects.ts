@@ -16,6 +16,7 @@ export const projects = [
       "https://8ybl2ah7tkcii6tt.public.blob.vercel-storage.com/Project_images/Palm%20Village/Palm%20Logo%20with%20address-XwMEbdcNRDx5PEhg99DIfr0HINt6TY.jpg",
     salesMapCanvaUrl: "https://www.canva.com/design/DAGjkJ2qYbc/CDiN9LHFwk0YW9meTDjdUg/view?embed",
     brochureCanvaUrl: "https://www.canva.com/design/DAF-sMYE_Oc/view?embed",
+    youtubeVideoId: "dQw4w9WgXcQ", // Example YouTube video ID
     developer: "Enjoy Realty",
     developerColor: "#65932D",
   },
@@ -42,6 +43,7 @@ export const projects = [
       "https://8ybl2ah7tkcii6tt.public.blob.vercel-storage.com/Project_images/Parkview%20NUR/parkview%20Naga%20Urban%20residences%20new%20logo-L7bsoG9mPT3iPBF5pMezIOAJXxH4Oo.jpg",
     salesMapCanvaUrl: "https://www.canva.com/design/DAGjj8-RgU8/tQnG_s5M5fzwUdfEKSJS3Q/view?embed",
     brochureCanvaUrl: "https://www.canva.com/design/DAF-sMYE_Oc/view?embed",
+    youtubeVideoId: "dQw4w9WgXcQ", // Example YouTube video ID
     developer: "Aman Engineering",
     developerColor: "#04009D",
   },
@@ -75,6 +77,7 @@ export const projects = [
       "https://8ybl2ah7tkcii6tt.public.blob.vercel-storage.com/Project_images/Haciendas/hdn%202-QC0xhtuzso5HOf0sAr1S6P2MDXIJa7.jpg",
     salesMapCanvaUrl: "https://www.canva.com/design/DAGkG9YIBBs/KRql_quyoRbqNMcPl8qUcg/view?embed",
     brochureCanvaUrl: "https://www.canva.com/design/DAF-sMYE_Oc/view?embed",
+    youtubeVideoId: "dQw4w9WgXcQ", // Example YouTube video ID
     developer: "Enjoy Realty",
     developerColor: "#65932D",
   },
@@ -101,6 +104,7 @@ export const projects = [
       "https://8ybl2ah7tkcii6tt.public.blob.vercel-storage.com/Project_images/Parkview%20Executive/Logo_PET_Transparent_Back-zZOkOK4fHnC03bfEMvKvw01Czhht7f.png",
     salesMapCanvaUrl: "https://www.canva.com/design/DAGkGo_Psi8/7Mq0yLNVNXu5kd9pwtGdFw/view?embed",
     brochureCanvaUrl: "https://www.canva.com/design/DAF-sMYE_Oc/view?embed",
+    youtubeVideoId: "dQw4w9WgXcQ", // Example YouTube video ID
     developer: "Enjoy Realty",
     developerColor: "#65932D",
   },
