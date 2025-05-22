@@ -48,7 +48,7 @@ export function YouTubeEmbed({
   const youtubeWatchUrl = `https://www.youtube.com/watch?v=${videoId}`
 
   return (
-    <div className={cn("flex flex-col items-center pb-4 md:pb-6", className)}>
+    <div className={cn("flex flex-col items-center py-4 md:py-6", className)}>
       <div className="w-full max-w-4xl mx-auto mb-4 md:mb-6 border rounded-lg overflow-hidden bg-white relative">
         {isLoading && (
           <div className="absolute inset-0 flex items-center justify-center bg-gray-50">
