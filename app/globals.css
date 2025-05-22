@@ -5,216 +5,298 @@
 @layer base {
   :root {
     --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-
+    --foreground: 240 10% 3.9%;
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-
+    --card-foreground: 240 10% 3.9%;
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-
-    --primary: 142.1 76.2% 36.3%;
-    --primary-foreground: 355.7 100% 97.3%;
-
-    --secondary: 240 3.7% 15.9%;
+    --popover-foreground: 240 10% 3.9%;
+    --primary: 142 76% 36%;
+    --primary-foreground: 355 100% 100%;
+    --primary-container: 142 70% 90%;
+    --primary-container-foreground: 142 76% 10%;
+    --secondary: 240 5.9% 10%;
     --secondary-foreground: 0 0% 98%;
-
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-
+    --secondary-container: 240 5.9% 90%;
+    --secondary-container-foreground: 240 5.9% 10%;
+    --tertiary: 261 51% 48%;
+    --tertiary-foreground: 0 0% 100%;
+    --tertiary-container: 261 51% 90%;
+    --tertiary-container-foreground: 261 51% 10%;
+    --muted: 240 4.8% 95.9%;
+    --muted-foreground: 240 3.8% 46.1%;
+    --accent: 240 4.8% 95.9%;
+    --accent-foreground: 240 5.9% 10%;
     --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive-foreground: 0 0% 98%;
+    --destructive-container: 0 84.2% 90%;
+    --destructive-container-foreground: 0 84.2% 40%;
+    --border: 240 5.9% 90%;
+    --input: 240 5.9% 90%;
+    --ring: 142 76% 36%;
+    --surface: 0 0% 100%;
+    --surface-foreground: 240 10% 3.9%;
+    --surface-variant: 240 4.8% 95.9%;
+    --surface-variant-foreground: 240 5% 34%;
+    --outline: 240 5% 64%;
+    --outline-variant: 240 5% 84%;
+    --shadow: 240 3.7% 15.9%;
+    --inverse-surface: 240 10% 3.9%;
+    --inverse-on-surface: 0 0% 100%;
+    --inverse-primary: 142 76% 80%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --radius-xs: 0.25rem;
+    --radius-sm: 0.5rem;
+    --radius-md: 0.75rem;
+    --radius-lg: 1rem;
+    --radius-2xl: 1.5rem;
+    --radius-3xl: 2rem;
 
-    --radius: 0.5rem;
+    --elevation-1: 0 1px 2px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.1);
+    --elevation-2: 0 2px 4px rgba(0, 0, 0, 0.05), 0 2px 6px rgba(0, 0, 0, 0.1);
+    --elevation-3: 0 4px 8px rgba(0, 0, 0, 0.05), 0 4px 12px rgba(0, 0, 0, 0.1);
+    --elevation-4: 0 8px 16px rgba(0, 0, 0, 0.05), 0 8px 24px rgba(0, 0, 0, 0.1);
+    --elevation-5: 0 16px 32px rgba(0, 0, 0, 0.05), 0 16px 48px rgba(0, 0, 0, 0.1);
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-
-    --primary: 142.1 70.6% 45.3%;
-    --primary-foreground: 144.9 80.4% 10%;
-
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --background: 240 10% 3.9%;
+    --foreground: 0 0% 98%;
+    --card: 240 10% 3.9%;
+    --card-foreground: 0 0% 98%;
+    --popover: 240 10% 3.9%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 142 76% 36%;
+    --primary-foreground: 355 100% 100%;
+    --primary-container: 142 40% 20%;
+    --primary-container-foreground: 142 76% 90%;
+    --secondary: 240 3.7% 15.9%;
+    --secondary-foreground: 0 0% 98%;
+    --secondary-container: 240 3.7% 25.9%;
+    --secondary-container-foreground: 0 0% 98%;
+    --tertiary: 261 51% 48%;
+    --tertiary-foreground: 0 0% 100%;
+    --tertiary-container: 261 51% 30%;
+    --tertiary-container-foreground: 261 51% 90%;
+    --muted: 240 3.7% 15.9%;
+    --muted-foreground: 240 5% 64.9%;
+    --accent: 240 3.7% 15.9%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --destructive-container: 0 84.2% 40%;
+    --destructive-container-foreground: 0 84.2% 90%;
+    --border: 240 3.7% 15.9%;
+    --input: 240 3.7% 15.9%;
+    --ring: 142 76% 36%;
+    --surface: 240 10% 3.9%;
+    --surface-foreground: 0 0% 98%;
+    --surface-variant: 240 3.7% 15.9%;
+    --surface-variant-foreground: 240 5% 84.9%;
+    --outline: 240 5% 64%;
+    --outline-variant: 240 5% 34%;
+    --shadow: 240 3.7% 15.9%;
+    --inverse-surface: 0 0% 98%;
+    --inverse-on-surface: 240 10% 3.9%;
+    --inverse-primary: 142 76% 36%;
   }
+}
 
-  html {
-    scroll-behavior: smooth;
-  }
-
-  /* For users who prefer reduced motion */
-  @media (prefers-reduced-motion: reduce) {
-    html {
-      scroll-behavior: auto;
-    }
-  }
-
-  /* Rest of your existing base styles */
+@layer base {
   * {
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground font-body;
-    -webkit-tap-highlight-color: transparent;
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
   }
-
-  /* Typography System */
-  /* Headings */
   h1,
   h2,
   h3,
   h4,
   h5,
   h6 {
-    @apply font-heading font-bold leading-tight;
+    @apply font-heading;
   }
-
-  h1 {
-    @apply text-2xl md:text-4xl;
-  }
-
-  h2 {
-    @apply text-xl md:text-3xl;
-  }
-
-  h3 {
-    @apply text-lg md:text-2xl;
-  }
-
-  h4 {
-    @apply text-base md:text-xl;
-  }
-
-  h5 {
-    @apply text-sm md:text-lg;
-  }
-
-  h6 {
-    @apply text-xs md:text-base;
-  }
-
-  /* Body Text */
   p,
   span,
-  li,
+  div,
   a,
   button,
   input,
+  textarea,
   select,
-  textarea {
+  li {
     @apply font-body;
-  }
-
-  p {
-    @apply leading-relaxed;
-  }
-
-  /* Card Typography */
-  .card-title {
-    @apply font-heading font-semibold text-lg md:text-xl;
-  }
-
-  .card-subtitle {
-    @apply font-body text-sm text-muted-foreground;
-  }
-
-  .card-content {
-    @apply font-body text-sm md:text-base;
-  }
-
-  .card-meta {
-    @apply font-body text-xs uppercase tracking-wide text-muted-foreground;
-  }
-
-  .card-price {
-    @apply font-body font-medium text-sm md:text-base;
-  }
-
-  /* Button Typography */
-  .btn {
-    @apply font-body font-medium;
-  }
-
-  .btn-primary {
-    @apply text-white;
-  }
-
-  .btn-secondary {
-    @apply text-secondary-foreground;
-  }
-
-  /* Badge Typography */
-  .badge {
-    @apply font-body text-xs font-medium;
-  }
-
-  /* Form Typography */
-  .form-label {
-    @apply font-body text-sm font-medium;
-  }
-
-  .form-input {
-    @apply font-body text-base;
-  }
-
-  .form-helper {
-    @apply font-body text-xs text-muted-foreground;
-  }
-
-  /* Navigation Typography */
-  .nav-link {
-    @apply font-body font-medium;
-  }
-
-  .nav-heading {
-    @apply font-heading font-bold;
-  }
-
-  /* Footer Typography */
-  .footer-heading {
-    @apply font-heading font-semibold text-base;
-  }
-
-  .footer-text {
-    @apply font-body text-sm;
   }
 }
 
+/* Material 3 Design System */
+.m3-transition {
+  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow,
+    transform, filter, backdrop-filter;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 200ms;
+}
+
+.m3-state-layer {
+  position: relative;
+  overflow: hidden;
+}
+
+.m3-state-layer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-color: currentColor;
+  opacity: 0;
+  transition: opacity 200ms;
+  pointer-events: none;
+}
+
+.m3-state-layer:hover::after {
+  opacity: 0.08;
+}
+
+.m3-state-layer:focus-visible::after {
+  opacity: 0.12;
+}
+
+.m3-state-layer:active::after {
+  opacity: 0.16;
+}
+
+/* Material 3 Elevation */
+.shadow-elevation-1 {
+  box-shadow: var(--elevation-1);
+}
+
+.shadow-elevation-2 {
+  box-shadow: var(--elevation-2);
+}
+
+.shadow-elevation-3 {
+  box-shadow: var(--elevation-3);
+}
+
+.shadow-elevation-4 {
+  box-shadow: var(--elevation-4);
+}
+
+.shadow-elevation-5 {
+  box-shadow: var(--elevation-5);
+}
+
+@layer components {
+  .m3-card {
+    @apply rounded-lg overflow-hidden m3-transition;
+  }
+
+  .m3-card-elevated {
+    @apply m3-card bg-card text-card-foreground shadow-elevation-1 hover:shadow-elevation-2;
+  }
+
+  .m3-card-filled {
+    @apply m3-card bg-surface-variant text-surface-variant-foreground;
+  }
+
+  .m3-card-outlined {
+    @apply m3-card bg-card text-card-foreground border border-outline;
+  }
+
+  .m3-headline-large {
+    @apply text-4xl font-heading font-medium leading-tight tracking-tight my-2;
+  }
+
+  .m3-headline-medium {
+    @apply text-3xl font-heading font-medium leading-tight tracking-tight my-2;
+  }
+
+  .m3-headline-small {
+    @apply text-2xl font-heading font-medium leading-tight tracking-tight my-2;
+  }
+
+  .m3-title-large {
+    @apply text-xl font-heading font-medium leading-tight my-2;
+  }
+
+  .m3-title-medium {
+    @apply text-lg font-heading font-medium leading-tight my-2;
+  }
+
+  .m3-title-small {
+    @apply text-base font-heading font-medium leading-tight my-2;
+  }
+
+  .m3-body-large {
+    @apply text-base font-body leading-normal my-2;
+  }
+
+  .m3-body-medium {
+    @apply text-sm font-body leading-normal my-2;
+  }
+
+  .m3-body-small {
+    @apply text-xs font-body leading-normal my-2;
+  }
+
+  .m3-badge {
+    @apply absolute -top-1 -right-1 min-w-[18px] h-[18px] rounded-full bg-destructive text-destructive-foreground text-xs flex items-center justify-center px-1;
+  }
+
+  .m3-menu {
+    @apply bg-surface rounded-md shadow-elevation-2 p-1 min-w-[112px] max-w-[280px];
+  }
+
+  .m3-menu-item {
+    @apply flex items-center px-3 py-2 text-sm rounded-sm m3-state-layer cursor-pointer;
+  }
+
+  .m3-divider {
+    @apply h-px w-full bg-outline-variant my-1;
+  }
+
+  .m3-fab {
+    @apply rounded-full flex items-center justify-center shadow-elevation-3 hover:shadow-elevation-4 m3-state-layer m3-transition;
+  }
+
+  .m3-fab-large {
+    @apply m3-fab w-24 h-24;
+  }
+
+  .m3-fab-medium {
+    @apply m3-fab w-16 h-16;
+  }
+
+  .m3-fab-small {
+    @apply m3-fab w-10 h-10;
+  }
+
+  .m3-chip {
+    @apply inline-flex items-center rounded-full px-3 py-1 text-sm m3-state-layer m3-transition;
+  }
+
+  .m3-chip-filled {
+    @apply m3-chip bg-surface-variant text-surface-variant-foreground;
+  }
+
+  .m3-chip-outlined {
+    @apply m3-chip border border-outline bg-transparent;
+  }
+
+  .m3-chip-elevated {
+    @apply m3-chip bg-surface text-surface-foreground shadow-elevation-1;
+  }
+
+  .m3-snackbar {
+    @apply fixed bottom-4 left-1/2 -translate-x-1/2 flex items-center bg-inverse-surface text-inverse-on-surface rounded-md shadow-elevation-3 px-4 py-3 z-50 m3-transition;
+  }
+
+  .m3-snackbar-action {
+    @apply ml-4 text-inverse-primary font-medium;
+  }
+}
+
+/* Existing CSS from the original file */
 @keyframes logoReveal {
   0% {
     transform: scale(0.8);
@@ -246,18 +328,151 @@
   }
 }
 
-/* Remove any PWA-specific styles like these if they exist */
-.splash-screen-bg,
-.logo-reveal,
-.fade-up,
-.shimmer {
-  /* Remove these styles */
-}
-
 @layer utilities {
   .text-balance {
     text-wrap: balance;
   }
+}
+
+/* Hide scrollbar for Chrome, Safari and Opera */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Hide scrollbar for IE, Edge and Firefox */
+.no-scrollbar {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
+
+/* Safe area insets for modern mobile browsers */
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0);
+}
+
+.safe-top {
+  padding-top: env(safe-area-inset-top, 0);
+}
+
+/* Typography System */
+/* Headings */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  @apply font-heading font-bold leading-tight;
+}
+
+h1 {
+  @apply text-2xl md:text-4xl;
+}
+
+h2 {
+  @apply text-xl md:text-3xl;
+}
+
+h3 {
+  @apply text-lg md:text-2xl;
+}
+
+h4 {
+  @apply text-base md:text-xl;
+}
+
+h5 {
+  @apply text-sm md:text-lg;
+}
+
+h6 {
+  @apply text-xs md:text-base;
+}
+
+/* Body Text */
+p,
+span,
+li,
+a,
+button,
+input,
+select,
+textarea {
+  @apply font-body;
+}
+
+p {
+  @apply leading-relaxed;
+}
+
+/* Card Typography */
+.card-title {
+  @apply font-heading font-semibold text-lg md:text-xl;
+}
+
+.card-subtitle {
+  @apply font-body text-sm text-muted-foreground;
+}
+
+.card-content {
+  @apply font-body text-sm md:text-base;
+}
+
+.card-meta {
+  @apply font-body text-xs uppercase tracking-wide text-muted-foreground;
+}
+
+.card-price {
+  @apply font-body font-medium text-sm md:text-base;
+}
+
+/* Button Typography */
+.btn {
+  @apply font-body font-medium;
+}
+
+.btn-primary {
+  @apply text-white;
+}
+
+.btn-secondary {
+  @apply text-secondary-foreground;
+}
+
+/* Badge Typography */
+.badge {
+  @apply font-body text-xs font-medium;
+}
+
+/* Form Typography */
+.form-label {
+  @apply font-body text-sm font-medium;
+}
+
+.form-input {
+  @apply font-body text-base;
+}
+
+.form-helper {
+  @apply font-body text-xs text-muted-foreground;
+}
+
+/* Navigation Typography */
+.nav-link {
+  @apply font-body font-medium;
+}
+
+.nav-heading {
+  @apply font-heading font-bold;
+}
+
+/* Footer Typography */
+.footer-heading {
+  @apply font-heading font-semibold text-base;
+}
+
+.footer-text {
+  @apply font-body text-sm;
 }
 
 /* Improved mobile touch targets */
@@ -294,323 +509,4 @@ textarea {
 
 .mobile-mx {
   @apply mx-4 md:mx-6;
-}
-
-/* Hide scrollbar for Chrome, Safari and Opera */
-.no-scrollbar::-webkit-scrollbar {
-  display: none;
-}
-
-/* Hide scrollbar for IE, Edge and Firefox */
-.no-scrollbar {
-  -ms-overflow-style: none; /* IE and Edge */
-  scrollbar-width: none; /* Firefox */
-}
-
-/* Improved tab transitions */
-[role="tab"] {
-  transition: all 0.2s ease;
-}
-
-[role="tab"][data-state="active"] {
-  transition: all 0.2s ease;
-}
-
-/* Tab container improvements */
-[role="tablist"] {
-  position: relative;
-  display: flex;
-  gap: 2px;
-}
-
-/* Tab animations and styling */
-.tabs-animated [data-state="active"] {
-  animation: tabFadeIn 0.3s ease forwards;
-  position: relative;
-}
-
-.tabs-animated [data-state="active"]::after {
-  content: "";
-  position: absolute;
-  bottom: -2px;
-  left: 0;
-  width: 100%;
-  height: 2px;
-  background-color: currentColor;
-  animation: tabUnderline 0.3s ease forwards;
-}
-
-@keyframes tabFadeIn {
-  from {
-    opacity: 0.7;
-    transform: translateY(2px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes tabUnderline {
-  from {
-    transform: scaleX(0);
-  }
-  to {
-    transform: scaleX(1);
-  }
-}
-
-/* Responsive tabs improvements */
-@media (max-width: 640px) {
-  [role="tablist"] {
-    overflow-x: auto;
-    scrollbar-width: none; /* Firefox */
-    -ms-overflow-style: none; /* IE and Edge */
-    padding-bottom: 5px;
-    gap: 1px;
-    flex-wrap: nowrap;
-    justify-content: flex-start;
-    padding: 0.5rem;
-  }
-
-  [role="tablist"]::-webkit-scrollbar {
-    display: none;
-  }
-
-  [role="tab"] {
-    white-space: nowrap;
-    flex-shrink: 0;
-    font-size: 0.75rem;
-    padding-left: 0.75rem;
-    padding-right: 0.75rem;
-    min-width: auto;
-    height: auto;
-    padding-top: 0.5rem;
-    padding-bottom: 0.5rem;
-  }
-}
-
-/* Improve tab display on mobile devices */
-.mobile-tabs [role="tab"] {
-  font-size: 0.75rem; /* Smaller font on mobile */
-  padding: 0.5rem 0.75rem;
-  min-width: auto;
-  white-space: nowrap;
-  flex-shrink: 0;
-  height: auto;
-}
-
-/* Ensure tab text doesn't wrap and shows ellipsis if needed */
-[role="tab"] {
-  text-overflow: ellipsis;
-  overflow: hidden;
-  white-space: nowrap;
-}
-
-/* Improve tab scrolling behavior */
-.mobile-tabs {
-  -webkit-overflow-scrolling: touch;
-  scroll-behavior: smooth;
-  scroll-snap-type: x mandatory;
-  padding: 0.25rem;
-}
-
-.mobile-tabs [role="tab"] {
-  scroll-snap-align: start;
-}
-
-/* Make active tabs more visible on mobile */
-.mobile-tabs [role="tab"][data-state="active"] {
-  font-weight: 600;
-  transform: scale(1.05);
-}
-
-/* Responsive table styles */
-@media (max-width: 640px) {
-  /* Make the amortization schedule table more mobile-friendly */
-  .overflow-x-auto {
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: thin;
-  }
-
-  /* Adjust font size for better readability on small screens */
-  .grid.grid-cols-5 {
-    font-size: 0.75rem;
-  }
-
-  /* Add some padding to ensure content is readable */
-  .grid.grid-cols-5 > div {
-    padding: 0.5rem 0.25rem;
-    word-break: break-word;
-  }
-
-  /* Ensure the header is sticky when scrolling horizontally */
-  .grid.grid-cols-5.bg-muted {
-    position: sticky;
-    top: 0;
-    z-index: 10;
-  }
-}
-
-/* Improved scrollbar for better UX */
-.overflow-x-auto::-webkit-scrollbar {
-  height: 6px;
-}
-
-.overflow-x-auto::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 3px;
-}
-
-.overflow-x-auto::-webkit-scrollbar-thumb {
-  background: #888;
-  border-radius: 3px;
-}
-
-.overflow-x-auto::-webkit-scrollbar-thumb:hover {
-  background: #555;
-}
-
-/* Safe area insets for modern mobile browsers */
-.safe-bottom {
-  padding-bottom: env(safe-area-inset-bottom, 0);
-}
-
-.safe-top {
-  padding-top: env(safe-area-inset-top, 0);
-}
-
-/* Mobile-friendly form elements */
-@media (max-width: 640px) {
-  input,
-  select,
-  textarea {
-    font-size: 16px !important; /* Prevents iOS zoom on focus */
-  }
-
-  .form-group {
-    margin-bottom: 1rem;
-  }
-
-  .form-label {
-    margin-bottom: 0.5rem;
-    display: block;
-  }
-}
-
-/* Improved mobile card layouts */
-@media (max-width: 640px) {
-  .card-mobile-friendly {
-    border-radius: 0.75rem;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  }
-
-  .card-mobile-friendly .card-header {
-    padding: 1rem;
-  }
-
-  .card-mobile-friendly .card-content {
-    padding: 0 1rem 1rem 1rem;
-  }
-}
-
-/* Mobile-friendly buttons */
-.btn-mobile-friendly {
-  min-height: 44px;
-  padding: 0.5rem 1rem;
-  border-radius: 0.5rem;
-  font-weight: 500;
-  touch-action: manipulation;
-}
-
-/* Bottom navigation specific styles */
-.bottom-nav-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 0.5rem 0;
-  min-width: 60px;
-}
-
-.bottom-nav-item-icon {
-  margin-bottom: 0.25rem;
-}
-
-.bottom-nav-item-label {
-  font-size: 0.65rem;
-  text-align: center;
-}
-
-@layer components {
-  .mobile-touch-target {
-    @apply min-h-[48px];
-  }
-}
-
-/* PWA-specific animations */
-@keyframes fade-in {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-.animate-fade-in {
-  animation: fade-in 0.5s ease-in-out forwards;
-}
-
-@keyframes pulse {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.5;
-  }
-}
-
-.animate-pulse {
-  animation: pulse 1.5s ease-in-out infinite;
-}
-
-/* PWA touch improvements */
-@media (display-mode: standalone) {
-  /* Increase spacing for standalone mode */
-  .container {
-    padding-left: 1rem;
-    padding-right: 1rem;
-  }
-
-  /* Ensure content is not hidden under the status bar on iOS */
-  body {
-    padding-top: env(safe-area-inset-top);
-    padding-bottom: env(safe-area-inset-bottom);
-    padding-left: env(safe-area-inset-left);
-    padding-right: env(safe-area-inset-right);
-  }
-
-  /* Improve touch targets in standalone mode */
-  button,
-  a,
-  input,
-  select,
-  textarea {
-    min-height: 44px;
-    min-width: 44px;
-  }
-}
-
-/* Hide scrollbar in PWA mode */
-@media (display-mode: standalone) {
-  ::-webkit-scrollbar {
-    display: none;
-  }
-
-  * {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-  }
 }

@@ -111,7 +111,7 @@ export default function LotOnlyAdminPage() {
 
   if (error) {
     return (
-      <div className="container mx-auto py-8">
+      <div className="container mx-auto py-8 px-4">
         <Alert variant="destructive" className="mb-6">
           <AlertTitle>Error loading data</AlertTitle>
           <AlertDescription>
@@ -140,17 +140,15 @@ export default function LotOnlyAdminPage() {
   )
 
   return (
-    <div className="container mx-auto">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">Lot Only Properties Admin</h1>
-        <div className="flex gap-4">
-          <Button asChild>
-            <Link href="/admin/lot-only/new">
-              <PlusCircle className="mr-2 h-4 w-4" />
-              Add New Property
-            </Link>
-          </Button>
-        </div>
+    <div className="container mx-auto px-4 py-6 md:py-8">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+        <h1 className="text-2xl md:text-3xl font-bold">Lot Only Properties Admin</h1>
+        <Button asChild size="sm" className="w-full sm:w-auto">
+          <Link href="/admin/lot-only/new">
+            <PlusCircle className="mr-2 h-4 w-4" />
+            Add New Property
+          </Link>
+        </Button>
       </div>
 
       <Card className="mb-6">
@@ -178,12 +176,17 @@ export default function LotOnlyAdminPage() {
             </div>
           </div>
         </CardContent>
-        <CardFooter className="flex justify-between">
-          <Button variant="outline" onClick={() => setResetDialogOpen(true)} disabled={isProcessing}>
+        <CardFooter className="flex flex-col sm:flex-row justify-between gap-2">
+          <Button
+            variant="outline"
+            onClick={() => setResetDialogOpen(true)}
+            disabled={isProcessing}
+            className="w-full sm:w-auto"
+          >
             {isProcessing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
             Reset to Default Data
           </Button>
-          <Button variant="secondary" onClick={handleRefreshData} disabled={isProcessing}>
+          <Button variant="secondary" onClick={handleRefreshData} disabled={isProcessing} className="w-full sm:w-auto">
             {isProcessing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Database className="mr-2 h-4 w-4" />}
             Refresh Data
           </Button>
@@ -192,15 +195,15 @@ export default function LotOnlyAdminPage() {
 
       {Object.entries(propertiesByDeveloper).map(([developer, developerProperties]) => (
         <div key={developer} className="mb-8">
-          <h2 className="text-2xl font-bold mb-4">{developer}</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <h2 className="text-xl md:text-2xl font-bold mb-4">{developer}</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
             {developerProperties.map((property) => (
               <Card key={property.id} className="overflow-hidden">
                 <CardHeader className="pb-3">
                   <div className="flex justify-between items-start">
                     <div>
-                      <CardTitle>{property.name}</CardTitle>
-                      <CardDescription>
+                      <CardTitle className="text-lg">{property.name}</CardTitle>
+                      <CardDescription className="text-sm">
                         {property.lotArea} | {property.project}
                       </CardDescription>
                     </div>
@@ -256,11 +259,16 @@ export default function LotOnlyAdminPage() {
             <DialogTitle>Confirm Deletion</DialogTitle>
             <DialogDescription>Are you sure you want to delete this property?</DialogDescription>
           </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteDialogOpen(false)} disabled={isProcessing}>
+          <DialogFooter className="flex flex-col sm:flex-row gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setDeleteDialogOpen(false)}
+              disabled={isProcessing}
+              className="w-full sm:w-auto"
+            >
               Cancel
             </Button>
-            <Button variant="destructive" onClick={handleDelete} disabled={isProcessing}>
+            <Button variant="destructive" onClick={handleDelete} disabled={isProcessing} className="w-full sm:w-auto">
               {isProcessing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Delete"}
             </Button>
           </DialogFooter>
@@ -276,11 +284,21 @@ export default function LotOnlyAdminPage() {
               changes.
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setResetDialogOpen(false)} disabled={isProcessing}>
+          <DialogFooter className="flex flex-col sm:flex-row gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setResetDialogOpen(false)}
+              disabled={isProcessing}
+              className="w-full sm:w-auto"
+            >
               Cancel
             </Button>
-            <Button variant="destructive" onClick={handleResetData} disabled={isProcessing}>
+            <Button
+              variant="destructive"
+              onClick={handleResetData}
+              disabled={isProcessing}
+              className="w-full sm:w-auto"
+            >
               {isProcessing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Reset Data"}
             </Button>
           </DialogFooter>

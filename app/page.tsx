@@ -184,7 +184,7 @@ export default function Home() {
       </section>
 
       {/* Company Profile Video Section */}
-      <section className="py-12 md:py-16 bg-gray-50 rounded-xl mt-12 md:mt-16">
+      <section className="py-12 md:py-16 bg-gray-50 rounded-xl mt-12 md:mt-16 mb-16 md:mb-24">
         <div className="container mx-auto px-4">
           <div className="max-w-5xl mx-auto">
             <div className="text-center mb-8 md:mb-10">
