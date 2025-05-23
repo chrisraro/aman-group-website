@@ -16,7 +16,7 @@ export const projects = [
       "https://8ybl2ah7tkcii6tt.public.blob.vercel-storage.com/Project_images/Palm%20Village/Palm%20Logo%20with%20address-XwMEbdcNRDx5PEhg99DIfr0HINt6TY.jpg",
     salesMapCanvaUrl: "https://www.canva.com/design/DAGjkJ2qYbc/CDiN9LHFwk0YW9meTDjdUg/view?embed",
     brochureCanvaUrl: "https://www.canva.com/design/DAF-sMYE_Oc/view?embed",
-    youtubeVideoId: "dQw4w9WgXcQ", // Example YouTube video ID
+    youtubeVideoId: "CB-ceJnOV3U?si=tIXknya_9xQ-TTVo", // Example YouTube video ID
     developer: "Enjoy Realty",
     developerColor: "#65932D",
   },
@@ -43,7 +43,7 @@ export const projects = [
       "https://8ybl2ah7tkcii6tt.public.blob.vercel-storage.com/Project_images/Parkview%20NUR/parkview%20Naga%20Urban%20residences%20new%20logo-L7bsoG9mPT3iPBF5pMezIOAJXxH4Oo.jpg",
     salesMapCanvaUrl: "https://www.canva.com/design/DAGjj8-RgU8/tQnG_s5M5fzwUdfEKSJS3Q/view?embed",
     brochureCanvaUrl: "https://www.canva.com/design/DAF-sMYE_Oc/view?embed",
-    youtubeVideoId: "dQw4w9WgXcQ", // Example YouTube video ID
+    youtubeVideoId: "PQpNGDD_Y0Y?si=M66CMSnFHrBq17HB", // Example YouTube video ID
     developer: "Aman Engineering",
     developerColor: "#04009D",
   },
