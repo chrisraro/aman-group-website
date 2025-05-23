@@ -90,3 +90,28 @@ export function useModelHouseUnit(seriesId: string | null, unitId: string | null
     isError: error,
   }
 }
+
+// Custom hook for fetching all model house units across all series
+export function useModelHouseUnits(filterByRFO?: boolean) {
+  const { getAllModelHouseSeries, isLoading, error } = useModelHousesContext()
+
+  const allSeries = getAllModelHouseSeries()
+  const allUnits = allSeries.flatMap((series) =>
+    series.units.map((unit) => ({
+      ...unit,
+      seriesId: series.id,
+      seriesName: series.name,
+      developer: series.developer,
+      developerColor: series.developerColor,
+      project: series.project,
+    })),
+  )
+
+  const filteredUnits = filterByRFO !== undefined ? allUnits.filter((unit) => unit.isRFO === filterByRFO) : allUnits
+
+  return {
+    units: filteredUnits,
+    isLoading,
+    isError: error,
+  }
+}

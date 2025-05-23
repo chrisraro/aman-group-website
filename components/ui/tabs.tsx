@@ -14,7 +14,9 @@ const TabsList = React.forwardRef<
   <TabsPrimitive.List
     ref={ref}
     className={cn(
-      "inline-flex h-auto min-h-10 items-center justify-center rounded-md p-1 text-muted-foreground overflow-x-auto scrollbar-hide gap-1 md:gap-2 w-full",
+      "inline-flex h-auto items-center justify-start rounded-md bg-muted/20 p-1 text-muted-foreground",
+      "overflow-x-auto scrollbar-hide gap-1 md:gap-2 w-full flex-nowrap",
+      "scroll-smooth snap-x snap-mandatory touch-pan-x",
       className,
     )}
     {...props}
@@ -31,16 +33,20 @@ const TabsTrigger = React.forwardRef<
   <TabsPrimitive.Trigger
     ref={ref}
     className={cn(
-      "inline-flex items-center justify-center whitespace-nowrap rounded-full px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 m3-state-layer relative",
-      "data-[state=active]:text-primary data-[state=active]:after:content-[''] data-[state=active]:after:absolute data-[state=active]:after:bottom-0 data-[state=active]:after:left-0 data-[state=active]:after:right-0 data-[state=active]:after:h-0.5 data-[state=active]:after:bg-primary data-[state=active]:after:animate-[tabUnderline_0.3s_ease_forwards]",
+      "inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium ring-offset-background",
+      "transition-all duration-200 ease-in-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+      "disabled:pointer-events-none disabled:opacity-50 snap-start",
+      "data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm",
+      "relative after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2px] after:scale-x-0 after:bg-primary after:transition-transform",
+      "data-[state=active]:after:scale-x-100",
       className,
     )}
     {...props}
   >
     {mobileAbbr ? (
       <>
-        <span className="block md:hidden">{mobileAbbr}</span>
-        <span className="hidden md:block">{children}</span>
+        <span className="block sm:hidden">{mobileAbbr}</span>
+        <span className="hidden sm:block">{children}</span>
       </>
     ) : (
       children
@@ -56,7 +62,8 @@ const TabsContent = React.forwardRef<
   <TabsPrimitive.Content
     ref={ref}
     className={cn(
-      "mt-2 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 data-[state=active]:animate-[tabFadeIn_0.3s_ease_forwards]",
+      "mt-2 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+      "animate-in fade-in-50 slide-in-from-bottom-3 duration-300 ease-in-out",
       className,
     )}
     {...props}

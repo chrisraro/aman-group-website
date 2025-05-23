@@ -1,73 +1,108 @@
+"use client"
+
+import { useState } from "react"
 import Link from "next/link"
-import Image from "next/image"
+import { useModelHouseUnits } from "@/lib/hooks/useModelHouses"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import type { ModelHouseSeries } from "@/lib/hooks/useModelHouses"
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner"
+import { ErrorMessage } from "@/components/ui/ErrorMessage"
+import { Bed, Bath, Grid, ArrowRight } from "lucide-react"
 
 interface ModelHouseUnitListProps {
-  series: ModelHouseSeries
+  seriesId: string
 }
 
-export function ModelHouseUnitList({ series }: ModelHouseUnitListProps) {
-  return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {series.units.map((unit) => {
-        // Create query parameters for the unit contact form
-        const unitContactQueryParams = new URLSearchParams({
-          propertyInterest: unit.isRFO ? "Ready for Occupancy" : "Model House",
-          modelHousesSeries: series.id,
-          projectLocation: series.project,
-          unitId: unit.id,
-        }).toString()
+export function ModelHouseUnitList({ seriesId }: ModelHouseUnitListProps) {
+  const { units, isLoading, isError } = useModelHouseUnits(seriesId)
+  const [activeTab, setActiveTab] = useState("all")
 
-        return (
-          <div
-            key={unit.id}
-            className="bg-white rounded-lg shadow-sm border overflow-hidden hover:shadow-md transition-shadow"
-          >
-            <div className="relative h-48">
-              <Image
-                src={unit.imageUrl || `/placeholder.svg?height=300&width=400&text=${series.name}+${unit.name}`}
-                alt={`${series.name} ${unit.name}`}
-                fill
-                className="object-cover"
-              />
-              {unit.isRFO && (
-                <div
-                  className={`absolute top-0 right-0 px-3 py-1 font-semibold text-white ${
-                    unit.status === "Fully Constructed" ? "bg-[#65932D]" : "bg-[#f59e0b]"
-                  }`}
-                >
-                  {unit.status}
-                </div>
-              )}
-            </div>
-            <div className="p-6">
-              <div className="flex justify-between items-start mb-2">
-                <h3 className="text-xl font-bold">{unit.name}</h3>
-                <div className="bg-primary/10 text-primary px-3 py-1 rounded-full text-sm font-medium">
-                  ₱{unit.price.toLocaleString()}
-                </div>
-              </div>
-              <p className="text-muted-foreground mb-4 line-clamp-2">{unit.description}</p>
-              <div className="grid grid-cols-2 gap-2">
-                <Link href={`/model-houses/${series.id}/${unit.id}`}>
-                  <Button
-                    className="w-full"
-                    style={{ backgroundColor: series.developerColor, borderColor: series.developerColor }}
-                  >
-                    View Details
-                  </Button>
-                </Link>
-                <Link href={`/contact?${unitContactQueryParams}`}>
-                  <Button variant="outline" className="w-full">
-                    Inquire Now
-                  </Button>
-                </Link>
-              </div>
-            </div>
+  if (isLoading) {
+    return (
+      <div className="flex justify-center py-8">
+        <LoadingSpinner size="lg" />
+      </div>
+    )
+  }
+
+  if (isError) {
+    return <ErrorMessage message="Failed to load units. Please try again later." />
+  }
+
+  if (units.length === 0) {
+    return <p className="text-center py-4 text-muted-foreground">No units available at this time.</p>
+  }
+
+  // Get unique unit types
+  const unitTypes = Array.from(new Set(units.map((unit) => unit.type)))
+
+  // Filter units based on active tab
+  const filteredUnits = activeTab === "all" ? units : units.filter((unit) => unit.type === activeTab)
+
+  return (
+    <div>
+      <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="w-full mb-4 overflow-x-auto flex-nowrap whitespace-nowrap scrollbar-hide pb-2 gap-1 sm:gap-2">
+          <TabsTrigger value="all" className="flex items-center gap-1 px-3 py-2" mobileAbbr="All">
+            <Grid className="h-4 w-4 mr-1 sm:mr-2" />
+            All Units
+          </TabsTrigger>
+
+          {unitTypes.map((type) => (
+            <TabsTrigger key={type} value={type} className="px-3 py-2" mobileAbbr={type.substring(0, 3)}>
+              {type}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+
+        <TabsContent value={activeTab} className="focus-visible:outline-none focus-visible:ring-0">
+          <div className="space-y-4">
+            {filteredUnits.map((unit) => (
+              <Card key={unit.id} className="overflow-hidden">
+                <CardContent className="p-0">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div
+                      className="h-40 md:h-full bg-cover bg-center"
+                      style={{ backgroundImage: `url(${unit.imageUrl || "/placeholder.svg?height=200&width=300"})` }}
+                    ></div>
+                    <div className="p-4 md:col-span-2">
+                      <h3 className="text-lg font-bold mb-2">{unit.name}</h3>
+                      <div className="grid grid-cols-3 gap-2 mb-3">
+                        <div className="flex items-center">
+                          <Bed className="h-4 w-4 mr-1 text-muted-foreground" />
+                          <span className="text-sm">{unit.bedrooms} Beds</span>
+                        </div>
+                        <div className="flex items-center">
+                          <Bath className="h-4 w-4 mr-1 text-muted-foreground" />
+                          <span className="text-sm">{unit.bathrooms} Baths</span>
+                        </div>
+                        <div className="flex items-center">
+                          <Grid className="h-4 w-4 mr-1 text-muted-foreground" />
+                          <span className="text-sm">{unit.floorArea}</span>
+                        </div>
+                      </div>
+                      <p className="text-sm mb-4 line-clamp-2">{unit.description}</p>
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <p className="text-lg font-bold">₱{unit.price.toLocaleString()}</p>
+                          <p className="text-xs text-muted-foreground">{unit.status}</p>
+                        </div>
+                        <Link href={`/model-houses/${seriesId}/${unit.id}`}>
+                          <Button size="sm" className="gap-1">
+                            Details
+                            <ArrowRight className="h-4 w-4" />
+                          </Button>
+                        </Link>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
           </div>
-        )
-      })}
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }

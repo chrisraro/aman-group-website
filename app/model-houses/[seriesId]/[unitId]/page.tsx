@@ -12,7 +12,7 @@ import { useModelHousesContext } from "@/lib/context/ModelHousesContext"
 import { LoanCalculatorButton } from "@/components/loan-calculator-button"
 import { PDFViewer } from "@/components/pdf-viewer"
 import { Badge } from "@/components/ui/badge"
-import ScheduleViewingButton from "@/components/schedule-viewing-button"
+import ScheduleViewingButton from "@/components/shared/ScheduleViewingButton"
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert"
 import type { ModelHouseSeries, ModelHouseUnit } from "@/lib/hooks/useModelHouses"
 

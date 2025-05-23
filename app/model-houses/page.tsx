@@ -5,7 +5,7 @@ import { useModelHouseSeries } from "@/lib/hooks/useModelHouses"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Input } from "@/components/ui/input"
-import { Search } from "lucide-react"
+import { Search, Home } from "lucide-react"
 import { LoadingState } from "@/components/loading-state"
 import { ErrorFallback } from "@/components/error-fallback"
 
@@ -57,8 +57,16 @@ export default function ModelHousesPage() {
     )
   }
 
+  // Create abbreviated names for mobile view
+  const getAbbreviation = (name) => {
+    if (!name) return ""
+    const words = name.split(" ")
+    if (words.length === 1) return name.substring(0, 3)
+    return words.map((word) => word[0]).join("")
+  }
+
   return (
-    <div className="container mx-auto py-8">
+    <div className="container mx-auto py-8 px-4 sm:px-6">
       <h1 className="text-3xl font-bold mb-6">Model Houses</h1>
 
       <div className="mb-6">
@@ -73,17 +81,32 @@ export default function ModelHousesPage() {
         </div>
       </div>
 
-      <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="mb-6">
-          <TabsTrigger value="all">All Projects</TabsTrigger>
-          {projects.map((project) => (
-            <TabsTrigger key={project} value={project}>
-              {project}
+      <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <div className="relative">
+          <TabsList className="w-full mb-6 overflow-x-auto flex-nowrap whitespace-nowrap scrollbar-hide pb-2 gap-1 sm:gap-2">
+            <TabsTrigger
+              value="all"
+              className="flex items-center gap-1 px-3 py-2 min-w-[80px] justify-center"
+              mobileAbbr="All"
+            >
+              <Home className="h-4 w-4 mr-1 sm:mr-2" />
+              All Projects
             </TabsTrigger>
-          ))}
-        </TabsList>
 
-        <TabsContent value={activeTab}>
+            {projects.map((project) => (
+              <TabsTrigger
+                key={project}
+                value={project}
+                className="px-3 py-2 min-w-[80px] justify-center"
+                mobileAbbr={getAbbreviation(project)}
+              >
+                {project}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </div>
+
+        <TabsContent value={activeTab} className="mt-4 focus-visible:outline-none focus-visible:ring-0">
           {filteredModelHouses.length === 0 ? (
             <div className="text-center py-12 bg-muted rounded-lg">
               <p className="text-muted-foreground">No model houses found matching your criteria.</p>
@@ -91,20 +114,20 @@ export default function ModelHousesPage() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredModelHouses.map((series) => (
-                <Card key={series.id} className="overflow-hidden">
+                <Card key={series.id} className="overflow-hidden h-full flex flex-col">
                   <div
                     className="h-48 bg-cover bg-center"
                     style={{ backgroundImage: `url(${series.imageUrl || "/placeholder.svg?height=200&width=400"})` }}
                   ></div>
-                  <CardHeader>
+                  <CardHeader className="pb-2">
                     <CardTitle>{series.name}</CardTitle>
                     <CardDescription>
                       {series.floorArea} | {series.project}
                     </CardDescription>
                   </CardHeader>
-                  <CardContent>
-                    <p className="text-sm mb-4">{series.description}</p>
-                    <div className="flex justify-between items-center">
+                  <CardContent className="flex-grow flex flex-col">
+                    <p className="text-sm mb-4 flex-grow">{series.description}</p>
+                    <div className="flex justify-between items-center mt-auto">
                       <p className="font-semibold">Starting at ₱{series.basePrice.toLocaleString()}</p>
                       <a
                         href={`/model-houses/${series.id}`}

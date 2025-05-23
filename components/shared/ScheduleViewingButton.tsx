@@ -134,7 +134,14 @@ Time: ${formatTime(selectedStartTime)}
     >
       <DialogTrigger asChild>
         <Button className={`whitespace-nowrap text-ellipsis overflow-hidden ${className}`} {...props}>
-          <Calendar className="mr-2 h-4 w-4" /> {children}
+          {/* Only add Calendar icon if children doesn't already contain it */}
+          {typeof children === "string" && !children.includes("Viewing") ? (
+            <>
+              <Calendar className="mr-2 h-4 w-4" /> {children}
+            </>
+          ) : (
+            children
+          )}
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[500px]">
