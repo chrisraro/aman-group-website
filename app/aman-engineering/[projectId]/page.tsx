@@ -112,7 +112,7 @@ export default function ProjectDetailPage({ params }: { params: { projectId: str
                 </p>
                 <Button className="w-full bg-[#04009D] hover:bg-[#04009D]/90 mb-4">Schedule a Visit</Button>
                 <YouTubeEmbed
-                  videoId={project.youtubeVideoId || "dQw4w9WgXcQ"}
+                  videoId={project.youtubeVideoId || "PQpNGDD_Y0Y?si=M66CMSnFHrBq17HB"}
                   title={`${project.name} Project Video`}
                   primaryColor="#04009D"
                   height="200px"
