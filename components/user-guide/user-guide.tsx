@@ -18,14 +18,19 @@ import {
   Smartphone,
   Monitor,
   Tablet,
+  ArrowLeft,
+  ChevronRight,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { useMediaQuery } from "@/hooks/use-media-query"
 
 export function UserGuide() {
   const [activeSection, setActiveSection] = useState("getting-started")
+  const [showSidebar, setShowSidebar] = useState(true)
+  const isMobile = useMediaQuery("(max-width: 768px)")
 
   const sections = [
     {
@@ -73,7 +78,7 @@ export function UserGuide() {
               </p>
             </div>
 
-            <div className="grid md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <Card>
                 <CardHeader className="pb-3">
                   <Building className="h-8 w-8 text-primary mb-2" />
@@ -113,7 +118,7 @@ export function UserGuide() {
 
             <div>
               <h4 className="font-semibold mb-3">Device Compatibility</h4>
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="flex items-center space-x-2">
                   <Monitor className="h-5 w-5 text-primary" />
                   <span className="text-sm">Desktop</span>
@@ -583,7 +588,7 @@ export function UserGuide() {
                   <CardTitle className="text-base">Response Times</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <p className="font-medium text-sm">Phone Calls</p>
                       <p className="text-sm text-muted-foreground">Immediate during business hours</p>
@@ -612,57 +617,161 @@ export function UserGuide() {
     }
   }
 
+  const currentSectionIndex = sections.findIndex((section) => section.id === activeSection)
+  const currentSection = sections[currentSectionIndex]
+
   return (
     <Dialog>
       <DialogTrigger asChild>
         <Button variant="outline" size="sm" className="flex items-center space-x-2">
           <Book className="h-4 w-4" />
-          <span>User Guide</span>
+          <span className="hidden sm:inline">User Guide</span>
+          <span className="sm:hidden">Guide</span>
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden">
-        <DialogHeader>
+      <DialogContent className="max-w-6xl max-h-[95vh] overflow-hidden p-0">
+        <DialogHeader className="px-4 py-3 border-b md:px-6">
           <DialogTitle className="flex items-center space-x-2">
             <Book className="h-5 w-5" />
             <span>User Guide</span>
           </DialogTitle>
         </DialogHeader>
 
-        <div className="flex h-[70vh]">
-          {/* Sidebar */}
-          <div className="w-64 border-r pr-4 overflow-y-auto">
-            <nav className="space-y-2">
-              {sections.map((section) => {
-                const Icon = section.icon
-                return (
-                  <button
-                    key={section.id}
-                    onClick={() => setActiveSection(section.id)}
-                    className={`w-full text-left p-3 rounded-lg transition-colors ${
-                      activeSection === section.id ? "bg-primary text-primary-foreground" : "hover:bg-gray-100"
-                    }`}
-                  >
-                    <div className="flex items-center space-x-3">
-                      <Icon className="h-4 w-4" />
-                      <div>
-                        <p className="font-medium text-sm">{section.title}</p>
-                        <p
-                          className={`text-xs ${
-                            activeSection === section.id ? "text-primary-foreground/80" : "text-muted-foreground"
+        <div className="flex h-[calc(95vh-80px)]">
+          {/* Mobile: Section Navigation */}
+          {isMobile && showSidebar && (
+            <div className="w-full bg-white overflow-y-auto">
+              <div className="p-4">
+                <h3 className="font-semibold mb-4">Choose a Section</h3>
+                <nav className="space-y-2">
+                  {sections.map((section) => {
+                    const Icon = section.icon
+                    return (
+                      <button
+                        key={section.id}
+                        onClick={() => {
+                          setActiveSection(section.id)
+                          setShowSidebar(false)
+                        }}
+                        className="w-full text-left p-3 rounded-lg transition-colors hover:bg-gray-100 border border-gray-200"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-3">
+                            <Icon className="h-5 w-5 text-primary" />
+                            <div>
+                              <p className="font-medium text-sm">{section.title}</p>
+                              <p className="text-xs text-muted-foreground">{section.description}</p>
+                            </div>
+                          </div>
+                          <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                        </div>
+                      </button>
+                    )
+                  })}
+                </nav>
+              </div>
+            </div>
+          )}
+
+          {/* Mobile: Content View */}
+          {isMobile && !showSidebar && (
+            <div className="w-full flex flex-col">
+              {/* Mobile Header */}
+              <div className="flex items-center justify-between p-4 border-b bg-gray-50">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowSidebar(true)}
+                  className="flex items-center space-x-2"
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                  <span>Back</span>
+                </Button>
+                <div className="flex items-center space-x-2">
+                  {currentSection && <currentSection.icon className="h-4 w-4 text-primary" />}
+                  <span className="font-medium text-sm">{currentSection?.title}</span>
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  {currentSectionIndex + 1} of {sections.length}
+                </div>
+              </div>
+
+              {/* Mobile Content */}
+              <div className="flex-1 overflow-y-auto p-4">{renderContent(activeSection)}</div>
+
+              {/* Mobile Navigation Footer */}
+              <div className="flex items-center justify-between p-4 border-t bg-gray-50">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const prevIndex = currentSectionIndex > 0 ? currentSectionIndex - 1 : sections.length - 1
+                    setActiveSection(sections[prevIndex].id)
+                  }}
+                  className="flex items-center space-x-2"
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                  <span>Previous</span>
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const nextIndex = currentSectionIndex < sections.length - 1 ? currentSectionIndex + 1 : 0
+                    setActiveSection(sections[nextIndex].id)
+                  }}
+                  className="flex items-center space-x-2"
+                >
+                  <span>Next</span>
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* Desktop: Sidebar + Content */}
+          {!isMobile && (
+            <>
+              {/* Desktop Sidebar */}
+              <div className="w-80 border-r overflow-y-auto bg-gray-50">
+                <div className="p-4">
+                  <nav className="space-y-2">
+                    {sections.map((section) => {
+                      const Icon = section.icon
+                      return (
+                        <button
+                          key={section.id}
+                          onClick={() => setActiveSection(section.id)}
+                          className={`w-full text-left p-3 rounded-lg transition-colors ${
+                            activeSection === section.id
+                              ? "bg-primary text-primary-foreground"
+                              : "hover:bg-white hover:shadow-sm"
                           }`}
                         >
-                          {section.description}
-                        </p>
-                      </div>
-                    </div>
-                  </button>
-                )
-              })}
-            </nav>
-          </div>
+                          <div className="flex items-center space-x-3">
+                            <Icon className="h-5 w-5" />
+                            <div>
+                              <p className="font-medium text-sm">{section.title}</p>
+                              <p
+                                className={`text-xs ${
+                                  activeSection === section.id ? "text-primary-foreground/80" : "text-muted-foreground"
+                                }`}
+                              >
+                                {section.description}
+                              </p>
+                            </div>
+                          </div>
+                        </button>
+                      )
+                    })}
+                  </nav>
+                </div>
+              </div>
 
-          {/* Content */}
-          <div className="flex-1 pl-6 overflow-y-auto">{renderContent(activeSection)}</div>
+              {/* Desktop Content */}
+              <div className="flex-1 overflow-y-auto p-6">{renderContent(activeSection)}</div>
+            </>
+          )}
         </div>
       </DialogContent>
     </Dialog>
