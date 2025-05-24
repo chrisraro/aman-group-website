@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from "framer-motion"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
+import { UserGuide } from "@/components/user-guide/user-guide"
 
 export function MainNav() {
   const pathname = usePathname()
@@ -190,6 +191,7 @@ export function MainNav() {
                 </motion.div>
               )
             })}
+            <UserGuide />
           </div>
 
           {/* Mobile Menu Button */}
@@ -344,6 +346,16 @@ export function MainNav() {
                     </motion.div>
                   )
                 })}
+                <motion.div
+                  variants={{
+                    hidden: { opacity: 0, y: 20 },
+                    visible: { opacity: 1, y: 0, transition: { duration: 0.3 } },
+                  }}
+                >
+                  <div className="py-4 px-4">
+                    <UserGuide />
+                  </div>
+                </motion.div>
               </motion.div>
             </div>
           </motion.div>
