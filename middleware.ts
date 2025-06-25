@@ -2,6 +2,15 @@ import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
 
 export function middleware(request: NextRequest) {
+  // Handle admin routes
+  if (request.nextUrl.pathname.startsWith("/admin") && !request.nextUrl.pathname.startsWith("/admin/login")) {
+    const adminSession = request.cookies.get("admin-session")
+
+    if (!adminSession || adminSession.value !== "authenticated") {
+      return NextResponse.redirect(new URL("/admin/login", request.url))
+    }
+  }
+
   // Add CORS headers for API routes
   if (request.nextUrl.pathname.startsWith("/api/")) {
     const response = NextResponse.next()
@@ -19,5 +28,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/api/:path*"],
+  matcher: ["/api/:path*", "/admin/:path*"],
 }
