@@ -56,41 +56,41 @@ export default function Home() {
         </p>
       </section>
 
-      <section className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 max-w-6xl mx-auto px-4">
+      <section className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8 max-w-5xl mx-auto px-0 md:px-4">
         {developers.map((developer) => (
           <div
             key={developer.id}
-            className="bg-white rounded-xl shadow-md overflow-hidden border hover:shadow-lg transition-all duration-300"
+            className="bg-white rounded-lg shadow-md overflow-hidden border hover:shadow-lg transition-shadow"
           >
-            <div className="h-48 sm:h-56 lg:h-64 relative">
+            <div className="h-48 md:h-64 relative">
               <Image
                 src={developer.logo_url || `/placeholder.svg?height=400&width=600&text=${developer.name}`}
                 alt={developer.name}
                 fill
-                className="object-contain p-6 sm:p-8"
+                className="object-contain p-8"
               />
               <div
                 className="absolute inset-0 bg-gradient-to-t from-opacity-80 to-transparent"
                 style={{
-                  backgroundImage: `linear-gradient(to top, ${developer.primary_color}20, transparent)`,
+                  backgroundImage: `linear-gradient(to top, ${developer.primary_color}80, transparent)`,
                 }}
               ></div>
             </div>
             <div
-              className="p-6 lg:p-8 border-t-4"
+              className="p-4 md:p-6 border-t-4"
               style={{
                 borderColor: developer.secondary_color || developer.primary_color,
               }}
             >
-              <h2 className="text-xl sm:text-2xl font-bold mb-3 lg:mb-4" style={{ color: developer.primary_color }}>
+              <h2 className="text-xl md:text-2xl font-bold mb-2 md:mb-3" style={{ color: developer.primary_color }}>
                 {developer.slug === "enjoy-realty"
                   ? "Enjoy Realty & Development Corporation"
                   : "Aman Engineering Enterprises"}
               </h2>
-              <p className="mb-6 text-muted-foreground text-sm sm:text-base leading-relaxed">{developer.description}</p>
+              <p className="mb-4 md:mb-6 text-muted-foreground text-sm md:text-base">{developer.description}</p>
               <Link href={`/${developer.slug}`}>
                 <Button
-                  className="w-full hover:opacity-90 mobile-touch-target text-base font-medium"
+                  className="w-full hover:opacity-90 mobile-touch-target"
                   style={{
                     backgroundColor: developer.primary_color,
                     borderColor: developer.primary_color,
@@ -104,19 +104,19 @@ export default function Home() {
         ))}
       </section>
 
-      <section className="mt-16 lg:mt-20 text-center px-4">
-        <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-4 lg:mb-6">Our Commitment</h2>
-        <p className="text-base sm:text-lg text-muted-foreground max-w-4xl mx-auto mb-8 lg:mb-12 leading-relaxed">
+      <section className="mt-12 md:mt-20 text-center px-4">
+        <h2 className="text-2xl md:text-3xl font-bold mb-4 md:mb-6">Our Commitment</h2>
+        <p className="text-base md:text-lg text-muted-foreground max-w-3xl mx-auto mb-6 md:mb-10">
           At Aman Group of Companies, we are committed to building quality homes and communities that enhance the lives
           of Bicolano families.
         </p>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8 max-w-6xl mx-auto">
-          <div className="p-6 lg:p-8 bg-white rounded-xl shadow-sm border hover:shadow-md transition-shadow">
-            <div className="h-14 w-14 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4 lg:mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-6 max-w-5xl mx-auto">
+          <div className="p-4 md:p-6 bg-white rounded-lg shadow-sm border">
+            <div className="h-12 w-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3 md:mb-4">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                className="h-7 w-7 text-primary"
+                className="h-6 w-6 text-gray-600"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -129,17 +129,17 @@ export default function Home() {
                 />
               </svg>
             </div>
-            <h3 className="text-lg sm:text-xl font-semibold mb-3 text-gray-900">Quality Construction</h3>
-            <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
+            <h3 className="text-lg md:text-xl font-semibold mb-2">Quality Construction</h3>
+            <p className="text-sm md:text-base text-muted-foreground">
               Built with premium materials and expert craftsmanship for lasting value.
             </p>
           </div>
 
-          <div className="p-6 lg:p-8 bg-white rounded-xl shadow-sm border hover:shadow-md transition-shadow">
-            <div className="h-14 w-14 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4 lg:mb-6">
+          <div className="p-4 md:p-6 bg-white rounded-lg shadow-sm border">
+            <div className="h-12 w-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3 md:mb-4">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                className="h-7 w-7 text-primary"
+                className="h-6 w-6 text-gray-600"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -152,17 +152,17 @@ export default function Home() {
                 />
               </svg>
             </div>
-            <h3 className="text-lg sm:text-xl font-semibold mb-3 text-gray-900">Strategic Locations</h3>
-            <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
+            <h3 className="text-lg md:text-xl font-semibold mb-2">Strategic Locations</h3>
+            <p className="text-sm md:text-base text-muted-foreground">
               Prime locations with access to essential amenities and transportation.
             </p>
           </div>
 
-          <div className="p-6 lg:p-8 bg-white rounded-xl shadow-sm border hover:shadow-md transition-shadow">
-            <div className="h-14 w-14 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4 lg:mb-6">
+          <div className="p-4 md:p-6 bg-white rounded-lg shadow-sm border">
+            <div className="h-12 w-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3 md:mb-4">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                className="h-7 w-7 text-primary"
+                className="h-6 w-6 text-gray-600"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -175,8 +175,8 @@ export default function Home() {
                 />
               </svg>
             </div>
-            <h3 className="text-lg sm:text-xl font-semibold mb-3 text-gray-900">Affordable Options</h3>
-            <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
+            <h3 className="text-lg md:text-xl font-semibold mb-2">Affordable Options</h3>
+            <p className="text-sm md:text-base text-muted-foreground">
               Flexible payment terms and financing options to make homeownership accessible.
             </p>
           </div>

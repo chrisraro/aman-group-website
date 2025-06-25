@@ -82,59 +82,56 @@ export default function ModelHousesPage() {
       </div>
 
       <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <div className="relative mb-6">
-          <TabsList className="w-full overflow-x-auto flex-nowrap whitespace-nowrap scrollbar-hide pb-2 gap-1 sm:gap-2 bg-gray-100/80 p-1 rounded-lg">
+        <div className="relative">
+          <TabsList className="w-full mb-6 overflow-x-auto flex-nowrap whitespace-nowrap scrollbar-hide pb-2 gap-1 sm:gap-2">
             <TabsTrigger
               value="all"
-              className="flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-2 sm:py-3 min-w-[100px] sm:min-w-[120px] justify-center text-sm sm:text-base font-medium rounded-md transition-all data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm hover:bg-gray-200/80"
+              className="flex items-center gap-1 px-3 py-2 min-w-[80px] justify-center"
+              mobileAbbr="All"
             >
-              <Home className="h-4 w-4" />
-              <span className="hidden sm:inline">All Projects</span>
-              <span className="sm:hidden">All</span>
+              <Home className="h-4 w-4 mr-1 sm:mr-2" />
+              All Projects
             </TabsTrigger>
 
             {projects.map((project) => (
               <TabsTrigger
                 key={project}
                 value={project}
-                className="px-3 sm:px-4 py-2 sm:py-3 min-w-[100px] sm:min-w-[120px] justify-center text-sm sm:text-base font-medium rounded-md transition-all data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm hover:bg-gray-200/80"
+                className="px-3 py-2 min-w-[80px] justify-center"
+                mobileAbbr={getAbbreviation(project)}
               >
-                <span className="hidden sm:inline">{project}</span>
-                <span className="sm:hidden">{getAbbreviation(project)}</span>
+                {project}
               </TabsTrigger>
             ))}
           </TabsList>
         </div>
 
-        <TabsContent value={activeTab} className="mt-6 focus-visible:outline-none focus-visible:ring-0">
+        <TabsContent value={activeTab} className="mt-4 focus-visible:outline-none focus-visible:ring-0">
           {filteredModelHouses.length === 0 ? (
-            <div className="text-center py-16 bg-muted rounded-xl">
-              <p className="text-muted-foreground text-base">No model houses found matching your criteria.</p>
+            <div className="text-center py-12 bg-muted rounded-lg">
+              <p className="text-muted-foreground">No model houses found matching your criteria.</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredModelHouses.map((series) => (
-                <Card
-                  key={series.id}
-                  className="overflow-hidden h-full flex flex-col hover:shadow-lg transition-shadow"
-                >
+                <Card key={series.id} className="overflow-hidden h-full flex flex-col">
                   <div
-                    className="h-48 sm:h-56 bg-cover bg-center"
+                    className="h-48 bg-cover bg-center"
                     style={{ backgroundImage: `url(${series.imageUrl || "/placeholder.svg?height=200&width=400"})` }}
                   ></div>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-lg sm:text-xl">{series.name}</CardTitle>
-                    <CardDescription className="text-sm">
+                  <CardHeader className="pb-2">
+                    <CardTitle>{series.name}</CardTitle>
+                    <CardDescription>
                       {series.floorArea} | {series.project}
                     </CardDescription>
                   </CardHeader>
-                  <CardContent className="flex-grow flex flex-col pt-0">
-                    <p className="text-sm text-muted-foreground mb-4 flex-grow leading-relaxed">{series.description}</p>
-                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mt-auto">
-                      <p className="font-semibold text-base">Starting at ₱{series.basePrice.toLocaleString()}</p>
+                  <CardContent className="flex-grow flex flex-col">
+                    <p className="text-sm mb-4 flex-grow">{series.description}</p>
+                    <div className="flex justify-between items-center mt-auto">
+                      <p className="font-semibold">Starting at ₱{series.basePrice.toLocaleString()}</p>
                       <a
                         href={`/model-houses/${series.id}`}
-                        className="w-full sm:w-auto inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
+                        className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
                       >
                         View Details
                       </a>
