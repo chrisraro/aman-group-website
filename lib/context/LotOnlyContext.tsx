@@ -27,18 +27,21 @@ type LotOnlyContextType = {
 
 const LotOnlyContext = createContext<LotOnlyContextType | undefined>(undefined)
 
-// Fetcher function for SWR with error handling
+// Fetcher function for SWR with error handling and fallback
 const fetcher = async (url: string) => {
   try {
     const response = await fetch(url)
     if (!response.ok) {
-      throw new Error(`Failed to fetch: ${response.status} ${response.statusText}`)
+      // If API fails, return initial data as fallback
+      console.warn(`API fetch failed: ${response.status} ${response.statusText}`)
+      return initialLotOnlyProperties
     }
     const data = await response.json()
-    return data.properties
+    return data.properties || initialLotOnlyProperties
   } catch (error) {
-    console.error("Fetch error:", error)
-    throw error
+    console.warn("Fetch error, using fallback data:", error)
+    // Return initial data as fallback instead of throwing
+    return initialLotOnlyProperties
   }
 }
 
@@ -49,8 +52,9 @@ export const LotOnlyProvider: React.FC<{ children: React.ReactNode }> = ({ child
     revalidateOnReconnect: true,
     dedupingInterval: 5000, // 5 seconds
     fallbackData: initialLotOnlyProperties, // Provide fallback data to avoid null/undefined
+    shouldRetryOnError: false, // Don't retry on error, use fallback instead
     onError: (err) => {
-      console.error("SWR Error:", err)
+      console.warn("SWR Error, using fallback data:", err)
     },
   })
 

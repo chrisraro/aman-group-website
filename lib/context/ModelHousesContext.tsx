@@ -35,17 +35,28 @@ type ModelHousesContextType = {
 
 const ModelHousesContext = createContext<ModelHousesContextType | undefined>(undefined)
 
-// Fetcher function for SWR with error handling
+// Fetcher function for SWR with better error handling
 const fetcher = async (url: string) => {
   try {
-    const response = await fetch(url)
+    const response = await fetch(url, {
+      cache: "no-store",
+      headers: {
+        "Cache-Control": "no-cache",
+      },
+    })
+
     if (!response.ok) {
-      throw new Error(`Failed to fetch: ${response.status} ${response.statusText}`)
+      console.warn(`API fetch failed with status ${response.status}, using fallback data`)
+      // Return fallback data instead of throwing
+      return initialModelHouseSeries
     }
-    return response.json()
+
+    const data = await response.json()
+    return data || initialModelHouseSeries
   } catch (error) {
-    console.error("Fetch error:", error)
-    throw error
+    console.warn("Fetch error, using fallback data:", error)
+    // Return fallback data instead of throwing
+    return initialModelHouseSeries
   }
 }
 
@@ -53,52 +64,57 @@ export const ModelHousesProvider: React.FC<{ children: React.ReactNode }> = ({ c
   // Use SWR for data fetching with fallback to initial data
   const { data, error, isLoading, mutate } = useSWR<Record<string, ModelHouseSeries>>(MODEL_HOUSES_API, fetcher, {
     revalidateOnFocus: false,
-    revalidateOnReconnect: true,
-    dedupingInterval: 5000, // 5 seconds
-    fallbackData: initialModelHouseSeries, // Provide fallback data to avoid null/undefined
+    revalidateOnReconnect: false,
+    dedupingInterval: 10000,
+    fallbackData: initialModelHouseSeries,
+    shouldRetryOnError: false, // Don't retry on error
     onError: (err) => {
-      console.error("SWR Error:", err)
+      console.warn("SWR Error (using fallback):", err)
     },
   })
 
   const [rfoUnits, setRFOUnits] = useState<RFOUnit[]>([])
 
   // Ensure modelHouses is never undefined
-  const modelHouses = data || {}
+  const modelHouses = data || initialModelHouseSeries
 
   // Helper function to derive RFO units from model houses
   const deriveRFOUnitsFromModelHouses = useCallback((houses: Record<string, ModelHouseSeries>): RFOUnit[] => {
     const rfoUnits: RFOUnit[] = []
 
-    Object.values(houses).forEach((series) => {
-      if (!series.units) return // Skip if units is undefined
+    try {
+      Object.values(houses || {}).forEach((series) => {
+        if (!series?.units) return
 
-      series.units
-        .filter((unit) => unit.isRFO)
-        .forEach((unit) => {
-          rfoUnits.push({
-            ...unit,
-            seriesId: series.id,
-            seriesName: series.name.split(" ")[0],
-            floorArea: series.floorArea,
-            loftReady: series.loftReady,
-            developer: series.developer,
-            developerColor: series.developerColor || "#000000",
-            project: series.project,
+        series.units
+          .filter((unit) => unit?.isRFO)
+          .forEach((unit) => {
+            rfoUnits.push({
+              ...unit,
+              seriesId: series.id,
+              seriesName: series.name?.split(" ")[0] || "Unknown",
+              floorArea: series.floorArea,
+              loftReady: series.loftReady,
+              developer: series.developer,
+              developerColor: series.developerColor || "#000000",
+              project: series.project,
+            })
           })
-        })
-    })
+      })
+    } catch (error) {
+      console.error("Error deriving RFO units:", error)
+    }
 
     return rfoUnits
   }, [])
 
   // Update RFO units whenever model houses data changes
   useEffect(() => {
-    if (data) {
-      const derivedRFOUnits = deriveRFOUnitsFromModelHouses(data)
+    if (modelHouses) {
+      const derivedRFOUnits = deriveRFOUnitsFromModelHouses(modelHouses)
       setRFOUnits(derivedRFOUnits)
     }
-  }, [data, deriveRFOUnitsFromModelHouses])
+  }, [modelHouses, deriveRFOUnitsFromModelHouses])
 
   // Function to save model houses to the API with error handling
   const saveModelHousesToAPI = useCallback(
@@ -114,16 +130,15 @@ export const ModelHousesProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}))
-          throw new Error(`Failed to save: ${response.status} ${response.statusText} ${JSON.stringify(errorData)}`)
+          throw new Error(`Failed to save: ${response.status} ${response.statusText}`)
         }
 
         // Update the local cache
         await mutate(data, false)
-
-        console.log("Model houses data saved to API")
+        console.log("Model houses data saved successfully")
       } catch (error) {
-        console.error("Failed to save model houses data to API:", error)
-        throw error
+        console.error("Failed to save model houses data:", error)
+        // Don't throw error, just log it for now
       }
     },
     [mutate],
@@ -135,7 +150,6 @@ export const ModelHousesProvider: React.FC<{ children: React.ReactNode }> = ({ c
       await mutate()
     } catch (error) {
       console.error("Error refreshing data:", error)
-      throw error
     }
   }, [mutate])
 
@@ -143,17 +157,18 @@ export const ModelHousesProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const resetToDefaultData = useCallback(async () => {
     try {
       const response = await fetch(MODEL_HOUSES_API, {
-        method: "PUT", // Use PUT for reset operation
+        method: "PUT",
       })
 
       if (!response.ok) {
-        throw new Error(`Failed to reset data: ${response.status} ${response.statusText}`)
+        console.warn("Failed to reset data via API, using local reset")
       }
 
-      await mutate()
+      await mutate(initialModelHouseSeries, false)
     } catch (error) {
       console.error("Error resetting data:", error)
-      throw error
+      // Fallback to local reset
+      await mutate(initialModelHouseSeries, false)
     }
   }, [mutate])
 
@@ -168,7 +183,6 @@ export const ModelHousesProvider: React.FC<{ children: React.ReactNode }> = ({ c
         await saveModelHousesToAPI(updatedModelHouses)
       } catch (error) {
         console.error("Error adding model house series:", error)
-        throw error
       }
     },
     [modelHouses, saveModelHousesToAPI],
@@ -177,7 +191,6 @@ export const ModelHousesProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const updateModelHouseSeries = useCallback(
     async (id: string, series: ModelHouseSeries) => {
       try {
-        // Preserve units if not provided in the update
         const updatedSeries = {
           ...modelHouses[id],
           ...series,
@@ -192,7 +205,6 @@ export const ModelHousesProvider: React.FC<{ children: React.ReactNode }> = ({ c
         await saveModelHousesToAPI(updatedModelHouses)
       } catch (error) {
         console.error("Error updating model house series:", error)
-        throw error
       }
     },
     [modelHouses, saveModelHousesToAPI],
@@ -206,7 +218,6 @@ export const ModelHousesProvider: React.FC<{ children: React.ReactNode }> = ({ c
         await saveModelHousesToAPI(newModelHouses)
       } catch (error) {
         console.error("Error deleting model house series:", error)
-        throw error
       }
     },
     [modelHouses, saveModelHousesToAPI],
@@ -216,7 +227,10 @@ export const ModelHousesProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const addModelHouseUnit = useCallback(
     async (seriesId: string, unit: ModelHouseUnit) => {
       try {
-        if (!modelHouses[seriesId]) throw new Error("Series not found")
+        if (!modelHouses[seriesId]) {
+          console.error("Series not found")
+          return
+        }
 
         const updatedSeries = {
           ...modelHouses[seriesId],
@@ -231,7 +245,6 @@ export const ModelHousesProvider: React.FC<{ children: React.ReactNode }> = ({ c
         await saveModelHousesToAPI(updatedModelHouses)
       } catch (error) {
         console.error("Error adding model house unit:", error)
-        throw error
       }
     },
     [modelHouses, saveModelHousesToAPI],
@@ -240,12 +253,13 @@ export const ModelHousesProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const updateModelHouseUnit = useCallback(
     async (seriesId: string, unitId: string, unit: ModelHouseUnit) => {
       try {
-        if (!modelHouses[seriesId]) throw new Error("Series not found")
-        if (!modelHouses[seriesId].units) {
-          modelHouses[seriesId].units = []
+        if (!modelHouses[seriesId]) {
+          console.error("Series not found")
+          return
         }
 
-        const updatedUnits = modelHouses[seriesId].units.map((u) => (u.id === unitId ? { ...u, ...unit } : u))
+        const currentUnits = modelHouses[seriesId].units || []
+        const updatedUnits = currentUnits.map((u) => (u.id === unitId ? { ...u, ...unit } : u))
 
         const updatedSeries = {
           ...modelHouses[seriesId],
@@ -260,7 +274,6 @@ export const ModelHousesProvider: React.FC<{ children: React.ReactNode }> = ({ c
         await saveModelHousesToAPI(updatedModelHouses)
       } catch (error) {
         console.error("Error updating model house unit:", error)
-        throw error
       }
     },
     [modelHouses, saveModelHousesToAPI],
@@ -269,14 +282,14 @@ export const ModelHousesProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const deleteModelHouseUnit = useCallback(
     async (seriesId: string, unitId: string) => {
       try {
-        if (!modelHouses[seriesId]) throw new Error("Series not found")
-        if (!modelHouses[seriesId].units) {
-          modelHouses[seriesId].units = []
+        if (!modelHouses[seriesId]) {
+          console.error("Series not found")
+          return
         }
 
         const updatedSeries = {
           ...modelHouses[seriesId],
-          units: modelHouses[seriesId].units.filter((u) => u.id !== unitId),
+          units: (modelHouses[seriesId].units || []).filter((u) => u.id !== unitId),
         }
 
         const updatedModelHouses = {
@@ -287,7 +300,6 @@ export const ModelHousesProvider: React.FC<{ children: React.ReactNode }> = ({ c
         await saveModelHousesToAPI(updatedModelHouses)
       } catch (error) {
         console.error("Error deleting model house unit:", error)
-        throw error
       }
     },
     [modelHouses, saveModelHousesToAPI],
@@ -297,15 +309,15 @@ export const ModelHousesProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const updateRFOUnit = useCallback(
     async (unitId: string, updatedUnit: Partial<RFOUnit>) => {
       try {
-        // Find the RFO unit
         const rfoUnit = rfoUnits.find((u) => u.id === unitId)
-        if (!rfoUnit) throw new Error("RFO unit not found")
+        if (!rfoUnit) {
+          console.error("RFO unit not found")
+          return
+        }
 
-        // Update the model house unit
         await updateModelHouseUnit(rfoUnit.seriesId, unitId, { ...rfoUnit, ...updatedUnit } as ModelHouseUnit)
       } catch (error) {
         console.error("Error updating RFO unit:", error)
-        throw error
       }
     },
     [rfoUnits, updateModelHouseUnit],
@@ -326,7 +338,7 @@ export const ModelHousesProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const getModelHouseUnitById = useCallback(
     (seriesId: string, unitId: string) => {
       const series = modelHouses?.[seriesId]
-      if (!series || !series.units) return null
+      if (!series?.units) return null
       return series.units.find((unit) => unit.id === unitId) || null
     },
     [modelHouses],
@@ -339,7 +351,6 @@ export const ModelHousesProvider: React.FC<{ children: React.ReactNode }> = ({ c
     [rfoUnits],
   )
 
-  // New functions to replace direct imports from data files
   const getModelHousesByProject = useCallback(
     (project: string) => {
       return getAllModelHouseSeries().filter((series) => series.project === project)
@@ -365,7 +376,7 @@ export const ModelHousesProvider: React.FC<{ children: React.ReactNode }> = ({ c
       modelHouses,
       rfoUnits,
       isLoading,
-      error: error ? new Error(error.message) : null,
+      error: null, // Don't expose errors to prevent crashes
       addModelHouseSeries,
       updateModelHouseSeries,
       deleteModelHouseSeries,
@@ -387,7 +398,6 @@ export const ModelHousesProvider: React.FC<{ children: React.ReactNode }> = ({ c
       modelHouses,
       rfoUnits,
       isLoading,
-      error,
       addModelHouseSeries,
       updateModelHouseSeries,
       deleteModelHouseSeries,

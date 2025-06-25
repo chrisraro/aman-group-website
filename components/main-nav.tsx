@@ -248,11 +248,11 @@ export function MainNav() {
             exit={{ x: "100%" }}
             transition={{ type: "tween", duration: 0.3 }}
             className="fixed inset-0 bg-white z-40 md:hidden overflow-y-auto"
-            style={{ top: "64px" }}
+            style={{ top: "64px", height: "calc(100vh - 64px)" }}
           >
-            <div className="container mx-auto px-4 py-3 pb-32">
+            <div className="container mx-auto px-4 py-6 pb-32 h-full">
               <motion.div
-                className="space-y-1"
+                className="space-y-2 h-full flex flex-col"
                 initial="hidden"
                 animate="visible"
                 variants={{
@@ -260,13 +260,12 @@ export function MainNav() {
                 }}
               >
                 {navItems.map((item) => {
-                  // Check if the item has a dropdown
                   if (item.items) {
                     const isExpanded = expandedMobileItems.includes(item.label)
                     return (
                       <motion.div
                         key={item.label}
-                        className="mb-2 rounded-lg overflow-hidden border border-gray-100"
+                        className="mb-3 rounded-xl overflow-hidden border border-gray-100 shadow-sm"
                         variants={{
                           hidden: { opacity: 0, y: 20 },
                           visible: { opacity: 1, y: 0, transition: { duration: 0.3 } },
@@ -275,10 +274,10 @@ export function MainNav() {
                         <button
                           onClick={() => toggleMobileExpand(item.label)}
                           className={cn(
-                            "flex items-center justify-between w-full py-3 px-4 text-base font-medium rounded-t-lg",
+                            "flex items-center justify-between w-full py-4 px-5 text-lg font-medium rounded-t-xl min-h-[56px]",
                             item.items.some((subItem) => pathname.startsWith(subItem.href))
                               ? "bg-primary/10 text-primary font-semibold"
-                              : "text-muted-foreground",
+                              : "text-muted-foreground hover:bg-gray-50",
                           )}
                         >
                           <span>{item.label}</span>
@@ -304,10 +303,10 @@ export function MainNav() {
                                     key={subItem.href}
                                     href={subItem.href}
                                     className={cn(
-                                      "flex items-center py-2 px-8 text-sm transition-all",
+                                      "flex items-center py-3 px-8 text-base transition-all min-h-[48px]",
                                       pathname === subItem.href
-                                        ? "text-primary font-semibold"
-                                        : "text-muted-foreground",
+                                        ? "text-primary font-semibold bg-primary/5"
+                                        : "text-muted-foreground hover:bg-gray-100",
                                     )}
                                     onClick={() => setIsMenuOpen(false)}
                                   >
@@ -322,7 +321,6 @@ export function MainNav() {
                     )
                   }
 
-                  // Regular menu item without dropdown
                   return (
                     <motion.div
                       key={item.href}
@@ -334,7 +332,7 @@ export function MainNav() {
                       <Link
                         href={item.href}
                         className={cn(
-                          "flex items-center justify-between py-4 px-4 text-base font-medium rounded-md transition-all",
+                          "flex items-center justify-between py-4 px-5 text-lg font-medium rounded-xl transition-all min-h-[56px] shadow-sm border border-gray-100",
                           pathname === item.href
                             ? "bg-primary/10 text-primary font-semibold"
                             : "text-muted-foreground hover:bg-gray-50",
@@ -346,13 +344,16 @@ export function MainNav() {
                     </motion.div>
                   )
                 })}
+
+                {/* User Guide with better spacing */}
                 <motion.div
+                  className="mt-auto pt-6"
                   variants={{
                     hidden: { opacity: 0, y: 20 },
                     visible: { opacity: 1, y: 0, transition: { duration: 0.3 } },
                   }}
                 >
-                  <div className="py-4 px-4">
+                  <div className="py-4 px-5">
                     <UserGuide />
                   </div>
                 </motion.div>

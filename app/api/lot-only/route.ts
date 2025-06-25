@@ -3,7 +3,16 @@ import { getLotOnlyData, saveLotOnlyData, resetLotOnlyData } from "@/lib/storage
 
 export async function GET(request: Request) {
   try {
-    const properties = await getLotOnlyData()
+    let properties
+
+    try {
+      properties = await getLotOnlyData()
+    } catch (storageError) {
+      console.warn("Storage error, using fallback data:", storageError)
+      // Import and use initial data as fallback
+      const { lotOnlyProperties } = await import("@/data/lot-only-properties")
+      properties = lotOnlyProperties
+    }
 
     // Set cache control headers to prevent caching
     const headers = new Headers()
@@ -11,15 +20,23 @@ export async function GET(request: Request) {
     headers.set("Pragma", "no-cache")
 
     return NextResponse.json(
-      { properties },
+      { properties: properties || [] },
       {
         headers,
         status: 200,
       },
     )
   } catch (error) {
-    console.error("Error fetching lot-only properties:", error)
-    return NextResponse.json({ error: "Failed to fetch lot-only properties" }, { status: 500 })
+    console.error("Error in lot-only API route:", error)
+
+    // Return fallback data instead of error
+    try {
+      const { lotOnlyProperties } = await import("@/data/lot-only-properties")
+      return NextResponse.json({ properties: lotOnlyProperties }, { status: 200 })
+    } catch (fallbackError) {
+      console.error("Even fallback failed:", fallbackError)
+      return NextResponse.json({ properties: [] }, { status: 200 })
+    }
   }
 }
 

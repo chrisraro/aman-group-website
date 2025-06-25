@@ -25,7 +25,7 @@ export default function EnjoyRealtyPage() {
       </div>
 
       {/* Hero Section */}
-      <div className="relative h-[300px] md:h-[400px] rounded-lg overflow-hidden mb-12">
+      <div className="relative h-[250px] sm:h-[300px] lg:h-[400px] rounded-xl overflow-hidden mb-12">
         <div className="absolute inset-0 flex items-center">
           <div className="absolute inset-0 flex items-center justify-center z-0">
             <Image
@@ -33,19 +33,21 @@ export default function EnjoyRealtyPage() {
               alt="Enjoy Realty Logo"
               width={600}
               height={400}
-              className="object-contain p-12 opacity-20"
+              className="object-contain p-8 sm:p-12 opacity-20"
             />
           </div>
           <div className="absolute inset-0 bg-gradient-to-r from-[#65932D]/80 to-transparent z-10"></div>
-          <div className="px-4 md:px-12 max-w-2xl z-20 relative">
-            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-3 md:mb-4">
+          <div className="px-4 sm:px-6 lg:px-12 max-w-3xl z-20 relative">
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white mb-3 lg:mb-4 leading-tight">
               Enjoy Realty & Development Corporation
             </h1>
-            <p className="text-white/90 text-base md:text-lg mb-4 md:mb-6">
-              Palm Villages, Parkview Communites, Haciendas de Naga
+            <p className="text-white/90 text-base sm:text-lg lg:text-xl mb-4 lg:mb-6 leading-relaxed">
+              Palm Villages, Parkview Communities, Haciendas de Naga
             </p>
             <Link href="/contact">
-              <Button className="bg-[#FFE400] text-[#65932D] hover:bg-[#FFE400]/90">Contact Us</Button>
+              <Button className="bg-[#FFE400] text-[#65932D] hover:bg-[#FFE400]/90 text-base font-medium px-6 py-3 h-auto">
+                Contact Us
+              </Button>
             </Link>
           </div>
         </div>
@@ -56,25 +58,27 @@ export default function EnjoyRealtyPage() {
         <h2 className="text-3xl font-bold mb-8 text-[#65932D]">Our Projects</h2>
 
         <Tabs defaultValue={enjoyRealtyProjects[0]?.id || ""} className="w-full">
-          <TabsList className="flex w-full rounded-lg p-1 bg-gray-100/80 mb-6 md:mb-8 mobile-tabs overflow-x-auto no-scrollbar">
+          <TabsList className="flex w-full rounded-lg p-1 bg-gray-100/80 mb-6 lg:mb-8 overflow-x-auto no-scrollbar gap-1">
             {enjoyRealtyProjects.map((project) => (
               <TabsTrigger
                 key={project.id}
                 value={project.id}
-                className="flex-1 min-w-[100px] rounded-md px-2 py-2 text-xs md:text-sm font-medium transition-all data-[state=active]:bg-[#65932D] data-[state=active]:text-white data-[state=active]:shadow-sm hover:bg-gray-200/80"
-                mobileAbbr={project.name.length > 15 ? project.name.split(" ")[0] : undefined}
+                className="flex-1 min-w-[120px] sm:min-w-[140px] rounded-md px-3 py-2 sm:py-3 text-xs sm:text-sm font-medium transition-all data-[state=active]:bg-[#65932D] data-[state=active]:text-white data-[state=active]:shadow-sm hover:bg-gray-200/80 whitespace-nowrap"
               >
-                {project.name}
+                <span className="hidden sm:inline">{project.name}</span>
+                <span className="sm:hidden">
+                  {project.name.length > 15 ? project.name.split(" ")[0] : project.name}
+                </span>
               </TabsTrigger>
             ))}
           </TabsList>
 
           {enjoyRealtyProjects.map((project, index) => (
             <TabsContent key={project.id} value={project.id}>
-              <div className="bg-white rounded-lg shadow-md overflow-hidden border">
-                <div className="md:flex">
-                  <div className="md:w-1/2 relative">
-                    <div className="h-[300px] overflow-hidden">
+              <div className="bg-white rounded-xl shadow-md overflow-hidden border">
+                <div className="lg:flex">
+                  <div className="lg:w-1/2 relative">
+                    <div className="h-[250px] sm:h-[300px] lg:h-[350px] overflow-hidden">
                       <Image
                         src={project.imageUrl || `/placeholder.svg?height=600&width=800&text=${project.name}`}
                         alt={project.name}
@@ -86,29 +90,29 @@ export default function EnjoyRealtyPage() {
                       />
                     </div>
                   </div>
-                  <div className="md:w-1/2 p-6 md:p-8">
-                    <h3 className="text-2xl font-bold mb-4">{project.name}</h3>
-                    <p className="text-muted-foreground mb-6">{project.description}</p>
-                    <div className="grid grid-cols-2 gap-4 mb-6">
+                  <div className="lg:w-1/2 p-6 sm:p-8">
+                    <h3 className="text-xl sm:text-2xl font-bold mb-4">{project.name}</h3>
+                    <p className="text-muted-foreground mb-6 leading-relaxed">{project.description}</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
                       <div>
-                        <h4 className="font-semibold mb-1">Location</h4>
+                        <h4 className="font-semibold mb-2 text-gray-900">Location</h4>
                         <p className="text-sm text-muted-foreground">{project.location}</p>
                       </div>
                       <div>
-                        <h4 className="font-semibold mb-1">Property Type</h4>
+                        <h4 className="font-semibold mb-2 text-gray-900">Property Type</h4>
                         <p className="text-sm text-muted-foreground">{project.propertyType}</p>
                       </div>
                       <div>
-                        <h4 className="font-semibold mb-1">Lot Area</h4>
+                        <h4 className="font-semibold mb-2 text-gray-900">Lot Area</h4>
                         <p className="text-sm text-muted-foreground">{project.lotArea}</p>
                       </div>
                       <div>
-                        <h4 className="font-semibold mb-1">Status</h4>
+                        <h4 className="font-semibold mb-2 text-gray-900">Status</h4>
                         <p className="text-sm text-muted-foreground">{project.status}</p>
                       </div>
                     </div>
                     <Link href={`/enjoy-realty/${project.id}`}>
-                      <Button className="w-full bg-[#65932D] hover:bg-[#65932D]/90">
+                      <Button className="w-full bg-[#65932D] hover:bg-[#65932D]/90 text-base font-medium h-12">
                         View Project Details <ArrowRight className="ml-2 h-4 w-4" />
                       </Button>
                     </Link>
