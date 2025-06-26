@@ -1,7 +1,7 @@
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { logoutAction } from "@/app/actions/auth"
-import { Home, Settings, Users, Building, LogOut } from "lucide-react"
+import { Home, Settings, Users, Building, LogOut, Calculator } from "lucide-react"
 
 export function AdminNav() {
   return (
@@ -40,6 +40,13 @@ export function AdminNav() {
               >
                 <Users className="h-4 w-4" />
                 <span>Agent Links</span>
+              </Link>
+              <Link
+                href="/admin/loan-calculator"
+                className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
+              >
+                <Calculator className="h-4 w-4" />
+                <span>Loan Calculator</span>
               </Link>
             </div>
           </div>

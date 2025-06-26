@@ -1,6 +1,6 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Building, MapPin, Users, LinkIcon, BarChart3, UserCheck } from "lucide-react"
+import { Building, MapPin, Users, LinkIcon, BarChart3, UserCheck, Calculator } from "lucide-react"
 import Link from "next/link"
 
 export default function AdminDashboard() {
@@ -79,6 +79,12 @@ export default function AdminDashboard() {
       description: "View performance metrics",
       href: "/admin/analytics",
       icon: BarChart3,
+    },
+    {
+      title: "Loan Calculator",
+      description: "Manage financing options and calculator settings",
+      href: "/admin/loan-calculator",
+      icon: Calculator,
     },
   ]
 

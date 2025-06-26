@@ -13,8 +13,8 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { formatCurrency } from "@/lib/utils"
-import { calculateMonthlyAmortization, getInterestRate } from "@/lib/loan-calculations"
-import type { AmortizationResult, FinancingOption, PaymentTerm } from "@/types/loan-calculator"
+import type { FinancingOption, PaymentTerm, DownPaymentTerm, LoanCalculationResult } from "@/types/loan-calculator"
+import { calculateCompleteLoanDetails, generateLoanAmortizationSchedule } from "@/lib/loan-calculations"
 // Add the import for the PDF export utility
 import { exportToPDF } from "@/components/pdf-export-utils"
 
@@ -33,6 +33,7 @@ const formatNumberWithCommas = (value: number | undefined): string => {
 const formSchema = z.object({
   propertyPrice: z.number().min(1),
   downPayment: z.number().min(1),
+  downPaymentTerm: z.number().int().min(1).max(36),
   financingOption: z.enum(["in-house", "in-house-bridge", "pag-ibig", "bank"]),
   paymentTerm: z.number().int().min(5).max(30),
 })
@@ -44,7 +45,7 @@ interface LoanCalculatorFormProps {
 }
 
 export function LoanCalculatorForm({ initialPrice, returnUrl = "/model-houses", modelName }: LoanCalculatorFormProps) {
-  const [result, setResult] = useState<AmortizationResult | null>(null)
+  const [result, setResult] = useState<LoanCalculationResult | null>(null)
   const [scheduleView, setScheduleView] = useState<"monthly" | "yearly">(() => {
     // Check if we're in the browser environment
     if (typeof window !== "undefined") {
@@ -87,6 +88,7 @@ export function LoanCalculatorForm({ initialPrice, returnUrl = "/model-houses", 
     defaultValues: {
       propertyPrice: propertyPrice,
       downPayment: Math.round(propertyPrice * (downPaymentPercentage / 100)),
+      downPaymentTerm: 12,
       financingOption: "in-house",
       paymentTerm: 5,
     },
@@ -124,6 +126,7 @@ export function LoanCalculatorForm({ initialPrice, returnUrl = "/model-houses", 
       form.reset({
         propertyPrice: defaultPrice,
         downPayment: Math.round(defaultPrice * 0.2),
+        downPaymentTerm: 12,
         financingOption: "in-house",
         paymentTerm: 5,
       })
@@ -140,14 +143,15 @@ export function LoanCalculatorForm({ initialPrice, returnUrl = "/model-houses", 
   }, [scheduleView])
 
   function onSubmit(values: z.infer<typeof formSchema>) {
-    const loanAmount = values.propertyPrice - values.downPayment
-    const interestRate = getInterestRate(values.financingOption as FinancingOption, values.paymentTerm as PaymentTerm)
-
-    const calculation = calculateMonthlyAmortization(loanAmount, interestRate, values.paymentTerm)
+    const calculation = calculateCompleteLoanDetails(
+      values.propertyPrice,
+      values.downPayment,
+      values.downPaymentTerm as DownPaymentTerm,
+      values.financingOption as FinancingOption,
+      values.paymentTerm as PaymentTerm,
+    )
 
     setResult(calculation)
-
-    // Scroll to loan summary on mobile after calculation
     setTimeout(() => scrollToLoanSummary(), 100)
   }
 
@@ -155,29 +159,12 @@ export function LoanCalculatorForm({ initialPrice, returnUrl = "/model-houses", 
   const generateAmortizationSchedule = () => {
     if (!result) return []
 
-    const { loanAmount, interestRate } = result
-    const monthlyInterestRate = interestRate / 100 / 12
-    const numberOfPayments = form.getValues("paymentTerm") * 12
-
-    let balance = loanAmount
-    const schedule = []
-
-    for (let month = 1; month <= numberOfPayments; month++) {
-      const interestPayment = balance * monthlyInterestRate
-      const principalPayment = result.monthlyPayment - interestPayment
-      balance -= principalPayment
-
-      schedule.push({
-        month,
-        date: new Date(Date.now() + month * 30 * 24 * 60 * 60 * 1000),
-        principal: principalPayment,
-        interest: interestPayment,
-        payment: result.monthlyPayment,
-        balance: Math.max(0, balance),
-      })
-    }
-
-    return schedule
+    return generateLoanAmortizationSchedule(
+      result.loanAmortization.loanAmount,
+      result.loanAmortization.interestRate,
+      form.getValues("paymentTerm"),
+      result.loanAmortization.monthlyPayment,
+    )
   }
 
   // Generate yearly amortization schedule
@@ -185,31 +172,7 @@ export function LoanCalculatorForm({ initialPrice, returnUrl = "/model-houses", 
     if (!result) return []
 
     const monthlySchedule = generateAmortizationSchedule()
-    const yearlySchedule = []
-
-    for (let year = 1; year <= form.getValues("paymentTerm"); year++) {
-      const yearStart = (year - 1) * 12
-      const yearEnd = year * 12
-      const yearMonths = monthlySchedule.slice(yearStart, yearEnd)
-
-      // Skip if there are no months in this year
-      if (yearMonths.length === 0) continue
-
-      const totalPrincipal = yearMonths.reduce((sum, month) => sum + month.principal, 0)
-      const totalInterest = yearMonths.reduce((sum, month) => sum + month.interest, 0)
-      const totalPayment = yearMonths.reduce((sum, month) => sum + month.payment, 0)
-      const balance = yearMonths[yearMonths.length - 1]?.balance || 0
-
-      yearlySchedule.push({
-        year,
-        principal: totalPrincipal,
-        interest: totalInterest,
-        payment: totalPayment,
-        balance,
-      })
-    }
-
-    return yearlySchedule
+    return generateYearlyAmortizationSchedule(monthlySchedule, form.getValues("paymentTerm"))
   }
 
   // Update the handleExport function to include modelName in both CSV and PDF exports
@@ -270,10 +233,10 @@ export function LoanCalculatorForm({ initialPrice, returnUrl = "/model-houses", 
           {
             propertyPrice: form.getValues("propertyPrice"),
             downPayment: form.getValues("downPayment"),
-            loanAmount: result.loanAmount,
-            interestRate: result.interestRate,
-            monthlyPayment: result.monthlyPayment,
-            totalPayment: result.totalPayment,
+            loanAmount: result.loanAmortization.loanAmount,
+            interestRate: result.loanAmortization.interestRate,
+            monthlyPayment: result.loanAmortization.monthlyPayment,
+            totalPayment: result.loanAmortization.totalPayment,
             term: form.getValues("paymentTerm"),
           },
           modelName,
@@ -363,12 +326,15 @@ export function LoanCalculatorForm({ initialPrice, returnUrl = "/model-houses", 
       <div className="grid md:grid-cols-3 gap-8">
         <div className="md:col-span-2">
           <Tabs defaultValue="calculator" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 mobile-tabs">
+            <TabsList className="grid w-full grid-cols-3 mobile-tabs">
               <TabsTrigger value="calculator" className="text-xs md:text-sm">
                 Calculator
               </TabsTrigger>
+              <TabsTrigger value="down-payment" className="text-xs md:text-sm">
+                Down Payment
+              </TabsTrigger>
               <TabsTrigger value="schedule" className="text-xs md:text-sm">
-                Amortization Schedule
+                Loan Schedule
               </TabsTrigger>
             </TabsList>
 
@@ -475,6 +441,27 @@ export function LoanCalculatorForm({ initialPrice, returnUrl = "/model-houses", 
                       </div>
 
                       <div className="space-y-2">
+                        <Label htmlFor="downPaymentTerm">Down Payment Terms</Label>
+                        <Select
+                          onValueChange={(value) => form.setValue("downPaymentTerm", Number.parseInt(value))}
+                          defaultValue={form.getValues("downPaymentTerm").toString()}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select down payment term" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="1">Lump Sum (No Interest)</SelectItem>
+                            <SelectItem value="3">3 months (2% interest)</SelectItem>
+                            <SelectItem value="6">6 months (3% interest)</SelectItem>
+                            <SelectItem value="12">12 months (4% interest)</SelectItem>
+                            <SelectItem value="18">18 months (5% interest)</SelectItem>
+                            <SelectItem value="24">24 months (6% interest)</SelectItem>
+                            <SelectItem value="36">36 months (7% interest)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-2">
                         <Label htmlFor="financingOption">Financing Option</Label>
                         <Select
                           onValueChange={(value) => form.setValue("financingOption", value as FinancingOption)}
@@ -517,6 +504,80 @@ export function LoanCalculatorForm({ initialPrice, returnUrl = "/model-houses", 
                       Calculate
                     </Button>
                   </form>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="down-payment" className="space-y-4 py-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Down Payment Schedule</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {!result ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      Please calculate your loan first to view the down payment schedule.
+                    </div>
+                  ) : (
+                    <>
+                      <div className="mb-4 p-4 bg-blue-50 rounded-lg">
+                        <div className="grid grid-cols-2 gap-4 text-sm">
+                          <div>
+                            <span className="text-muted-foreground">Total Down Payment:</span>
+                            <div className="font-semibold">{formatCurrency(result.totalDownPayment)}</div>
+                          </div>
+                          <div>
+                            <span className="text-muted-foreground">Monthly Payment:</span>
+                            <div className="font-semibold">{formatCurrency(result.downPaymentMonthlyAmount)}</div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Desktop view */}
+                      <div className="hidden md:block overflow-x-auto">
+                        <div className="rounded-md border min-w-full">
+                          <div className="grid grid-cols-4 bg-muted p-3 text-sm font-medium">
+                            <div>Month</div>
+                            <div>Payment</div>
+                            <div>Cumulative Paid</div>
+                            <div>Balance</div>
+                          </div>
+                          <div className="max-h-[400px] overflow-y-auto">
+                            {result.downPaymentSchedule.map((row) => (
+                              <div key={row.month} className="grid grid-cols-4 border-t p-3 text-sm">
+                                <div>{row.month}</div>
+                                <div>{formatCurrency(row.payment)}</div>
+                                <div>{formatCurrency(row.cumulativePaid)}</div>
+                                <div>{formatCurrency(row.balance)}</div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Mobile view */}
+                      <div className="md:hidden space-y-2">
+                        {result.downPaymentSchedule.map((row) => (
+                          <div key={row.month} className="border rounded-md p-3 text-sm">
+                            <div className="flex justify-between border-b pb-2 mb-2">
+                              <span className="font-medium">Month {row.month}</span>
+                              <span className="font-medium">Balance: {formatCurrency(row.balance)}</span>
+                            </div>
+                            <div className="grid grid-cols-2 gap-2">
+                              <div>
+                                <div className="text-xs text-muted-foreground">Payment</div>
+                                <div>{formatCurrency(row.payment)}</div>
+                              </div>
+                              <div>
+                                <div className="text-xs text-muted-foreground">Cumulative</div>
+                                <div>{formatCurrency(row.cumulativePaid)}</div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>
@@ -632,20 +693,28 @@ export function LoanCalculatorForm({ initialPrice, returnUrl = "/model-houses", 
                     <p className="text-xl font-semibold">{formatCurrency(form.getValues("propertyPrice"))}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-muted-foreground">Down Payment</p>
+                    <p className="text-sm text-muted-foreground">Down Payment Amount</p>
                     <p className="text-xl font-semibold">{formatCurrency(form.getValues("downPayment"))}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-muted-foreground">Loan Principal</p>
-                    <p className="text-xl font-semibold">{formatCurrency(result.loanAmount)}</p>
-                  </div>
-                  <div className="pt-2 border-t">
-                    <p className="text-sm text-muted-foreground">Monthly Payment</p>
-                    <p className="text-2xl font-bold text-primary">{formatCurrency(result.monthlyPayment)}</p>
+                    <p className="text-sm text-muted-foreground">Down Payment Monthly</p>
+                    <p className="text-xl font-semibold text-blue-600">
+                      {formatCurrency(result.downPaymentMonthlyAmount)}
+                    </p>
                   </div>
                   <div>
-                    <p className="text-sm text-muted-foreground">Total Payment</p>
-                    <p className="text-xl font-semibold">{formatCurrency(result.totalPayment)}</p>
+                    <p className="text-sm text-muted-foreground">Loan Principal</p>
+                    <p className="text-xl font-semibold">{formatCurrency(result.loanAmortization.loanAmount)}</p>
+                  </div>
+                  <div className="pt-2 border-t">
+                    <p className="text-sm text-muted-foreground">Loan Monthly Payment</p>
+                    <p className="text-2xl font-bold text-primary">
+                      {formatCurrency(result.loanAmortization.monthlyPayment)}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Total Project Cost</p>
+                    <p className="text-xl font-semibold text-red-600">{formatCurrency(result.totalProjectCost)}</p>
                   </div>
                 </div>
               )}
