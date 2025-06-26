@@ -204,13 +204,35 @@ export default function LoanCalculatorAdmin() {
             <p className="text-xs text-muted-foreground">Years maximum</p>
           </CardContent>
         </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Reservation Fees</CardTitle>
+            <DollarSign className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">25K / 10K</div>
+            <p className="text-xs text-muted-foreground">Model House / Lot Only</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Special Rules</CardTitle>
+            <Settings className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">20%</div>
+            <p className="text-xs text-muted-foreground">Special rate active</p>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Main Content */}
       <Tabs defaultValue="financing" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="financing">Financing Options</TabsTrigger>
           <TabsTrigger value="downpayment">Down Payment Terms</TabsTrigger>
+          <TabsTrigger value="fees">Fees & Taxes</TabsTrigger>
+          <TabsTrigger value="special-rules">Special Rules</TabsTrigger>
           <TabsTrigger value="settings">Calculator Settings</TabsTrigger>
         </TabsList>
 
@@ -491,6 +513,161 @@ export default function LoanCalculatorAdmin() {
                     </div>
                   </div>
                 ))}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Fees & Taxes Tab */}
+        <TabsContent value="fees" className="space-y-4">
+          <div className="grid gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Reservation Fees</CardTitle>
+                <CardDescription>Configure reservation fees for different property types</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="modelHouseReservation">Model House Reservation Fee</Label>
+                    <Input id="modelHouseReservation" type="number" defaultValue="25000" placeholder="25000" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="lotOnlyReservation">Lot Only Reservation Fee</Label>
+                    <Input id="lotOnlyReservation" type="number" defaultValue="10000" placeholder="10000" />
+                  </div>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Switch id="reservationActive" defaultChecked />
+                  <Label htmlFor="reservationActive">Enable reservation fees</Label>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Government Fees & Taxes</CardTitle>
+                <CardDescription>Configure government fees and taxes calculation</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="fixedAmountThreshold">Fixed Amount Threshold</Label>
+                    <Input id="fixedAmountThreshold" type="number" defaultValue="1000000" placeholder="1000000" />
+                    <p className="text-xs text-muted-foreground">Properties ≥ this amount use fixed fee</p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="fixedAmount">Fixed Amount</Label>
+                    <Input id="fixedAmount" type="number" defaultValue="205000" placeholder="205000" />
+                    <p className="text-xs text-muted-foreground">Fixed fee for properties ≥ threshold</p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="percentageRate">Percentage Rate (%)</Label>
+                    <Input id="percentageRate" type="number" step="0.1" defaultValue="20.5" placeholder="20.5" />
+                    <p className="text-xs text-muted-foreground">Percentage for properties &lt; threshold</p>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Switch id="governmentFeesActive" defaultChecked />
+                  <Label htmlFor="governmentFeesActive">Enable government fees & taxes</Label>
+                </div>
+
+                <div className="mt-4 p-4 bg-blue-50 rounded-lg">
+                  <h4 className="font-medium mb-2">Calculation Logic:</h4>
+                  <div className="text-sm text-muted-foreground space-y-1">
+                    <p>• If property price ≥ 1,000,000: Add fixed 205,000</p>
+                    <p>• If property price &lt; 1,000,000: Add 20.5% of property price</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <div className="flex justify-end">
+              <Button>Save Fees Configuration</Button>
+            </div>
+          </div>
+        </TabsContent>
+
+        {/* Special Rules Tab */}
+        <TabsContent value="special-rules" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>20% Down Payment Special Rule</CardTitle>
+              <CardDescription>Configure special interest rates for 20% down payments</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center space-x-2 mb-4">
+                <Switch id="twentyPercentRuleActive" defaultChecked />
+                <Label htmlFor="twentyPercentRuleActive">Enable 20% down payment special rule</Label>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="firstYearRate">First Year Interest Rate (%)</Label>
+                  <Input id="firstYearRate" type="number" step="0.1" defaultValue="0" placeholder="0" />
+                  <p className="text-xs text-muted-foreground">Interest rate for first 12 months</p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="subsequentYearRate">Subsequent Years Interest Rate (%)</Label>
+                  <Input id="subsequentYearRate" type="number" step="0.1" defaultValue="8.5" placeholder="8.5" />
+                  <p className="text-xs text-muted-foreground">Interest rate for months 13 onwards</p>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Applicable Terms</Label>
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="flex items-center space-x-2">
+                    <input type="checkbox" id="term12" defaultChecked />
+                    <Label htmlFor="term12" className="text-sm">
+                      12 Months
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <input type="checkbox" id="term24" defaultChecked />
+                    <Label htmlFor="term24" className="text-sm">
+                      24 Months
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <input type="checkbox" id="term36" defaultChecked />
+                    <Label htmlFor="term36" className="text-sm">
+                      36 Months
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <input type="checkbox" id="term48" defaultChecked />
+                    <Label htmlFor="term48" className="text-sm">
+                      48 Months
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <input type="checkbox" id="term60" defaultChecked />
+                    <Label htmlFor="term60" className="text-sm">
+                      60 Months
+                    </Label>
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Select which payment terms qualify for the 20% special rule
+                </p>
+              </div>
+
+              <div className="mt-4 p-4 bg-blue-50 rounded-lg">
+                <h4 className="font-medium mb-2">Rule Logic:</h4>
+                <div className="text-sm text-muted-foreground space-y-1">
+                  <p>
+                    • <strong>Option 1:</strong> 12 months at 0% interest (when down payment = 20%)
+                  </p>
+                  <p>
+                    • <strong>Option 2:</strong> First year at 0%, subsequent years at 8.5% (when down payment = 20%)
+                  </p>
+                  <p>• Rule only applies when down payment percentage is exactly 20%</p>
+                </div>
+              </div>
+
+              <div className="flex justify-end">
+                <Button>Save Special Rules</Button>
               </div>
             </CardContent>
           </Card>

@@ -5,16 +5,28 @@ import Link from "next/link"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import * as z from "zod"
-import { ArrowLeft, Calculator, FileDown, FileText, Home, Loader2 } from "lucide-react"
+import { ArrowLeft, Calculator, FileDown, FileText, Home, Loader2, Info } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Badge } from "@/components/ui/badge"
 import { formatCurrency } from "@/lib/utils"
-import type { FinancingOption, PaymentTerm, DownPaymentTerm, LoanCalculationResult } from "@/types/loan-calculator"
-import { calculateCompleteLoanDetails, generateLoanAmortizationSchedule } from "@/lib/loan-calculations"
+import type {
+  FinancingOption,
+  PaymentTerm,
+  DownPaymentTerm,
+  LoanCalculationResult,
+  PropertyType,
+} from "@/types/loan-calculator"
+import {
+  calculateCompleteLoanDetails,
+  generateLoanAmortizationSchedule,
+  loadLoanCalculatorSettings,
+  getDefaultLoanCalculatorSettings,
+} from "@/lib/loan-calculations"
 // Add the import for the PDF export utility
 import { exportToPDF } from "@/components/pdf-export-utils"
 
@@ -31,7 +43,8 @@ const formatNumberWithCommas = (value: number | undefined): string => {
 }
 
 const formSchema = z.object({
-  propertyPrice: z.number().min(1),
+  basePrice: z.number().min(1),
+  propertyType: z.enum(["model-house", "lot-only"]),
   downPayment: z.number().min(1),
   downPaymentTerm: z.number().int().min(1).max(36),
   financingOption: z.enum(["in-house", "in-house-bridge", "pag-ibig", "bank"]),
@@ -42,9 +55,15 @@ interface LoanCalculatorFormProps {
   initialPrice?: number
   returnUrl?: string
   modelName?: string
+  propertyType?: PropertyType
 }
 
-export function LoanCalculatorForm({ initialPrice, returnUrl = "/model-houses", modelName }: LoanCalculatorFormProps) {
+export function LoanCalculatorForm({
+  initialPrice,
+  returnUrl = "/model-houses",
+  modelName,
+  propertyType = "model-house",
+}: LoanCalculatorFormProps) {
   const [result, setResult] = useState<LoanCalculationResult | null>(null)
   const [scheduleView, setScheduleView] = useState<"monthly" | "yearly">(() => {
     // Check if we're in the browser environment
@@ -59,8 +78,20 @@ export function LoanCalculatorForm({ initialPrice, returnUrl = "/model-houses", 
   })
   const [downPaymentPercentage, setDownPaymentPercentage] = useState<number>(20)
   const [isExporting, setIsExporting] = useState(false)
+  const [calculatorSettings, setCalculatorSettings] = useState(getDefaultLoanCalculatorSettings())
 
   const loanSummaryRef = useRef<HTMLDivElement>(null)
+
+  // Load calculator settings on component mount
+  useEffect(() => {
+    const loadSettings = async () => {
+      const savedSettings = await loadLoanCalculatorSettings()
+      if (savedSettings) {
+        setCalculatorSettings({ ...getDefaultLoanCalculatorSettings(), ...savedSettings })
+      }
+    }
+    loadSettings()
+  }, [])
 
   // Function to scroll to loan summary on mobile
   const scrollToLoanSummary = () => {
@@ -73,10 +104,10 @@ export function LoanCalculatorForm({ initialPrice, returnUrl = "/model-houses", 
   const defaultPrice = 4707475
 
   // Use the initial price from the model house if available
-  const propertyPrice = initialPrice || defaultPrice
+  const basePrice = initialPrice || defaultPrice
 
   // Calculate default down payment (20%)
-  const defaultDownPayment = propertyPrice * 0.2
+  const defaultDownPayment = basePrice * 0.2
 
   // Helper function to format number to two decimal places
   const formatToTwoDecimals = (value: number): number => {
@@ -86,8 +117,9 @@ export function LoanCalculatorForm({ initialPrice, returnUrl = "/model-houses", 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      propertyPrice: propertyPrice,
-      downPayment: Math.round(propertyPrice * (downPaymentPercentage / 100)),
+      basePrice: basePrice,
+      propertyType: propertyType,
+      downPayment: Math.round(basePrice * (downPaymentPercentage / 100)),
       downPaymentTerm: 12,
       financingOption: "in-house",
       paymentTerm: 5,
@@ -96,7 +128,7 @@ export function LoanCalculatorForm({ initialPrice, returnUrl = "/model-houses", 
 
   // Update down payment when property price or percentage changes
   useEffect(() => {
-    const currentPrice = form.getValues("propertyPrice")
+    const currentPrice = form.getValues("basePrice")
     if (currentPrice && !isNaN(currentPrice)) {
       const newDownPayment = Math.round(currentPrice * (downPaymentPercentage / 100))
       form.setValue("downPayment", newDownPayment)
@@ -124,7 +156,8 @@ export function LoanCalculatorForm({ initialPrice, returnUrl = "/model-houses", 
     if (pathname === "/loan-calculator" && !initialPrice) {
       // Reset to default values with integer values
       form.reset({
-        propertyPrice: defaultPrice,
+        basePrice: defaultPrice,
+        propertyType: "model-house",
         downPayment: Math.round(defaultPrice * 0.2),
         downPaymentTerm: 12,
         financingOption: "in-house",
@@ -144,11 +177,14 @@ export function LoanCalculatorForm({ initialPrice, returnUrl = "/model-houses", 
 
   function onSubmit(values: z.infer<typeof formSchema>) {
     const calculation = calculateCompleteLoanDetails(
-      values.propertyPrice,
+      values.basePrice,
+      values.propertyType,
       values.downPayment,
       values.downPaymentTerm as DownPaymentTerm,
       values.financingOption as FinancingOption,
       values.paymentTerm as PaymentTerm,
+      calculatorSettings.reservationFees,
+      calculatorSettings.governmentFeesConfig,
     )
 
     setResult(calculation)
@@ -231,7 +267,7 @@ export function LoanCalculatorForm({ initialPrice, returnUrl = "/model-houses", 
           scheduleData,
           scheduleView,
           {
-            propertyPrice: form.getValues("propertyPrice"),
+            propertyPrice: result.propertyBreakdown.totalAllInPrice,
             downPayment: form.getValues("downPayment"),
             loanAmount: result.loanAmortization.loanAmount,
             interestRate: result.loanAmortization.interestRate,
@@ -296,7 +332,7 @@ export function LoanCalculatorForm({ initialPrice, returnUrl = "/model-houses", 
           </Link>
           <span className="mx-2 text-muted-foreground">/</span>
           <Link href={returnUrl} className="text-muted-foreground hover:text-primary">
-            Model Houses
+            {propertyType === "model-house" ? "Model Houses" : "Lot Only"}
           </Link>
           <span className="mx-2 text-muted-foreground">/</span>
           <span className="font-medium">Loan Calculator</span>
@@ -305,7 +341,7 @@ export function LoanCalculatorForm({ initialPrice, returnUrl = "/model-houses", 
         <Link href={returnUrl}>
           <Button variant="outline" size="sm">
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Model Houses
+            Back to {propertyType === "model-house" ? "Model Houses" : "Lot Only"}
           </Button>
         </Link>
       </div>
@@ -326,9 +362,12 @@ export function LoanCalculatorForm({ initialPrice, returnUrl = "/model-houses", 
       <div className="grid md:grid-cols-3 gap-8">
         <div className="md:col-span-2">
           <Tabs defaultValue="calculator" className="w-full">
-            <TabsList className="grid w-full grid-cols-3 mobile-tabs">
+            <TabsList className="grid w-full grid-cols-4 mobile-tabs">
               <TabsTrigger value="calculator" className="text-xs md:text-sm">
                 Calculator
+              </TabsTrigger>
+              <TabsTrigger value="breakdown" className="text-xs md:text-sm">
+                Breakdown
               </TabsTrigger>
               <TabsTrigger value="down-payment" className="text-xs md:text-sm">
                 Down Payment
@@ -347,25 +386,42 @@ export function LoanCalculatorForm({ initialPrice, returnUrl = "/model-houses", 
                   <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                     <div className="grid gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="propertyPrice">Property Price</Label>
+                        <Label htmlFor="basePrice">Base Property Price</Label>
                         <Input
-                          id="propertyPrice"
+                          id="basePrice"
                           type="text"
                           disabled={!!initialPrice}
-                          value={formatNumberWithCommas(form.getValues("propertyPrice") || 0)}
+                          value={formatNumberWithCommas(form.getValues("basePrice") || 0)}
                           onChange={(e) => {
                             // Remove commas and convert to number
                             const rawValue = e.target.value.replace(/,/g, "")
                             const value = rawValue ? Number(rawValue) : 0
 
                             if (!isNaN(value)) {
-                              form.setValue("propertyPrice", value)
+                              form.setValue("basePrice", value)
                               // Update down payment based on percentage
                               const newDownPayment = Math.round(value * (downPaymentPercentage / 100))
                               form.setValue("downPayment", newDownPayment)
                             }
                           }}
                         />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="propertyType">Property Type</Label>
+                        <Select
+                          onValueChange={(value) => form.setValue("propertyType", value as PropertyType)}
+                          defaultValue={form.getValues("propertyType")}
+                          disabled={!!propertyType}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select property type" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="model-house">Model House</SelectItem>
+                            <SelectItem value="lot-only">Lot Only</SelectItem>
+                          </SelectContent>
+                        </Select>
                       </div>
 
                       <div className="space-y-2">
@@ -380,7 +436,7 @@ export function LoanCalculatorForm({ initialPrice, returnUrl = "/model-houses", 
                               onValueChange={(value) => {
                                 setDownPaymentPercentage(Number(value))
                                 // Immediately update the down payment value
-                                const currentPrice = form.getValues("propertyPrice")
+                                const currentPrice = form.getValues("basePrice")
                                 if (currentPrice && !isNaN(currentPrice)) {
                                   const newDownPayment = Math.round(currentPrice * (Number(value) / 100))
                                   form.setValue("downPayment", newDownPayment)
@@ -425,7 +481,7 @@ export function LoanCalculatorForm({ initialPrice, returnUrl = "/model-houses", 
                                 form.setValue("downPayment", value)
 
                                 // Update percentage if property price is not zero
-                                const propertyPrice = form.getValues("propertyPrice")
+                                const propertyPrice = form.getValues("basePrice")
                                 if (propertyPrice > 0) {
                                   const calculatedPercentage = Math.round((value / propertyPrice) * 100)
                                   // Only update if it's a valid percentage
@@ -450,13 +506,33 @@ export function LoanCalculatorForm({ initialPrice, returnUrl = "/model-houses", 
                             <SelectValue placeholder="Select down payment term" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="1">Lump Sum (No Interest)</SelectItem>
-                            <SelectItem value="3">3 months (2% interest)</SelectItem>
-                            <SelectItem value="6">6 months (3% interest)</SelectItem>
-                            <SelectItem value="12">12 months (4% interest)</SelectItem>
-                            <SelectItem value="18">18 months (5% interest)</SelectItem>
-                            <SelectItem value="24">24 months (6% interest)</SelectItem>
-                            <SelectItem value="36">36 months (7% interest)</SelectItem>
+                            {calculatorSettings.downPaymentTerms
+                              .filter((term) => term.isActive)
+                              .map((term) => {
+                                const is20PercentRule =
+                                  Math.abs(downPaymentPercentage - 20) < 0.1 &&
+                                  calculatorSettings.specialDownPaymentRules?.twentyPercentRule.isActive &&
+                                  calculatorSettings.specialDownPaymentRules.twentyPercentRule.applicableTerms.includes(
+                                    term.value,
+                                  )
+
+                                return (
+                                  <SelectItem key={term.id} value={term.value.toString()}>
+                                    <div className="flex flex-col">
+                                      <span>{term.name}</span>
+                                      {is20PercentRule ? (
+                                        <span className="text-xs text-green-600">Year 1: 0% • Year 2+: 8.5%</span>
+                                      ) : term.interestRate > 0 ? (
+                                        <span className="text-xs text-muted-foreground">
+                                          {term.interestRate}% interest
+                                        </span>
+                                      ) : (
+                                        <span className="text-xs text-muted-foreground">No interest</span>
+                                      )}
+                                    </div>
+                                  </SelectItem>
+                                )
+                              })}
                           </SelectContent>
                         </Select>
                       </div>
@@ -471,10 +547,13 @@ export function LoanCalculatorForm({ initialPrice, returnUrl = "/model-houses", 
                             <SelectValue placeholder="Select financing option" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="in-house">In-House Financing</SelectItem>
-                            <SelectItem value="in-house-bridge">In-House Bridge Financing</SelectItem>
-                            <SelectItem value="pag-ibig">Pag-IBIG Financing</SelectItem>
-                            <SelectItem value="bank">Bank Financing</SelectItem>
+                            {calculatorSettings.financingOptions
+                              .filter((option) => option.isActive)
+                              .map((option) => (
+                                <SelectItem key={option.id} value={option.value}>
+                                  {option.name}
+                                </SelectItem>
+                              ))}
                           </SelectContent>
                         </Select>
                       </div>
@@ -508,6 +587,85 @@ export function LoanCalculatorForm({ initialPrice, returnUrl = "/model-houses", 
               </Card>
             </TabsContent>
 
+            <TabsContent value="breakdown" className="space-y-4 py-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    Property Price Breakdown
+                    <Info className="h-4 w-4 text-muted-foreground" />
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {!result ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      Please calculate your loan first to view the price breakdown.
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      <div className="grid gap-4">
+                        <div className="flex justify-between items-center p-3 bg-blue-50 rounded-lg">
+                          <span className="font-medium">Base Property Price</span>
+                          <span className="font-semibold">{formatCurrency(result.propertyBreakdown.basePrice)}</span>
+                        </div>
+
+                        <div className="flex justify-between items-center p-3 bg-green-50 rounded-lg">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium">Reservation Fee</span>
+                            <Badge variant="outline" className="text-xs">
+                              {result.propertyBreakdown.propertyType === "model-house" ? "Model House" : "Lot Only"}
+                            </Badge>
+                          </div>
+                          <span className="font-semibold">
+                            {formatCurrency(result.propertyBreakdown.reservationFee)}
+                          </span>
+                        </div>
+
+                        <div className="flex justify-between items-center p-3 bg-yellow-50 rounded-lg">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium">Government Fees & Taxes</span>
+                            <Badge variant="outline" className="text-xs">
+                              {result.propertyBreakdown.basePrice >= 1000000 ? "Fixed ₱205K" : "20.5%"}
+                            </Badge>
+                          </div>
+                          <span className="font-semibold">
+                            {formatCurrency(result.propertyBreakdown.governmentFeesAndTaxes)}
+                          </span>
+                        </div>
+
+                        <div className="border-t pt-4">
+                          <div className="flex justify-between items-center p-4 bg-primary/10 rounded-lg">
+                            <span className="text-lg font-bold">Total All-In Price</span>
+                            <span className="text-lg font-bold text-primary">
+                              {formatCurrency(result.propertyBreakdown.totalAllInPrice)}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+                          <h4 className="font-medium mb-2">Fee Breakdown Details:</h4>
+                          <div className="text-sm text-muted-foreground space-y-1">
+                            <p>
+                              • <strong>Reservation Fee:</strong>{" "}
+                              {result.propertyBreakdown.propertyType === "model-house" ? "₱25,000" : "₱10,000"} for{" "}
+                              {result.propertyBreakdown.propertyType === "model-house"
+                                ? "model houses"
+                                : "lot only properties"}
+                            </p>
+                            <p>
+                              • <strong>Government Fees:</strong>{" "}
+                              {result.propertyBreakdown.basePrice >= 1000000
+                                ? "Fixed ₱205,000 for properties ≥ ₱1M"
+                                : "20.5% of base price for properties < ₱1M"}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
             <TabsContent value="down-payment" className="space-y-4 py-4">
               <Card>
                 <CardHeader>
@@ -533,20 +691,43 @@ export function LoanCalculatorForm({ initialPrice, returnUrl = "/model-houses", 
                         </div>
                       </div>
 
+                      {result.specialRuleApplied && (
+                        <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+                          <div className="flex items-center gap-2 mb-2">
+                            <Badge variant="default" className="bg-green-600">
+                              20% Special Rate
+                            </Badge>
+                            <span className="text-sm font-medium text-green-800">Applied</span>
+                          </div>
+                          <div className="text-sm text-green-700">
+                            <p>• First 12 months: 0% interest</p>
+                            <p>• Months 13+: 8.5% interest per annum</p>
+                          </div>
+                        </div>
+                      )}
+
                       {/* Desktop view */}
                       <div className="hidden md:block overflow-x-auto">
                         <div className="rounded-md border min-w-full">
-                          <div className="grid grid-cols-4 bg-muted p-3 text-sm font-medium">
+                          <div className="grid grid-cols-5 bg-muted p-3 text-sm font-medium">
                             <div>Month</div>
                             <div>Payment</div>
+                            <div>Interest Rate</div>
                             <div>Cumulative Paid</div>
                             <div>Balance</div>
                           </div>
                           <div className="max-h-[400px] overflow-y-auto">
                             {result.downPaymentSchedule.map((row) => (
-                              <div key={row.month} className="grid grid-cols-4 border-t p-3 text-sm">
+                              <div key={row.month} className="grid grid-cols-5 border-t p-3 text-sm">
                                 <div>{row.month}</div>
                                 <div>{formatCurrency(row.payment)}</div>
+                                <div
+                                  className={
+                                    row.isFirstYear && result.specialRuleApplied ? "text-green-600 font-medium" : ""
+                                  }
+                                >
+                                  {row.interestRate}%
+                                </div>
                                 <div>{formatCurrency(row.cumulativePaid)}</div>
                                 <div>{formatCurrency(row.balance)}</div>
                               </div>
@@ -689,8 +870,8 @@ export function LoanCalculatorForm({ initialPrice, returnUrl = "/model-houses", 
               ) : (
                 <div className="space-y-4">
                   <div>
-                    <p className="text-sm text-muted-foreground">Property Price</p>
-                    <p className="text-xl font-semibold">{formatCurrency(form.getValues("propertyPrice"))}</p>
+                    <p className="text-sm text-muted-foreground">Total All-In Price</p>
+                    <p className="text-xl font-semibold">{formatCurrency(result.propertyBreakdown.totalAllInPrice)}</p>
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Down Payment Amount</p>
@@ -703,8 +884,8 @@ export function LoanCalculatorForm({ initialPrice, returnUrl = "/model-houses", 
                     </p>
                   </div>
                   <div>
-                    <p className="text-sm text-muted-foreground">Loan Principal</p>
-                    <p className="text-xl font-semibold">{formatCurrency(result.loanAmortization.loanAmount)}</p>
+                    <p className="text-sm text-muted-foreground">Net Loan Amount</p>
+                    <p className="text-xl font-semibold">{formatCurrency(result.netLoanAmount)}</p>
                   </div>
                   <div className="pt-2 border-t">
                     <p className="text-sm text-muted-foreground">Loan Monthly Payment</p>
