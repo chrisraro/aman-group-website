@@ -1,7 +1,6 @@
 import type {
   FinancingOption,
   PaymentTerm,
-  DownPaymentTerm,
   PropertyType,
   AmortizationResult,
   DownPaymentScheduleItem,
@@ -11,8 +10,10 @@ import type {
   PropertyPriceBreakdown,
   ReservationFeeConfig,
   GovernmentFeesConfig,
+  ConstructionFeesConfig,
   SpecialDownPaymentRules,
   LoanCalculatorSettings,
+  LoanCalculation,
 } from "@/types/loan-calculator"
 
 // Financing options with their interest rates
@@ -42,19 +43,6 @@ export const FINANCING_RATES = {
   },
 } as const
 
-// Down payment interest rates (for installment plans)
-export const DOWN_PAYMENT_RATES = {
-  1: 0, // No interest for 1 month (lump sum)
-  3: 2.0, // 2% annual for 3 months
-  6: 3.0, // 3% annual for 6 months
-  12: 4.0, // 4% annual for 12 months
-  18: 5.0, // 5% annual for 18 months
-  24: 6.0, // 6% annual for 24 months
-  36: 7.0, // 7% annual for 36 months
-  48: 8.0, // 8.5% annual for 48 months
-  60: 8.5, // 8.5% annual for 60 months
-} as const
-
 // Default configuration values
 export const DEFAULT_RESERVATION_FEES: ReservationFeeConfig = {
   modelHouse: 25000,
@@ -69,12 +57,18 @@ export const DEFAULT_GOVERNMENT_FEES: GovernmentFeesConfig = {
   isActive: true,
 }
 
+export const DEFAULT_CONSTRUCTION_FEES: ConstructionFeesConfig = {
+  houseConstructionFeeRate: 8.5,
+  lotFeeRate: 8.5,
+  isActive: true,
+}
+
 export const DEFAULT_SPECIAL_RULES: SpecialDownPaymentRules = {
   twentyPercentRule: {
     isActive: true,
     firstYearInterestRate: 0, // 0% for first year
     subsequentYearInterestRate: 8.5, // 8.5% for subsequent years
-    applicableTerms: [12, 24, 36, 48, 60], // Terms that qualify for 20% rule
+    downPaymentTermMonths: 24, // Fixed to 24 months
   },
 }
 
@@ -83,15 +77,14 @@ export function getInterestRate(financingOption: FinancingOption, paymentTerm: P
   return rates[paymentTerm as keyof typeof rates] || 8.5
 }
 
-export function getDownPaymentInterestRate(downPaymentTerm: DownPaymentTerm): number {
-  return DOWN_PAYMENT_RATES[downPaymentTerm] || 0
-}
-
 export function calculatePropertyBreakdown(
   basePrice: number,
   propertyType: PropertyType,
+  lotPrice?: number,
+  houseConstructionCost?: number,
   reservationConfig: ReservationFeeConfig = DEFAULT_RESERVATION_FEES,
   governmentFeesConfig: GovernmentFeesConfig = DEFAULT_GOVERNMENT_FEES,
+  constructionFeesConfig: ConstructionFeesConfig = DEFAULT_CONSTRUCTION_FEES,
 ): PropertyPriceBreakdown {
   const validBasePrice = isNaN(basePrice) || basePrice < 0 ? 0 : basePrice
 
@@ -112,12 +105,28 @@ export function calculatePropertyBreakdown(
     }
   }
 
-  const totalAllInPrice = validBasePrice + reservationFee + governmentFeesAndTaxes
+  // Calculate construction fees (only for model houses)
+  let constructionFees = 0
+  let lotFees = 0
+  if (propertyType === "model-house" && constructionFeesConfig.isActive) {
+    if (houseConstructionCost) {
+      constructionFees = houseConstructionCost * (constructionFeesConfig.houseConstructionFeeRate / 100)
+    }
+    if (lotPrice) {
+      lotFees = lotPrice * (constructionFeesConfig.lotFeeRate / 100)
+    }
+  }
+
+  const totalAllInPrice = validBasePrice + reservationFee + governmentFeesAndTaxes + constructionFees + lotFees
 
   return {
     basePrice: validBasePrice,
+    lotPrice: propertyType === "model-house" ? lotPrice : undefined,
+    houseConstructionCost: propertyType === "model-house" ? houseConstructionCost : undefined,
     reservationFee,
     governmentFeesAndTaxes,
+    constructionFees: propertyType === "model-house" ? constructionFees : undefined,
+    lotFees: propertyType === "model-house" ? lotFees : undefined,
     totalAllInPrice,
     propertyType,
   }
@@ -164,60 +173,30 @@ export function calculateMonthlyAmortization(
 
 export function calculateDownPaymentSchedule(
   downPaymentAmount: number,
-  downPaymentTerm: DownPaymentTerm,
-  downPaymentPercentage: number,
   specialRules: SpecialDownPaymentRules = DEFAULT_SPECIAL_RULES,
 ): DownPaymentScheduleItem[] {
   const validDownPayment = isNaN(downPaymentAmount) || downPaymentAmount < 0 ? 0 : downPaymentAmount
+  const downPaymentTermMonths = specialRules.twentyPercentRule.downPaymentTermMonths
 
-  if (downPaymentTerm === 1) {
-    // Lump sum payment
-    return [
-      {
-        month: 1,
-        date: new Date(),
-        payment: validDownPayment,
-        balance: 0,
-        cumulativePaid: validDownPayment,
-        interestRate: 0,
-        isFirstYear: true,
-      },
-    ]
-  }
-
-  // Check if 20% rule applies
-  const is20PercentRule =
-    specialRules.twentyPercentRule.isActive &&
-    Math.abs(downPaymentPercentage - 20) < 0.1 && // Allow for small floating point differences
-    specialRules.twentyPercentRule.applicableTerms.includes(downPaymentTerm)
-
-  let schedule: DownPaymentScheduleItem[] = []
-
-  if (is20PercentRule) {
-    // Apply special 20% rule: First year 0%, subsequent years 8.5%
-    schedule = calculateSpecial20PercentSchedule(
-      validDownPayment,
-      downPaymentTerm,
-      specialRules.twentyPercentRule.firstYearInterestRate,
-      specialRules.twentyPercentRule.subsequentYearInterestRate,
-    )
-  } else {
-    // Apply standard interest rate
-    const standardRate = getDownPaymentInterestRate(downPaymentTerm)
-    schedule = calculateStandardDownPaymentSchedule(validDownPayment, downPaymentTerm, standardRate)
-  }
+  // Always apply special 20% rule since down payment is fixed at 20%
+  const schedule = calculateSpecial20PercentSchedule(
+    validDownPayment,
+    downPaymentTermMonths,
+    specialRules.twentyPercentRule.firstYearInterestRate,
+    specialRules.twentyPercentRule.subsequentYearInterestRate,
+  )
 
   return schedule
 }
 
 function calculateSpecial20PercentSchedule(
   downPaymentAmount: number,
-  downPaymentTerm: DownPaymentTerm,
+  downPaymentTermMonths: number,
   firstYearRate: number,
   subsequentYearRate: number,
 ): DownPaymentScheduleItem[] {
   const schedule: DownPaymentScheduleItem[] = []
-  const numberOfPayments = downPaymentTerm
+  const numberOfPayments = downPaymentTermMonths
 
   // Calculate payments for first year (0% interest)
   const firstYearMonths = Math.min(12, numberOfPayments)
@@ -286,69 +265,32 @@ function calculateSpecial20PercentSchedule(
   return schedule
 }
 
-function calculateStandardDownPaymentSchedule(
-  downPaymentAmount: number,
-  downPaymentTerm: DownPaymentTerm,
-  interestRate: number,
-): DownPaymentScheduleItem[] {
-  const monthlyInterestRate = interestRate / 100 / 12
-  const numberOfPayments = downPaymentTerm
-
-  let monthlyPayment: number
-
-  if (monthlyInterestRate === 0) {
-    monthlyPayment = downPaymentAmount / numberOfPayments
-  } else {
-    monthlyPayment =
-      (downPaymentAmount * monthlyInterestRate * Math.pow(1 + monthlyInterestRate, numberOfPayments)) /
-      (Math.pow(1 + monthlyInterestRate, numberOfPayments) - 1)
-  }
-
-  if (isNaN(monthlyPayment) || !isFinite(monthlyPayment)) {
-    monthlyPayment = downPaymentAmount / numberOfPayments
-  }
-
-  let balance = downPaymentAmount
-  let cumulativePaid = 0
-  const schedule: DownPaymentScheduleItem[] = []
-
-  for (let month = 1; month <= numberOfPayments; month++) {
-    const interestPayment = balance * monthlyInterestRate
-    const principalPayment = monthlyPayment - interestPayment
-
-    balance -= principalPayment
-    cumulativePaid += monthlyPayment
-
-    schedule.push({
-      month,
-      date: new Date(Date.now() + month * 30 * 24 * 60 * 60 * 1000),
-      payment: monthlyPayment,
-      balance: Math.max(0, balance),
-      cumulativePaid,
-      interestRate: interestRate,
-      isFirstYear: month <= 12,
-    })
-  }
-
-  return schedule
-}
-
 export function calculateCompleteLoanDetails(
   basePrice: number,
   propertyType: PropertyType,
-  downPaymentAmount: number,
-  downPaymentTerm: DownPaymentTerm,
+  lotPrice: number | undefined,
+  houseConstructionCost: number | undefined,
   financingOption: FinancingOption,
   paymentTerm: PaymentTerm,
   reservationConfig?: ReservationFeeConfig,
   governmentFeesConfig?: GovernmentFeesConfig,
+  constructionFeesConfig?: ConstructionFeesConfig,
   specialRules?: SpecialDownPaymentRules,
 ): LoanCalculationResult {
   // Calculate property breakdown with all fees
-  const propertyBreakdown = calculatePropertyBreakdown(basePrice, propertyType, reservationConfig, governmentFeesConfig)
+  const propertyBreakdown = calculatePropertyBreakdown(
+    basePrice,
+    propertyType,
+    lotPrice,
+    houseConstructionCost,
+    reservationConfig,
+    governmentFeesConfig,
+    constructionFeesConfig,
+  )
 
-  // Calculate down payment percentage
-  const downPaymentPercentage = (downPaymentAmount / propertyBreakdown.totalAllInPrice) * 100
+  // Fixed 20% down payment
+  const downPaymentPercentage = 20
+  const downPaymentAmount = propertyBreakdown.totalAllInPrice * 0.2
 
   // Calculate net loan amount (total price minus down payment)
   const netLoanAmount = propertyBreakdown.totalAllInPrice - downPaymentAmount
@@ -357,24 +299,15 @@ export function calculateCompleteLoanDetails(
   // Calculate loan amortization
   const loanAmortization = calculateMonthlyAmortization(netLoanAmount, loanInterestRate, paymentTerm)
 
-  // Calculate down payment schedule with special rules
-  const downPaymentSchedule = calculateDownPaymentSchedule(
-    downPaymentAmount,
-    downPaymentTerm,
-    downPaymentPercentage,
-    specialRules,
-  )
+  // Calculate down payment schedule with special rules (always applied since it's always 20%)
+  const downPaymentSchedule = calculateDownPaymentSchedule(downPaymentAmount, specialRules)
 
   const totalDownPayment = downPaymentSchedule.reduce((sum, item) => sum + item.payment, 0)
   const downPaymentMonthlyAmount = downPaymentSchedule.length > 0 ? downPaymentSchedule[0].payment : 0
   const totalProjectCost = totalDownPayment + loanAmortization.totalPayment
 
-  // Check if special rule was applied
-  const specialRuleApplied =
-    (specialRules?.twentyPercentRule.isActive &&
-      Math.abs(downPaymentPercentage - 20) < 0.1 &&
-      specialRules.twentyPercentRule.applicableTerms.includes(downPaymentTerm)) ||
-    false
+  // Special rule is always applied since down payment is always 20%
+  const specialRuleApplied = true
 
   return {
     propertyBreakdown,
@@ -448,9 +381,6 @@ export function generateYearlyAmortizationSchedule(
   return yearlySchedule
 }
 
-// Remove the existing saveLoanCalculatorSettings and loadLoanCalculatorSettings functions
-// They are no longer needed as we're using the API and KV storage
-
 export function getDefaultLoanCalculatorSettings(): LoanCalculatorSettings {
   return {
     id: "default",
@@ -492,101 +422,146 @@ export function getDefaultLoanCalculatorSettings(): LoanCalculatorSettings {
         isActive: true,
       },
     ],
-    downPaymentTerms: [
-      {
-        id: "1",
-        name: "Lump Sum",
-        value: 1,
-        description: "One-time payment",
-        interestRate: 0,
-        isActive: true,
-        applicableFinancing: ["in-house", "in-house-bridge", "pag-ibig", "bank"],
-      },
-      {
-        id: "2",
-        name: "3 Months",
-        value: 3,
-        description: "3-month installment plan",
-        interestRate: 2.0,
-        isActive: true,
-        applicableFinancing: ["in-house", "in-house-bridge"],
-      },
-      {
-        id: "3",
-        name: "6 Months",
-        value: 6,
-        description: "6-month installment plan",
-        interestRate: 3.0,
-        isActive: true,
-        applicableFinancing: ["in-house", "in-house-bridge"],
-      },
-      {
-        id: "4",
-        name: "12 Months (Option 1)",
-        value: 12,
-        description: "12-month installment plan",
-        interestRate: 4.0,
-        isActive: true,
-        applicableFinancing: ["in-house", "in-house-bridge"],
-      },
-      {
-        id: "5",
-        name: "18 Months",
-        value: 18,
-        description: "18-month installment plan",
-        interestRate: 5.0,
-        isActive: true,
-        applicableFinancing: ["in-house"],
-      },
-      {
-        id: "6",
-        name: "24 Months (Option 2)",
-        value: 24,
-        description: "24-month installment plan",
-        interestRate: 6.0,
-        isActive: true,
-        applicableFinancing: ["in-house"],
-      },
-      {
-        id: "7",
-        name: "36 Months (Option 2)",
-        value: 36,
-        description: "36-month installment plan",
-        interestRate: 7.0,
-        isActive: true,
-        applicableFinancing: ["in-house"],
-      },
-      {
-        id: "8",
-        name: "48 Months (Option 2)",
-        value: 48,
-        description: "48-month installment plan",
-        interestRate: 8.0,
-        isActive: true,
-        applicableFinancing: ["in-house"],
-      },
-      {
-        id: "9",
-        name: "60 Months (Option 2)",
-        value: 60,
-        description: "60-month installment plan",
-        interestRate: 8.5,
-        isActive: true,
-        applicableFinancing: ["in-house"],
-      },
-    ],
     reservationFees: DEFAULT_RESERVATION_FEES,
     governmentFeesConfig: DEFAULT_GOVERNMENT_FEES,
+    constructionFeesConfig: DEFAULT_CONSTRUCTION_FEES,
     specialDownPaymentRules: DEFAULT_SPECIAL_RULES,
     defaultSettings: {
       defaultFinancingOption: "in-house",
       defaultPaymentTerm: 5,
-      defaultDownPaymentTerm: 12,
-      defaultDownPaymentPercentage: 20,
-      minimumDownPaymentPercentage: 5,
-      maximumDownPaymentPercentage: 50,
+      fixedDownPaymentPercentage: 20,
+      fixedDownPaymentTermMonths: 24,
     },
     createdAt: new Date(),
     updatedAt: new Date(),
+    processingFeePercentage: 2,
+    appraisalFee: 5000,
+    notarialFeePercentage: 1,
+    insuranceFeePercentage: 0.5,
+    constructionFeePercentage: 8.5,
+    specialRuleInterestRate: 8.5,
+  }
+}
+
+interface CalculateLoanParams {
+  totalPrice: number
+  lotOnlyPrice?: number
+  houseConstructionPrice?: number
+  propertyType: "Model House" | "Lot Only"
+  loanTermYears: number
+  settings: LoanCalculatorSettings
+}
+
+export function calculateLoan({
+  totalPrice,
+  lotOnlyPrice = 0,
+  houseConstructionPrice = 0,
+  propertyType,
+  loanTermYears,
+  settings,
+}: CalculateLoanParams): LoanCalculation {
+  // Fixed 20% down payment
+  const downPaymentPercentage = 0.2
+  const downPayment = totalPrice * downPaymentPercentage
+
+  // Calculate fees
+  const fees: Array<{ name: string; amount: number; percentage?: number }> = []
+
+  // Processing fee
+  const processingFee = totalPrice * (settings.processingFeePercentage / 100)
+  fees.push({
+    name: "Processing Fee",
+    amount: processingFee,
+    percentage: settings.processingFeePercentage,
+  })
+
+  // Appraisal fee
+  fees.push({
+    name: "Appraisal Fee",
+    amount: settings.appraisalFee,
+  })
+
+  // Notarial fee
+  const notarialFee = totalPrice * (settings.notarialFeePercentage / 100)
+  fees.push({
+    name: "Notarial Fee",
+    amount: notarialFee,
+    percentage: settings.notarialFeePercentage,
+  })
+
+  // Insurance fee
+  const insuranceFee = totalPrice * (settings.insuranceFeePercentage / 100)
+  fees.push({
+    name: "Insurance Fee",
+    amount: insuranceFee,
+    percentage: settings.insuranceFeePercentage,
+  })
+
+  // Model House specific fees (17% total)
+  if (propertyType === "Model House" && lotOnlyPrice > 0 && houseConstructionPrice > 0) {
+    // 8.5% of lot price
+    const lotFee = lotOnlyPrice * (settings.constructionFeePercentage / 100)
+    fees.push({
+      name: "Lot Development Fee",
+      amount: lotFee,
+      percentage: settings.constructionFeePercentage,
+    })
+
+    // 8.5% of house construction cost
+    const houseFee = houseConstructionPrice * (settings.constructionFeePercentage / 100)
+    fees.push({
+      name: "House Construction Fee",
+      amount: houseFee,
+      percentage: settings.constructionFeePercentage,
+    })
+  }
+
+  const totalFees = fees.reduce((sum, fee) => sum + fee.amount, 0)
+
+  // Loan amount (total price minus down payment)
+  const loanAmount = totalPrice - downPayment
+
+  // Special rule: Always applied since down payment is always 20%
+  // First year: 0% interest
+  // Second year onwards: 8.5% per annum
+
+  const monthlyLoanAmount = loanAmount / (loanTermYears * 12)
+  const monthlyInterestRate = settings.specialRuleInterestRate / 100 / 12
+
+  // First year payment (no interest)
+  const firstYearMonthlyPayment = monthlyLoanAmount
+
+  // Calculate remaining balance after first year
+  const remainingBalance = loanAmount - firstYearMonthlyPayment * 12
+  const remainingTermMonths = (loanTermYears - 1) * 12
+
+  // Subsequent years payment (with 8.5% interest)
+  let subsequentYearsMonthlyPayment = 0
+  if (remainingTermMonths > 0 && monthlyInterestRate > 0) {
+    subsequentYearsMonthlyPayment =
+      (remainingBalance * monthlyInterestRate * Math.pow(1 + monthlyInterestRate, remainingTermMonths)) /
+      (Math.pow(1 + monthlyInterestRate, remainingTermMonths) - 1)
+  } else if (remainingTermMonths > 0) {
+    subsequentYearsMonthlyPayment = remainingBalance / remainingTermMonths
+  }
+
+  // Total cost calculation
+  const totalInterest = subsequentYearsMonthlyPayment * remainingTermMonths - remainingBalance
+  const totalCost = totalPrice + totalFees + totalInterest
+
+  return {
+    totalPrice,
+    downPayment,
+    loanAmount,
+    fees,
+    totalFees,
+    monthlyPayments: {
+      firstYear: firstYearMonthlyPayment,
+      subsequentYears: subsequentYearsMonthlyPayment,
+    },
+    totalCost,
+    loanTermYears,
+    interestRate: settings.specialRuleInterestRate,
+    specialRuleApplied: true,
   }
 }

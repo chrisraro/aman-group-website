@@ -1,45 +1,56 @@
-import { NextResponse } from "next/server"
-import { getLotOnlyPropertyById } from "@/data/lot-only-properties"
-import { getLotOnlyData } from "@/lib/storage/kv-storage"
+import { type NextRequest, NextResponse } from "next/server"
+import { lotOnlyProperties } from "@/data/lot-only-properties"
 
-export async function GET(request: Request, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   try {
-    // First try to get from KV storage for real-time data
-    let property = null
+    const { id } = params
 
-    try {
-      const kvData = await getLotOnlyData()
-      if (kvData && Array.isArray(kvData)) {
-        property = kvData.find((p: any) => p.id === params.id)
-      }
-    } catch (kvError) {
-      console.error("Error fetching from KV:", kvError)
-      // Fall back to static data if KV fails
+    if (!id) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Property ID is required",
+        },
+        { status: 400 },
+      )
     }
 
-    // If not found in KV, fall back to static data
-    if (!property) {
-      property = getLotOnlyPropertyById(params.id)
-    }
+    // Find the property by ID
+    const property = lotOnlyProperties.find((p) => p.id === id)
 
     if (!property) {
-      return NextResponse.json({ error: "Property not found" }, { status: 404 })
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Property not found",
+        },
+        { status: 404 },
+      )
     }
 
-    // Set cache control headers to prevent caching
+    // Set cache control headers
     const headers = new Headers()
     headers.set("Cache-Control", "no-store, max-age=0")
     headers.set("Pragma", "no-cache")
 
     return NextResponse.json(
-      { property },
+      {
+        success: true,
+        property,
+      },
       {
         headers,
         status: 200,
       },
     )
   } catch (error) {
-    console.error("Failed to fetch property:", error)
-    return NextResponse.json({ error: "Failed to fetch property" }, { status: 500 })
+    console.error("Error fetching lot-only property:", error)
+    return NextResponse.json(
+      {
+        success: false,
+        error: "Failed to fetch property",
+      },
+      { status: 500 },
+    )
   }
 }

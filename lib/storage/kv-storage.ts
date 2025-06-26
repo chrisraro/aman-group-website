@@ -1,208 +1,86 @@
-import { modelHouseSeries as initialModelHouseSeries } from "@/data/model-houses"
-import { lotOnlyProperties as initialLotOnlyProperties } from "@/data/lot-only-properties"
+import { kv } from "@vercel/kv"
+import type { LoanCalculatorSettings } from "@/types/loan-calculator"
+import { DEFAULT_LOAN_CALCULATOR_SETTINGS } from "@/types/loan-calculator"
+import { modelHouseSeries } from "@/data/model-houses"
 
-// Constants
-const MODEL_HOUSES_KEY = "model_houses_data"
-const LOT_ONLY_KEY = "lot_only_data"
-const DATA_VERSION_KEY = "model_houses_version"
-const LOT_ONLY_VERSION_KEY = "lot_only_version"
-const CURRENT_VERSION = "1.0.0"
+const LOAN_CALCULATOR_SETTINGS_KEY = "loan-calculator-settings"
+const MODEL_HOUSES_DATA_KEY = "model-houses-data"
 
-// In-memory fallback storage
-const inMemoryStorage: Record<string, any> = {
-  [MODEL_HOUSES_KEY]: initialModelHouseSeries,
-  [LOT_ONLY_KEY]: initialLotOnlyProperties,
-  [DATA_VERSION_KEY]: CURRENT_VERSION,
-  [LOT_ONLY_VERSION_KEY]: CURRENT_VERSION,
-}
-
-// Check if we're in a server environment and KV is available
-function isKVAvailable(): boolean {
-  return typeof process !== "undefined" && process.env && process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN
-}
-
-// Helper function to get value from storage
-export async function getValue(key: string): Promise<any> {
+// Loan Calculator Settings Functions
+export async function getLoanCalculatorSettings(): Promise<LoanCalculatorSettings> {
   try {
-    // Always fall back to in-memory storage for now to avoid KV issues
-    if (inMemoryStorage[key] !== undefined) {
-      return inMemoryStorage[key]
+    const settings = await kv.get<LoanCalculatorSettings>(LOAN_CALCULATOR_SETTINGS_KEY)
+
+    if (!settings) {
+      // If no settings exist, save and return defaults
+      await saveLoanCalculatorSettings(DEFAULT_LOAN_CALCULATOR_SETTINGS)
+      return DEFAULT_LOAN_CALCULATOR_SETTINGS
     }
 
-    // Return default values based on key
-    switch (key) {
-      case MODEL_HOUSES_KEY:
-        return initialModelHouseSeries
-      case LOT_ONLY_KEY:
-        return initialLotOnlyProperties
-      case DATA_VERSION_KEY:
-      case LOT_ONLY_VERSION_KEY:
-        return CURRENT_VERSION
-      default:
-        return null
-    }
-  } catch (error) {
-    console.error(`Error getting value for key ${key}:`, error)
-    // Return appropriate fallback
-    switch (key) {
-      case MODEL_HOUSES_KEY:
-        return initialModelHouseSeries
-      case LOT_ONLY_KEY:
-        return initialLotOnlyProperties
-      default:
-        return null
-    }
-  }
-}
-
-// Helper function to set value in storage
-export async function setValue(key: string, value: any): Promise<void> {
-  try {
-    // Store in memory
-    inMemoryStorage[key] = value
-    console.log(`Stored ${key} in memory storage`)
-  } catch (error) {
-    console.error(`Error setting value for key ${key}:`, error)
-    // Don't throw error, just log it
-  }
-}
-
-// Get model houses data
-export async function getModelHousesData() {
-  try {
-    const storedData = await getValue(MODEL_HOUSES_KEY)
-    const storedVersion = await getValue(DATA_VERSION_KEY)
-
-    // If no data or version mismatch, return initial data
-    if (!storedData || storedVersion !== CURRENT_VERSION) {
-      await setValue(MODEL_HOUSES_KEY, initialModelHouseSeries)
-      await setValue(DATA_VERSION_KEY, CURRENT_VERSION)
-      return initialModelHouseSeries
+    // Ensure all required fields exist (for backward compatibility)
+    const mergedSettings: LoanCalculatorSettings = {
+      ...DEFAULT_LOAN_CALCULATOR_SETTINGS,
+      ...settings,
     }
 
-    return storedData || initialModelHouseSeries
+    return mergedSettings
   } catch (error) {
-    console.error("Error fetching model houses data:", error)
-    return initialModelHouseSeries
+    console.error("Error getting loan calculator settings:", error)
+    return DEFAULT_LOAN_CALCULATOR_SETTINGS
   }
 }
 
-// Save model houses data
-export async function saveModelHousesData(data: any) {
+export async function saveLoanCalculatorSettings(settings: LoanCalculatorSettings): Promise<void> {
   try {
-    await setValue(MODEL_HOUSES_KEY, data)
-    return { success: true }
-  } catch (error) {
-    console.error("Error saving model houses data:", error)
-    // Don't throw error, just return success false
-    return { success: false, error: error.message }
-  }
-}
-
-// Reset to default data
-export async function resetModelHousesData() {
-  try {
-    await setValue(MODEL_HOUSES_KEY, initialModelHouseSeries)
-    await setValue(DATA_VERSION_KEY, CURRENT_VERSION)
-    return { success: true }
-  } catch (error) {
-    console.error("Error resetting model houses data:", error)
-    return { success: false, error: error.message }
-  }
-}
-
-// Get lot-only properties data
-export async function getLotOnlyData() {
-  try {
-    const storedData = await getValue(LOT_ONLY_KEY)
-    const storedVersion = await getValue(LOT_ONLY_VERSION_KEY)
-
-    if (!storedData || storedVersion !== CURRENT_VERSION) {
-      await setValue(LOT_ONLY_KEY, initialLotOnlyProperties)
-      await setValue(LOT_ONLY_VERSION_KEY, CURRENT_VERSION)
-      return initialLotOnlyProperties
-    }
-
-    return storedData || initialLotOnlyProperties
-  } catch (error) {
-    console.error("Error fetching lot-only data:", error)
-    return initialLotOnlyProperties
-  }
-}
-
-// Save lot-only properties data
-export async function saveLotOnlyData(data: any) {
-  try {
-    await setValue(LOT_ONLY_KEY, data)
-    return { success: true }
-  } catch (error) {
-    console.error("Error saving lot-only data:", error)
-    return { success: false, error: error.message }
-  }
-}
-
-// Reset lot-only properties to default data
-export async function resetLotOnlyData() {
-  try {
-    await setValue(LOT_ONLY_KEY, initialLotOnlyProperties)
-    await setValue(LOT_ONLY_VERSION_KEY, CURRENT_VERSION)
-    return { success: true }
-  } catch (error) {
-    console.error("Error resetting lot-only data:", error)
-    return { success: false, error: error.message }
-  }
-}
-
-// Loan Calculator Settings
-const LOAN_CALCULATOR_SETTINGS_KEY = "loan_calculator_settings"
-const LOAN_CALCULATOR_VERSION_KEY = "loan_calculator_version"
-
-// Get loan calculator settings
-export async function getLoanCalculatorSettings() {
-  try {
-    const storedData = await getValue(LOAN_CALCULATOR_SETTINGS_KEY)
-    const storedVersion = await getValue(LOAN_CALCULATOR_VERSION_KEY)
-
-    if (!storedData || storedVersion !== CURRENT_VERSION) {
-      // Import default settings
-      const { getDefaultLoanCalculatorSettings } = await import("@/lib/loan-calculations")
-      const defaultSettings = getDefaultLoanCalculatorSettings()
-      await setValue(LOAN_CALCULATOR_SETTINGS_KEY, defaultSettings)
-      await setValue(LOAN_CALCULATOR_VERSION_KEY, CURRENT_VERSION)
-      return defaultSettings
-    }
-
-    return storedData
-  } catch (error) {
-    console.error("Error fetching loan calculator settings:", error)
-    // Return default settings on error
-    const { getDefaultLoanCalculatorSettings } = await import("@/lib/loan-calculations")
-    return getDefaultLoanCalculatorSettings()
-  }
-}
-
-// Save loan calculator settings
-export async function saveLoanCalculatorSettings(settings: any) {
-  try {
-    await setValue(LOAN_CALCULATOR_SETTINGS_KEY, settings)
-    await setValue(LOAN_CALCULATOR_VERSION_KEY, CURRENT_VERSION)
-    return { success: true }
+    await kv.set(LOAN_CALCULATOR_SETTINGS_KEY, settings)
   } catch (error) {
     console.error("Error saving loan calculator settings:", error)
-    return { success: false, error: error.message }
+    throw new Error("Failed to save loan calculator settings")
   }
 }
 
-// Reset loan calculator settings to default
-export async function resetLoanCalculatorSettings() {
+export async function resetLoanCalculatorSettings(): Promise<void> {
   try {
-    const { getDefaultLoanCalculatorSettings } = await import("@/lib/loan-calculations")
-    const defaultSettings = getDefaultLoanCalculatorSettings()
-    await setValue(LOAN_CALCULATOR_SETTINGS_KEY, defaultSettings)
-    await setValue(LOAN_CALCULATOR_VERSION_KEY, CURRENT_VERSION)
-    return { success: true }
+    await kv.set(LOAN_CALCULATOR_SETTINGS_KEY, DEFAULT_LOAN_CALCULATOR_SETTINGS)
   } catch (error) {
     console.error("Error resetting loan calculator settings:", error)
-    return { success: false, error: error.message }
+    throw new Error("Failed to reset loan calculator settings")
+  }
+}
+
+// Model Houses Data Functions
+export async function getModelHousesData() {
+  try {
+    const data = await kv.get(MODEL_HOUSES_DATA_KEY)
+
+    if (!data) {
+      // If no data exists, save and return defaults from static data
+      await saveModelHousesData(modelHouseSeries)
+      return modelHouseSeries
+    }
+
+    return data
+  } catch (error) {
+    console.error("Error getting model houses data:", error)
+    // Return static data as fallback
+    return modelHouseSeries
+  }
+}
+
+export async function saveModelHousesData(data: typeof modelHouseSeries): Promise<void> {
+  try {
+    await kv.set(MODEL_HOUSES_DATA_KEY, data)
+  } catch (error) {
+    console.error("Error saving model houses data:", error)
+    throw new Error("Failed to save model houses data")
+  }
+}
+
+export async function resetModelHousesData(): Promise<void> {
+  try {
+    await kv.set(MODEL_HOUSES_DATA_KEY, modelHouseSeries)
+  } catch (error) {
+    console.error("Error resetting model houses data:", error)
+    throw new Error("Failed to reset model houses data")
   }
 }

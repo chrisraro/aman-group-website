@@ -1,252 +1,99 @@
 "use client"
 
 import type React from "react"
+
 import { useState } from "react"
-import { Button, type ButtonProps } from "@/components/ui/button"
-import { Calendar, Check, Loader2, ExternalLink } from "lucide-react"
+import { Calendar, ExternalLink } from "lucide-react"
+import { Button } from "@/components/ui/button"
 import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import { Label } from "@/components/ui/label"
-import { Input } from "@/components/ui/input"
-import { formatDate, formatTime } from "@/lib/google-calendar-api"
-import { CalendarAvailabilityView } from "@/components/calendar-availability-view"
-import { createGoogleCalendarUrl, createCalendarEvent, ICAL_URL } from "@/lib/google-calendar-api"
-import { Alert, AlertDescription } from "@/components/ui/alert"
 
-interface ScheduleViewingButtonProps extends ButtonProps {
+interface ScheduleViewingButtonProps {
   propertyName: string
   propertyLocation?: string
+  propertyType?: string
+  className?: string
+  variant?: "default" | "outline" | "secondary" | "ghost" | "link" | "destructive"
+  style?: React.CSSProperties
   children?: React.ReactNode
 }
 
 export default function ScheduleViewingButton({
   propertyName,
-  propertyLocation = "Naga City",
-  children = "Schedule a Viewing",
+  propertyLocation,
+  propertyType,
   className,
-  ...props
+  variant = "default",
+  style,
+  children,
 }: ScheduleViewingButtonProps) {
-  // Form state
-  const [name, setName] = useState("")
-  const [email, setEmail] = useState("")
-  const [phone, setPhone] = useState("")
-  const [selectedDate, setSelectedDate] = useState<string>("")
-  const [selectedStartTime, setSelectedStartTime] = useState<string>("")
-  const [selectedEndTime, setSelectedEndTime] = useState<string>("")
+  const [isOpen, setIsOpen] = useState(false)
 
-  // UI state
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [isSuccess, setIsSuccess] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [step, setStep] = useState(1)
-  const [open, setOpen] = useState(false)
+  const handleScheduleViewing = () => {
+    // Create the subject and body for the email
+    const subject = `Schedule Property Viewing - ${propertyName}`
+    const body = `Hello,
 
-  const handleTimeSlotSelect = (date: string, startTime: string, endTime: string) => {
-    setSelectedDate(date)
-    setSelectedStartTime(startTime)
-    setSelectedEndTime(endTime)
-  }
+I would like to schedule a viewing for the following property:
 
-  const handleNextStep = () => {
-    setStep(2)
-  }
-
-  const handlePrevStep = () => {
-    setStep(1)
-  }
-
-  const resetForm = () => {
-    setName("")
-    setEmail("")
-    setPhone("")
-    setSelectedDate("")
-    setSelectedStartTime("")
-    setSelectedEndTime("")
-    setStep(1)
-    setIsSuccess(false)
-    setError(null)
-  }
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsSubmitting(true)
-    setError(null)
-
-    try {
-      if (!selectedDate || !selectedStartTime || !selectedEndTime) {
-        throw new Error("Please select a date and time")
-      }
-
-      // Format the event details for Google Calendar
-      const eventTitle = `Property Viewing: ${propertyName}`
-      const eventDetails = `
 Property: ${propertyName}
-Location: ${propertyLocation}
-Visitor: ${name}
-Contact: ${email} / ${phone}
-Date: ${formatDate(selectedDate)}
-Time: ${formatTime(selectedStartTime)}
-      `
+${propertyLocation ? `Location: ${propertyLocation}` : ""}
+${propertyType ? `Type: ${propertyType}` : ""}
 
-      // Create Google Calendar event
-      const result = await createCalendarEvent(
-        eventTitle,
-        eventDetails,
-        propertyLocation,
-        selectedStartTime,
-        selectedEndTime,
-      )
+Please let me know your available dates and times.
 
-      if (!result.success) {
-        throw new Error(result.error || "Failed to schedule viewing")
-      }
+Thank you!`
 
-      // Create Google Calendar event URL for the user
-      const googleCalendarUrl = createGoogleCalendarUrl(
-        eventTitle,
-        eventDetails,
-        propertyLocation,
-        selectedStartTime,
-        selectedEndTime,
-      )
+    // Create mailto link
+    const mailtoLink = `mailto:frontdesk@enjoyrealty.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
 
-      // Open Google Calendar in a new tab
-      window.open(googleCalendarUrl, "_blank")
+    // Open email client
+    window.location.href = mailtoLink
+    setIsOpen(false)
+  }
 
-      setIsSuccess(true)
-
-      // Reset form after 3 seconds
-      setTimeout(() => {
-        setIsSuccess(false)
-        resetForm()
-        setOpen(false)
-      }, 3000)
-    } catch (error) {
-      console.error("Error scheduling viewing:", error)
-      setError(error instanceof Error ? error.message : "Failed to schedule viewing")
-    } finally {
-      setIsSubmitting(false)
-    }
+  const handleCalendarView = () => {
+    window.open("/calendar", "_blank")
+    setIsOpen(false)
   }
 
   return (
-    <Dialog
-      open={open}
-      onOpenChange={(isOpen) => {
-        setOpen(isOpen)
-        if (!isOpen) resetForm()
-      }}
-    >
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button className={className} {...props}>
-          <Calendar className="mr-2 h-4 w-4" /> {children}
+        <Button className={className} variant={variant} style={style}>
+          {children || (
+            <>
+              <Calendar className="h-4 w-4 mr-2" />
+              Schedule Viewing
+            </>
+          )}
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Schedule a Property Viewing</DialogTitle>
-          <DialogDescription>
-            {step === 1
-              ? "Fill out your information to schedule a viewing."
-              : `Select an available time slot to schedule your viewing of ${propertyName}.`}
-          </DialogDescription>
+          <DialogTitle>Schedule Property Viewing</DialogTitle>
+          <DialogDescription>Choose how you'd like to schedule your viewing for {propertyName}</DialogDescription>
         </DialogHeader>
-
-        {isSuccess ? (
-          <div className="py-6 text-center">
-            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
-              <Check className="h-6 w-6 text-green-600" />
-            </div>
-            <h3 className="mb-2 text-lg font-medium">Viewing Scheduled!</h3>
-            <p className="text-sm text-gray-500 mb-4">
-              Your viewing for {propertyName} on {formatDate(selectedDate)} at {formatTime(selectedStartTime)} has been
-              added to your Google Calendar. You'll receive a confirmation email shortly.
-            </p>
-            <div className="flex justify-center space-x-2">
-              <Button variant="outline" size="sm" onClick={() => window.open(ICAL_URL, "_blank")}>
-                <Calendar className="mr-2 h-4 w-4" />
-                Subscribe to Calendar
-              </Button>
-            </div>
-          </div>
-        ) : (
-          <form onSubmit={handleSubmit} className="space-y-4 py-4">
-            {step === 1 ? (
-              <>
-                <div className="space-y-2">
-                  <Label htmlFor="name">Your Name</Label>
-                  <Input id="name" value={name} onChange={(e) => setName(e.target.value)} required />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="phone">Phone Number</Label>
-                  <Input id="phone" value={phone} onChange={(e) => setPhone(e.target.value)} required />
-                </div>
-
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Want to see all available dates?</span>
-                  <a
-                    href={ICAL_URL}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center text-primary hover:underline"
-                  >
-                    View Full Calendar <ExternalLink className="ml-1 h-3 w-3" />
-                  </a>
-                </div>
-
-                {error && <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">{error}</div>}
-
-                <DialogFooter>
-                  <Button type="button" onClick={handleNextStep} disabled={!name || !email || !phone}>
-                    Next: Select Time
-                  </Button>
-                </DialogFooter>
-              </>
-            ) : (
-              <>
-                <CalendarAvailabilityView
-                  onSelectTimeSlot={handleTimeSlotSelect}
-                  selectedDate={selectedDate}
-                  selectedStartTime={selectedStartTime}
-                />
-
-                {error && (
-                  <Alert variant="destructive">
-                    <AlertDescription>{error}</AlertDescription>
-                  </Alert>
-                )}
-
-                <DialogFooter className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-between">
-                  <Button type="button" variant="outline" onClick={handlePrevStep}>
-                    Back
-                  </Button>
-                  <Button type="submit" disabled={isSubmitting || !selectedDate || !selectedStartTime}>
-                    {isSubmitting ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Scheduling...
-                      </>
-                    ) : (
-                      "Schedule Viewing"
-                    )}
-                  </Button>
-                </DialogFooter>
-              </>
-            )}
-          </form>
-        )}
+        <div className="space-y-3">
+          <Button onClick={handleScheduleViewing} className="w-full justify-start">
+            <Calendar className="h-4 w-4 mr-2" />
+            Send Email Request
+          </Button>
+          <Button onClick={handleCalendarView} variant="outline" className="w-full justify-start">
+            <ExternalLink className="h-4 w-4 mr-2" />
+            View Available Dates
+          </Button>
+        </div>
       </DialogContent>
     </Dialog>
   )
 }
+
+// Export as both named and default for compatibility
+export { ScheduleViewingButton }

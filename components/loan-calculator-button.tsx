@@ -1,50 +1,85 @@
-import Link from "next/link"
-import { Calculator } from "lucide-react"
+"use client"
+
 import { Button } from "@/components/ui/button"
-import { cn } from "@/lib/utils"
+import { Calculator } from "lucide-react"
+import { useRouter } from "next/navigation"
+import type { ReactNode } from "react"
 
 interface LoanCalculatorButtonProps {
   modelName?: string
+  propertyName?: string
+  propertyId?: string
   floorArea?: string
   price?: number
+  propertyPrice?: number
   lotOnlyPrice?: number
   houseConstructionPrice?: number
+  propertyType?: string
   returnUrl?: string
   className?: string
-  propertyPrice?: number
+  variant?: "default" | "outline" | "secondary" | "ghost" | "link" | "destructive"
+  children?: ReactNode
 }
 
-function LoanCalculatorButton({
-  modelName = "Property",
-  floorArea = "N/A",
+export function LoanCalculatorButton({
+  modelName,
+  propertyName,
+  propertyId,
+  floorArea,
   price,
+  propertyPrice,
   lotOnlyPrice,
   houseConstructionPrice,
-  returnUrl = "/",
-  className = "",
-  propertyPrice,
+  propertyType,
+  returnUrl,
+  className,
+  variant = "default",
+  children,
 }: LoanCalculatorButtonProps) {
-  // Use propertyPrice as a fallback if price is undefined
-  const finalPrice = price || propertyPrice || 0
+  const router = useRouter()
 
-  // Create URL parameters
-  const params = new URLSearchParams()
-  params.append("model", modelName)
-  params.append("area", floorArea)
-  params.append("price", finalPrice.toString())
-  params.append("returnUrl", returnUrl)
+  const handleClick = () => {
+    const params = new URLSearchParams()
 
-  const href = `/loan-calculator?${params.toString()}`
+    // If we have a property ID, use it for dynamic fetching
+    if (propertyId) {
+      params.set("propertyId", propertyId)
+    } else {
+      // Fallback to manual parameters
+      const finalPropertyType = propertyType || (lotOnlyPrice && houseConstructionPrice ? "Model House" : "Lot Only")
+      const finalPrice = price || propertyPrice || 0
+      const finalPropertyName = modelName || propertyName || "Property"
+
+      params.set("propertyName", finalPropertyName)
+      params.set("propertyType", finalPropertyType)
+      params.set("price", finalPrice.toString())
+
+      if (floorArea) {
+        params.set("floorArea", floorArea)
+      }
+
+      if (lotOnlyPrice) {
+        params.set("lotPrice", lotOnlyPrice.toString())
+      }
+
+      if (houseConstructionPrice) {
+        params.set("houseConstructionCost", houseConstructionPrice.toString())
+      }
+    }
+
+    if (returnUrl) {
+      params.set("returnUrl", returnUrl)
+    }
+
+    router.push(`/loan-calculator?${params.toString()}`)
+  }
 
   return (
-    <Link href={href} className={cn("block", className)}>
-      <Button className="w-full bg-[#65932D] hover:bg-[#65932D]/90">
-        <Calculator className="mr-2 h-4 w-4" /> Loan Sample Computation
-      </Button>
-    </Link>
+    <Button onClick={handleClick} variant={variant} className={className}>
+      <Calculator className="h-4 w-4 mr-2" />
+      {children || "Calculate Loan"}
+    </Button>
   )
 }
 
-// Add both named and default exports
-export { LoanCalculatorButton }
 export default LoanCalculatorButton

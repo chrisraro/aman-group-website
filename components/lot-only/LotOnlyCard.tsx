@@ -1,11 +1,12 @@
 import Link from "next/link"
-import { Card, CardContent, CardFooter } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
+import Image from "next/image"
 import { Button } from "@/components/ui/button"
-import { formatNumberWithCommas } from "@/lib/utils/format-utils"
-import type { LotOnlyProperty } from "@/data/lot-only-properties"
-import { ScheduleViewingButton } from "@/components/shared/ScheduleViewingButton"
-import { ArrowRight, Calendar } from "lucide-react"
+import { Card, CardContent } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { MapPin, Calendar, Calculator } from "lucide-react"
+import { LoanCalculatorButton } from "@/components/loan-calculator-button"
+import ScheduleViewingButton from "@/components/schedule-viewing-button"
+import type { LotOnlyProperty } from "@/lib/hooks/useLotOnlyProperties"
 
 interface LotOnlyCardProps {
   property: LotOnlyProperty
@@ -13,20 +14,16 @@ interface LotOnlyCardProps {
 
 export function LotOnlyCard({ property }: LotOnlyCardProps) {
   return (
-    <Card className="h-full flex flex-col overflow-hidden transition-all duration-200" isHoverable>
-      <div className="aspect-[4/3] relative bg-muted">
-        {property.imageUrl ? (
-          <img
-            src={property.imageUrl || "/placeholder.svg"}
-            alt={property.name}
-            className="object-cover w-full h-full"
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center bg-muted">
-            <span className="text-muted-foreground">No image available</span>
-          </div>
-        )}
-        <div className="absolute top-2 right-2 flex flex-col gap-1">
+    <Card className="overflow-hidden hover:shadow-lg transition-shadow duration-300">
+      <div className="relative h-48">
+        <Image
+          src={property.imageUrl || `/placeholder.svg?height=300&width=400&text=${property.name}`}
+          alt={property.name}
+          fill
+          className="object-cover"
+          sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, 33vw"
+        />
+        <div className="absolute top-2 right-2 flex gap-2">
           <Badge
             className="text-xs"
             style={{
@@ -41,55 +38,61 @@ export function LotOnlyCard({ property }: LotOnlyCardProps) {
           >
             {property.status}
           </Badge>
-          <Badge
-            variant="outline"
-            className="text-xs bg-white/80 backdrop-blur-sm"
-            style={{ borderColor: property.developerColor, color: property.developerColor }}
-          >
-            {property.developer}
-          </Badge>
         </div>
       </div>
-      <CardContent className="flex-grow flex flex-col p-4 sm:p-5">
-        <div className="mb-3">
-          <h3 className="card-title mb-1 line-clamp-1">{property.name}</h3>
-          <p className="card-subtitle">{property.location}</p>
+      <CardContent className="p-4">
+        <h3 className="text-lg font-bold mb-2 line-clamp-1">{property.name}</h3>
+        <div className="flex items-center gap-1 mb-2 text-sm text-muted-foreground">
+          <MapPin className="h-3 w-3 flex-shrink-0" />
+          <span className="line-clamp-1">{property.location}</span>
         </div>
-        <div className="grid grid-cols-2 gap-4 mb-4">
-          <div className="flex flex-col">
-            <span className="card-meta">Price</span>
-            <span className="card-price">₱{formatNumberWithCommas(property.price)}</span>
+        <div className="grid grid-cols-2 gap-2 mb-3 text-sm">
+          <div>
+            <span className="font-medium">₱{property.price.toLocaleString()}</span>
+            <p className="text-xs text-muted-foreground">Total Price</p>
           </div>
-          <div className="flex flex-col">
-            <span className="card-meta">Lot Area</span>
-            <span className="card-price">{property.lotArea}</span>
+          <div>
+            <span className="font-medium">{property.lotArea}</span>
+            <p className="text-xs text-muted-foreground">Lot Area</p>
           </div>
         </div>
-        <p className="card-content mb-4 flex-grow line-clamp-3">{property.description}</p>
+        <p className="text-sm text-muted-foreground mb-4 line-clamp-2">{property.description}</p>
+        <div className="grid grid-cols-1 gap-2">
+          <Link href={`/lot-only/${property.id}`} className="w-full">
+            <Button
+              className="w-full"
+              style={{
+                backgroundColor: property.developerColor,
+                borderColor: property.developerColor,
+              }}
+            >
+              View Details
+            </Button>
+          </Link>
+          <div className="grid grid-cols-2 gap-2">
+            <ScheduleViewingButton
+              propertyName={property.name}
+              propertyLocation={property.location}
+              className="w-full text-xs"
+              variant="outline"
+            >
+              <Calendar className="h-3 w-3 mr-1" />
+              Schedule
+            </ScheduleViewingButton>
+            <LoanCalculatorButton
+              propertyName={property.name}
+              propertyPrice={property.price}
+              propertyType="Lot Only"
+              returnUrl={`/lot-only/${property.id}`}
+              className="w-full text-xs"
+              variant="outline"
+            >
+              <Calculator className="h-3 w-3 mr-1" />
+              Calculate
+            </LoanCalculatorButton>
+          </div>
+        </div>
       </CardContent>
-      <CardFooter className="p-4 sm:p-5 pt-0 mt-auto">
-        <div className="flex flex-col sm:flex-row w-full gap-3">
-          <Button
-            asChild
-            variant="outline"
-            className="w-full h-11 flex-1 border-gray-300 hover:bg-gray-50 hover:border-gray-400 transition-all duration-200"
-          >
-            <Link href={`/lot-only/${property.id}`} className="flex items-center justify-center gap-2">
-              <span>View Details</span>
-              <ArrowRight className="h-4 w-4" />
-            </Link>
-          </Button>
-          <ScheduleViewingButton
-            propertyName={property.name}
-            propertyType="Lot Only"
-            className="w-full h-11 flex-1 bg-primary hover:bg-primary/90 text-white flex items-center justify-center gap-2"
-          >
-            <Calendar className="h-4 w-4" />
-            <span className="hidden xs:inline">Schedule</span>
-            <span>Viewing</span>
-          </ScheduleViewingButton>
-        </div>
-      </CardFooter>
     </Card>
   )
 }

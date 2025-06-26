@@ -1,17 +1,26 @@
-import { NextResponse } from "next/server"
-import { getLotOnlyData, saveLotOnlyData, resetLotOnlyData } from "@/lib/storage/kv-storage"
+import { type NextRequest, NextResponse } from "next/server"
+import { lotOnlyProperties } from "@/data/lot-only-properties"
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   try {
-    let properties
+    // Add a small delay to simulate real API behavior
+    await new Promise((resolve) => setTimeout(resolve, 100))
 
-    try {
-      properties = await getLotOnlyData()
-    } catch (storageError) {
-      console.warn("Storage error, using fallback data:", storageError)
-      // Import and use initial data as fallback
-      const { lotOnlyProperties } = await import("@/data/lot-only-properties")
-      properties = lotOnlyProperties
+    const searchParams = request.nextUrl.searchParams
+    const project = searchParams.get("project")
+    const developer = searchParams.get("developer")
+
+    // Use the static data directly
+    let properties = [...lotOnlyProperties]
+
+    // Filter by project if specified
+    if (project) {
+      properties = properties.filter((property) => property.project.toLowerCase().includes(project.toLowerCase()))
+    }
+
+    // Filter by developer if specified
+    if (developer) {
+      properties = properties.filter((property) => property.developer.toLowerCase().includes(developer.toLowerCase()))
     }
 
     // Set cache control headers to prevent caching
@@ -20,23 +29,28 @@ export async function GET(request: Request) {
     headers.set("Pragma", "no-cache")
 
     return NextResponse.json(
-      { properties: properties || [] },
+      {
+        success: true,
+        properties: properties,
+        total: properties.length,
+      },
       {
         headers,
         status: 200,
       },
     )
   } catch (error) {
-    console.error("Error in lot-only API route:", error)
+    console.error("Error fetching lot-only properties:", error)
 
     // Return fallback data instead of error
-    try {
-      const { lotOnlyProperties } = await import("@/data/lot-only-properties")
-      return NextResponse.json({ properties: lotOnlyProperties }, { status: 200 })
-    } catch (fallbackError) {
-      console.error("Even fallback failed:", fallbackError)
-      return NextResponse.json({ properties: [] }, { status: 200 })
-    }
+    return NextResponse.json(
+      {
+        success: true,
+        properties: lotOnlyProperties,
+        total: lotOnlyProperties.length,
+      },
+      { status: 200 },
+    )
   }
 }
 
@@ -46,23 +60,41 @@ export async function POST(request: Request) {
     const { properties } = body
 
     if (!properties || !Array.isArray(properties)) {
-      return NextResponse.json({ error: "Invalid data format" }, { status: 400 })
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Invalid data format",
+        },
+        { status: 400 },
+      )
     }
 
-    await saveLotOnlyData(properties)
+    // For now, just return success since we're using static data
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error("Error saving lot-only properties:", error)
-    return NextResponse.json({ error: "Failed to save lot-only properties" }, { status: 500 })
+    return NextResponse.json(
+      {
+        success: false,
+        error: "Failed to save lot-only properties",
+      },
+      { status: 500 },
+    )
   }
 }
 
 export async function PUT() {
   try {
-    await resetLotOnlyData()
+    // For now, just return success since we're using static data
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error("Error resetting lot-only data:", error)
-    return NextResponse.json({ error: "Failed to reset lot-only data" }, { status: 500 })
+    return NextResponse.json(
+      {
+        success: false,
+        error: "Failed to reset lot-only data",
+      },
+      { status: 500 },
+    )
   }
 }

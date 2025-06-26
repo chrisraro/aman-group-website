@@ -1,815 +1,291 @@
 "use client"
 
 import { useState } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Badge } from "@/components/ui/badge"
 import { Switch } from "@/components/ui/switch"
-import { useToast } from "@/hooks/use-toast"
-import { Calculator, Settings, Calendar, DollarSign, Loader2, RefreshCw, Save } from "lucide-react"
-import type { FinancingOption, PaymentTerm, DownPaymentTerm } from "@/types/loan-calculator"
+import { Separator } from "@/components/ui/separator"
+import { Badge } from "@/components/ui/badge"
+import { Save, RotateCcw, Settings, AlertCircle } from "lucide-react"
 import { useLoanCalculatorSettings } from "@/lib/hooks/useLoanCalculatorSettings"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 
-export default function LoanCalculatorAdmin() {
-  const { settings, loading, error, saveSettings, updateSettings, resetSettings, refetch } = useLoanCalculatorSettings()
-
-  const { toast } = useToast()
-  const [isEditingFinancing, setIsEditingFinancing] = useState(false)
-  const [isEditingDownPayment, setIsEditingDownPayment] = useState(false)
-  const [editingItem, setEditingItem] = useState<any>(null)
+export default function AdminLoanCalculatorPage() {
+  const { settings, isLoading, updateSettings, resetSettings } = useLoanCalculatorSettings()
+  const [localSettings, setLocalSettings] = useState(settings)
   const [isSaving, setIsSaving] = useState(false)
+  const [isResetting, setIsResetting] = useState(false)
+  const [saveStatus, setSaveStatus] = useState<"idle" | "success" | "error">("idle")
 
-  // Form states for fees and settings
-  const [reservationFees, setReservationFees] = useState({
-    modelHouse: settings.reservationFees.modelHouse,
-    lotOnly: settings.reservationFees.lotOnly,
-    isActive: settings.reservationFees.isActive,
-  })
-
-  const [governmentFees, setGovernmentFees] = useState({
-    fixedAmountThreshold: settings.governmentFeesConfig.fixedAmountThreshold,
-    fixedAmount: settings.governmentFeesConfig.fixedAmount,
-    percentageRate: settings.governmentFeesConfig.percentageRate,
-    isActive: settings.governmentFeesConfig.isActive,
-  })
-
-  const [specialRules, setSpecialRules] = useState({
-    isActive: settings.specialDownPaymentRules.twentyPercentRule.isActive,
-    firstYearRate: settings.specialDownPaymentRules.twentyPercentRule.firstYearInterestRate,
-    subsequentYearRate: settings.specialDownPaymentRules.twentyPercentRule.subsequentYearInterestRate,
-    applicableTerms: settings.specialDownPaymentRules.twentyPercentRule.applicableTerms,
-  })
-
-  const [defaultSettings, setDefaultSettings] = useState({
-    defaultFinancingOption: settings.defaultSettings.defaultFinancingOption,
-    defaultPaymentTerm: settings.defaultSettings.defaultPaymentTerm,
-    defaultDownPaymentTerm: settings.defaultSettings.defaultDownPaymentTerm,
-    defaultDownPaymentPercentage: settings.defaultSettings.defaultDownPaymentPercentage,
-    minimumDownPaymentPercentage: settings.defaultSettings.minimumDownPaymentPercentage,
-    maximumDownPaymentPercentage: settings.defaultSettings.maximumDownPaymentPercentage,
-  })
-
-  // Update form states when settings change
+  // Update local settings when settings change
   useState(() => {
-    setReservationFees({
-      modelHouse: settings.reservationFees.modelHouse,
-      lotOnly: settings.reservationFees.lotOnly,
-      isActive: settings.reservationFees.isActive,
-    })
-    setGovernmentFees({
-      fixedAmountThreshold: settings.governmentFeesConfig.fixedAmountThreshold,
-      fixedAmount: settings.governmentFeesConfig.fixedAmount,
-      percentageRate: settings.governmentFeesConfig.percentageRate,
-      isActive: settings.governmentFeesConfig.isActive,
-    })
-    setSpecialRules({
-      isActive: settings.specialDownPaymentRules.twentyPercentRule.isActive,
-      firstYearRate: settings.specialDownPaymentRules.twentyPercentRule.firstYearInterestRate,
-      subsequentYearRate: settings.specialDownPaymentRules.twentyPercentRule.subsequentYearInterestRate,
-      applicableTerms: settings.specialDownPaymentRules.twentyPercentRule.applicableTerms,
-    })
-    setDefaultSettings({
-      defaultFinancingOption: settings.defaultSettings.defaultFinancingOption,
-      defaultPaymentTerm: settings.defaultSettings.defaultPaymentTerm,
-      defaultDownPaymentTerm: settings.defaultSettings.defaultDownPaymentTerm,
-      defaultDownPaymentPercentage: settings.defaultSettings.defaultDownPaymentPercentage,
-      minimumDownPaymentPercentage: settings.defaultSettings.minimumDownPaymentPercentage,
-      maximumDownPaymentPercentage: settings.defaultSettings.maximumDownPaymentPercentage,
-    })
-  })
-
-  const toggleFinancingStatus = async (id: string) => {
-    const updatedOptions = settings.financingOptions.map((option) =>
-      option.id === id ? { ...option, isActive: !option.isActive } : option,
-    )
-
-    const result = await updateSettings({
-      financingOptions: updatedOptions,
-    })
-
-    if (result.success) {
-      toast({
-        title: "Success",
-        description: "Financing option updated successfully",
-      })
-    } else {
-      toast({
-        title: "Error",
-        description: result.error || "Failed to update financing option",
-        variant: "destructive",
-      })
+    if (settings) {
+      setLocalSettings(settings)
     }
-  }
+  }, [settings])
 
-  const toggleDownPaymentStatus = async (id: string) => {
-    const updatedTerms = settings.downPaymentTerms.map((term) =>
-      term.id === id ? { ...term, isActive: !term.isActive } : term,
-    )
+  const handleSave = async () => {
+    if (!localSettings) return
 
-    const result = await updateSettings({
-      downPaymentTerms: updatedTerms,
-    })
-
-    if (result.success) {
-      toast({
-        title: "Success",
-        description: "Down payment term updated successfully",
-      })
-    } else {
-      toast({
-        title: "Error",
-        description: result.error || "Failed to update down payment term",
-        variant: "destructive",
-      })
-    }
-  }
-
-  const saveFeesConfiguration = async () => {
     setIsSaving(true)
-    try {
-      const result = await updateSettings({
-        reservationFees: reservationFees,
-        governmentFeesConfig: governmentFees,
-      })
+    setSaveStatus("idle")
 
-      if (result.success) {
-        toast({
-          title: "Success",
-          description: "Fees configuration saved successfully",
-        })
-      } else {
-        toast({
-          title: "Error",
-          description: result.error || "Failed to save fees configuration",
-          variant: "destructive",
-        })
-      }
+    try {
+      await updateSettings(localSettings)
+      setSaveStatus("success")
+      setTimeout(() => setSaveStatus("idle"), 3000)
+    } catch (error) {
+      console.error("Error saving settings:", error)
+      setSaveStatus("error")
     } finally {
       setIsSaving(false)
     }
   }
 
-  const saveSpecialRules = async () => {
-    setIsSaving(true)
+  const handleReset = async () => {
+    setIsResetting(true)
+    setSaveStatus("idle")
+
     try {
-      const result = await updateSettings({
-        specialDownPaymentRules: {
-          twentyPercentRule: {
-            isActive: specialRules.isActive,
-            firstYearInterestRate: specialRules.firstYearRate,
-            subsequentYearInterestRate: specialRules.subsequentYearRate,
-            applicableTerms: specialRules.applicableTerms,
-          },
-        },
-      })
-
-      if (result.success) {
-        toast({
-          title: "Success",
-          description: "Special rules saved successfully",
-        })
-      } else {
-        toast({
-          title: "Error",
-          description: result.error || "Failed to save special rules",
-          variant: "destructive",
-        })
-      }
+      await resetSettings()
+      setSaveStatus("success")
+      setTimeout(() => setSaveStatus("idle"), 3000)
+    } catch (error) {
+      console.error("Error resetting settings:", error)
+      setSaveStatus("error")
     } finally {
-      setIsSaving(false)
+      setIsResetting(false)
     }
   }
 
-  const saveDefaultSettings = async () => {
-    setIsSaving(true)
-    try {
-      const result = await updateSettings({
-        defaultSettings: defaultSettings,
-      })
-
-      if (result.success) {
-        toast({
-          title: "Success",
-          description: "Default settings saved successfully",
-        })
-      } else {
-        toast({
-          title: "Error",
-          description: result.error || "Failed to save default settings",
-          variant: "destructive",
-        })
-      }
-    } finally {
-      setIsSaving(false)
-    }
+  const updateLocalSetting = (key: keyof typeof localSettings, value: number | boolean) => {
+    if (!localSettings) return
+    setLocalSettings({
+      ...localSettings,
+      [key]: value,
+    })
   }
 
-  const handleResetSettings = async () => {
-    if (confirm("Are you sure you want to reset all settings to default? This action cannot be undone.")) {
-      const result = await resetSettings()
-
-      if (result.success) {
-        toast({
-          title: "Success",
-          description: "Settings reset to default successfully",
-        })
-      } else {
-        toast({
-          title: "Error",
-          description: result.error || "Failed to reset settings",
-          variant: "destructive",
-        })
-      }
-    }
-  }
-
-  if (loading) {
+  if (isLoading || !localSettings) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-8 w-8 animate-spin mr-2" />
-        <span>Loading loan calculator settings...</span>
-      </div>
-    )
-  }
-
-  if (error) {
-    return (
-      <div className="text-center py-12">
-        <p className="text-red-600 mb-4">Error loading settings: {error}</p>
-        <Button onClick={refetch} variant="outline">
-          <RefreshCw className="h-4 w-4 mr-2" />
-          Retry
-        </Button>
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p>Loading settings...</p>
+        </div>
       </div>
     )
   }
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 flex items-center">
-            <Calculator className="mr-3 h-8 w-8 text-primary" />
-            Loan Calculator Management
-          </h1>
-          <p className="text-muted-foreground mt-1">
-            Configure financing options, payment terms, and calculator settings
-          </p>
+          <h1 className="text-3xl font-bold">Loan Calculator Settings</h1>
+          <p className="text-muted-foreground">Configure loan calculation parameters and fees</p>
         </div>
         <div className="flex gap-2">
-          <Button onClick={refetch} variant="outline" size="sm">
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Refresh
+          <Button variant="outline" onClick={handleReset} disabled={isResetting}>
+            <RotateCcw className="h-4 w-4 mr-2" />
+            {isResetting ? "Resetting..." : "Reset to Defaults"}
           </Button>
-          <Button onClick={handleResetSettings} variant="outline" size="sm">
-            Reset to Default
+          <Button onClick={handleSave} disabled={isSaving}>
+            <Save className="h-4 w-4 mr-2" />
+            {isSaving ? "Saving..." : "Save Changes"}
           </Button>
         </div>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Financing Options</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{settings.financingOptions.filter((f) => f.isActive).length}</div>
-            <p className="text-xs text-muted-foreground">{settings.financingOptions.length} total options</p>
-          </CardContent>
-        </Card>
+      {saveStatus === "success" && (
+        <Alert className="border-green-200 bg-green-50">
+          <AlertCircle className="h-4 w-4 text-green-600" />
+          <AlertDescription className="text-green-800">Settings saved successfully!</AlertDescription>
+        </Alert>
+      )}
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Down Payment Terms</CardTitle>
-            <Calendar className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{settings.downPaymentTerms.filter((d) => d.isActive).length}</div>
-            <p className="text-xs text-muted-foreground">{settings.downPaymentTerms.length} total terms</p>
-          </CardContent>
-        </Card>
+      {saveStatus === "error" && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>Error saving settings. Please try again.</AlertDescription>
+        </Alert>
+      )}
 
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Interest Rates */}
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Reservation Fees</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Settings className="h-5 w-5" />
+              Interest Rates
+            </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              ₱{reservationFees.modelHouse.toLocaleString()} / ₱{reservationFees.lotOnly.toLocaleString()}
+          <CardContent className="space-y-4">
+            <div>
+              <Label htmlFor="baseInterestRate">Base Interest Rate (%)</Label>
+              <Input
+                id="baseInterestRate"
+                type="number"
+                step="0.1"
+                value={localSettings.baseInterestRate}
+                onChange={(e) => updateLocalSetting("baseInterestRate", Number.parseFloat(e.target.value) || 0)}
+              />
+              <p className="text-sm text-muted-foreground mt-1">Standard interest rate for regular loans</p>
             </div>
-            <p className="text-xs text-muted-foreground">Model House / Lot Only</p>
+
+            <div>
+              <Label htmlFor="specialRuleInterestRate">Special Rule Interest Rate (%)</Label>
+              <Input
+                id="specialRuleInterestRate"
+                type="number"
+                step="0.1"
+                value={localSettings.specialRuleInterestRate}
+                onChange={(e) => updateLocalSetting("specialRuleInterestRate", Number.parseFloat(e.target.value) || 0)}
+              />
+              <p className="text-sm text-muted-foreground mt-1">
+                Interest rate for year 2+ (20% down payment special rule)
+              </p>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div>
+                <Label htmlFor="specialRuleEnabled">Enable Special Rule</Label>
+                <p className="text-sm text-muted-foreground">20% down payment: Year 1 at 0%, Year 2+ at special rate</p>
+              </div>
+              <Switch
+                id="specialRuleEnabled"
+                checked={localSettings.specialRuleEnabled}
+                onCheckedChange={(checked) => updateLocalSetting("specialRuleEnabled", checked)}
+              />
+            </div>
           </CardContent>
         </Card>
 
+        {/* Standard Fees */}
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Special Rules</CardTitle>
-            <Settings className="h-4 w-4 text-muted-foreground" />
+          <CardHeader>
+            <CardTitle>Standard Fees</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <Label htmlFor="processingFeePercentage">Processing Fee (%)</Label>
+              <Input
+                id="processingFeePercentage"
+                type="number"
+                step="0.1"
+                value={localSettings.processingFeePercentage}
+                onChange={(e) => updateLocalSetting("processingFeePercentage", Number.parseFloat(e.target.value) || 0)}
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="appraisalFee">Appraisal Fee (₱)</Label>
+              <Input
+                id="appraisalFee"
+                type="number"
+                value={localSettings.appraisalFee}
+                onChange={(e) => updateLocalSetting("appraisalFee", Number.parseFloat(e.target.value) || 0)}
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="notarialFeePercentage">Notarial Fee (%)</Label>
+              <Input
+                id="notarialFeePercentage"
+                type="number"
+                step="0.1"
+                value={localSettings.notarialFeePercentage}
+                onChange={(e) => updateLocalSetting("notarialFeePercentage", Number.parseFloat(e.target.value) || 0)}
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="insuranceFeePercentage">Insurance Fee (%)</Label>
+              <Input
+                id="insuranceFeePercentage"
+                type="number"
+                step="0.1"
+                value={localSettings.insuranceFeePercentage}
+                onChange={(e) => updateLocalSetting("insuranceFeePercentage", Number.parseFloat(e.target.value) || 0)}
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Model House Specific Fees */}
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <CardTitle>Model House Construction Fees</CardTitle>
+            <p className="text-sm text-muted-foreground">
+              Additional fees applied to model house properties (17% total)
+            </p>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{specialRules.isActive ? "Active" : "Inactive"}</div>
-            <p className="text-xs text-muted-foreground">20% down payment rule</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <Label htmlFor="constructionFeePercentage">Construction Fee Percentage (%)</Label>
+                <Input
+                  id="constructionFeePercentage"
+                  type="number"
+                  step="0.1"
+                  value={localSettings.constructionFeePercentage}
+                  onChange={(e) =>
+                    updateLocalSetting("constructionFeePercentage", Number.parseFloat(e.target.value) || 0)
+                  }
+                />
+                <p className="text-sm text-muted-foreground mt-1">
+                  Applied to both lot price and house construction cost
+                </p>
+              </div>
+
+              <div className="bg-blue-50 p-4 rounded-lg">
+                <h4 className="font-medium mb-2">Fee Breakdown for Model Houses:</h4>
+                <div className="space-y-1 text-sm">
+                  <div className="flex justify-between">
+                    <span>Lot Development Fee:</span>
+                    <Badge variant="outline">{localSettings.constructionFeePercentage}% of lot price</Badge>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>House Construction Fee:</span>
+                    <Badge variant="outline">{localSettings.constructionFeePercentage}% of house cost</Badge>
+                  </div>
+                  <Separator className="my-2" />
+                  <div className="flex justify-between font-medium">
+                    <span>Total Additional Fees:</span>
+                    <Badge>{localSettings.constructionFeePercentage * 2}%</Badge>
+                  </div>
+                </div>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Main Content */}
-      <Tabs defaultValue="financing" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="financing">Financing Options</TabsTrigger>
-          <TabsTrigger value="downpayment">Down Payment Terms</TabsTrigger>
-          <TabsTrigger value="fees">Fees & Taxes</TabsTrigger>
-          <TabsTrigger value="special-rules">Special Rules</TabsTrigger>
-          <TabsTrigger value="settings">Calculator Settings</TabsTrigger>
-        </TabsList>
-
-        {/* Financing Options Tab */}
-        <TabsContent value="financing" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Financing Options</CardTitle>
-              <CardDescription>Manage available financing options and their interest rates</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {settings.financingOptions.map((option) => (
-                  <div key={option.id} className="flex items-center justify-between p-4 border rounded-lg">
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-3">
-                        <h3 className="font-medium">{option.name}</h3>
-                        <Badge variant={option.isActive ? "default" : "secondary"}>
-                          {option.isActive ? "Active" : "Inactive"}
-                        </Badge>
-                      </div>
-                      <p className="text-sm text-muted-foreground mt-1">{option.description}</p>
-                      <div className="flex flex-wrap gap-2 mt-2">
-                        {option.availableTerms.map((term) => (
-                          <Badge key={term} variant="outline" className="text-xs">
-                            {term}yr: {option.interestRates[term]}%
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Switch checked={option.isActive} onCheckedChange={() => toggleFinancingStatus(option.id)} />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Down Payment Terms Tab */}
-        <TabsContent value="downpayment" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Down Payment Terms</CardTitle>
-              <CardDescription>Manage down payment installment options and their interest rates</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {settings.downPaymentTerms.map((term) => (
-                  <div key={term.id} className="flex items-center justify-between p-4 border rounded-lg">
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-3">
-                        <h3 className="font-medium">{term.name}</h3>
-                        <Badge variant={term.isActive ? "default" : "secondary"}>
-                          {term.isActive ? "Active" : "Inactive"}
-                        </Badge>
-                        <Badge variant="outline">{term.interestRate}% interest</Badge>
-                      </div>
-                      <p className="text-sm text-muted-foreground mt-1">{term.description}</p>
-                      <div className="flex flex-wrap gap-1 mt-2">
-                        {term.applicableFinancing.map((financing) => (
-                          <Badge key={financing} variant="outline" className="text-xs">
-                            {financing}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Switch checked={term.isActive} onCheckedChange={() => toggleDownPaymentStatus(term.id)} />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Fees & Taxes Tab */}
-        <TabsContent value="fees" className="space-y-4">
-          <div className="grid gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Reservation Fees</CardTitle>
-                <CardDescription>Configure reservation fees for different property types</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="modelHouseReservation">Model House Reservation Fee</Label>
-                    <Input
-                      id="modelHouseReservation"
-                      type="number"
-                      value={reservationFees.modelHouse}
-                      onChange={(e) =>
-                        setReservationFees((prev) => ({
-                          ...prev,
-                          modelHouse: Number(e.target.value),
-                        }))
-                      }
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="lotOnlyReservation">Lot Only Reservation Fee</Label>
-                    <Input
-                      id="lotOnlyReservation"
-                      type="number"
-                      value={reservationFees.lotOnly}
-                      onChange={(e) =>
-                        setReservationFees((prev) => ({
-                          ...prev,
-                          lotOnly: Number(e.target.value),
-                        }))
-                      }
-                    />
-                  </div>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="reservationActive"
-                    checked={reservationFees.isActive}
-                    onCheckedChange={(checked) =>
-                      setReservationFees((prev) => ({
-                        ...prev,
-                        isActive: checked,
-                      }))
-                    }
-                  />
-                  <Label htmlFor="reservationActive">Enable reservation fees</Label>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Government Fees & Taxes</CardTitle>
-                <CardDescription>Configure government fees and taxes calculation</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="fixedAmountThreshold">Fixed Amount Threshold</Label>
-                    <Input
-                      id="fixedAmountThreshold"
-                      type="number"
-                      value={governmentFees.fixedAmountThreshold}
-                      onChange={(e) =>
-                        setGovernmentFees((prev) => ({
-                          ...prev,
-                          fixedAmountThreshold: Number(e.target.value),
-                        }))
-                      }
-                    />
-                    <p className="text-xs text-muted-foreground">Properties ≥ this amount use fixed fee</p>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="fixedAmount">Fixed Amount</Label>
-                    <Input
-                      id="fixedAmount"
-                      type="number"
-                      value={governmentFees.fixedAmount}
-                      onChange={(e) =>
-                        setGovernmentFees((prev) => ({
-                          ...prev,
-                          fixedAmount: Number(e.target.value),
-                        }))
-                      }
-                    />
-                    <p className="text-xs text-muted-foreground">Fixed fee for properties ≥ threshold</p>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="percentageRate">Percentage Rate (%)</Label>
-                    <Input
-                      id="percentageRate"
-                      type="number"
-                      step="0.1"
-                      value={governmentFees.percentageRate}
-                      onChange={(e) =>
-                        setGovernmentFees((prev) => ({
-                          ...prev,
-                          percentageRate: Number(e.target.value),
-                        }))
-                      }
-                    />
-                    <p className="text-xs text-muted-foreground">Percentage for properties &lt; threshold</p>
-                  </div>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="governmentFeesActive"
-                    checked={governmentFees.isActive}
-                    onCheckedChange={(checked) =>
-                      setGovernmentFees((prev) => ({
-                        ...prev,
-                        isActive: checked,
-                      }))
-                    }
-                  />
-                  <Label htmlFor="governmentFeesActive">Enable government fees & taxes</Label>
-                </div>
-
-                <div className="mt-4 p-4 bg-blue-50 rounded-lg">
-                  <h4 className="font-medium mb-2">Calculation Logic:</h4>
-                  <div className="text-sm text-muted-foreground space-y-1">
-                    <p>
-                      • If property price ≥ {governmentFees.fixedAmountThreshold.toLocaleString()}: Add fixed ₱
-                      {governmentFees.fixedAmount.toLocaleString()}
-                    </p>
-                    <p>
-                      • If property price &lt; {governmentFees.fixedAmountThreshold.toLocaleString()}: Add{" "}
-                      {governmentFees.percentageRate}% of property price
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <div className="flex justify-end">
-              <Button onClick={saveFeesConfiguration} disabled={isSaving}>
-                {isSaving ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Saving...
-                  </>
-                ) : (
-                  <>
-                    <Save className="h-4 w-4 mr-2" />
-                    Save Fees Configuration
-                  </>
-                )}
-              </Button>
+      {/* Current Configuration Summary */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Current Configuration Summary</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+            <div>
+              <h4 className="font-medium mb-2">Down Payment</h4>
+              <p className="text-muted-foreground">Fixed at 20% (Special Rule)</p>
+            </div>
+            <div>
+              <h4 className="font-medium mb-2">Interest Structure</h4>
+              <p className="text-muted-foreground">Year 1: 0% | Year 2+: {localSettings.specialRuleInterestRate}%</p>
+            </div>
+            <div>
+              <h4 className="font-medium mb-2">Model House Fees</h4>
+              <p className="text-muted-foreground">
+                {localSettings.constructionFeePercentage * 2}% total additional fees
+              </p>
             </div>
           </div>
-        </TabsContent>
-
-        {/* Special Rules Tab */}
-        <TabsContent value="special-rules" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>20% Down Payment Special Rule</CardTitle>
-              <CardDescription>Configure special interest rates for 20% down payments</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center space-x-2 mb-4">
-                <Switch
-                  id="twentyPercentRuleActive"
-                  checked={specialRules.isActive}
-                  onCheckedChange={(checked) =>
-                    setSpecialRules((prev) => ({
-                      ...prev,
-                      isActive: checked,
-                    }))
-                  }
-                />
-                <Label htmlFor="twentyPercentRuleActive">Enable 20% down payment special rule</Label>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="firstYearRate">First Year Interest Rate (%)</Label>
-                  <Input
-                    id="firstYearRate"
-                    type="number"
-                    step="0.1"
-                    value={specialRules.firstYearRate}
-                    onChange={(e) =>
-                      setSpecialRules((prev) => ({
-                        ...prev,
-                        firstYearRate: Number(e.target.value),
-                      }))
-                    }
-                  />
-                  <p className="text-xs text-muted-foreground">Interest rate for first 12 months</p>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="subsequentYearRate">Subsequent Years Interest Rate (%)</Label>
-                  <Input
-                    id="subsequentYearRate"
-                    type="number"
-                    step="0.1"
-                    value={specialRules.subsequentYearRate}
-                    onChange={(e) =>
-                      setSpecialRules((prev) => ({
-                        ...prev,
-                        subsequentYearRate: Number(e.target.value),
-                      }))
-                    }
-                  />
-                  <p className="text-xs text-muted-foreground">Interest rate for months 13 onwards</p>
-                </div>
-              </div>
-
-              <div className="mt-4 p-4 bg-blue-50 rounded-lg">
-                <h4 className="font-medium mb-2">Rule Logic:</h4>
-                <div className="text-sm text-muted-foreground space-y-1">
-                  <p>
-                    • <strong>Option 1:</strong> 12 months at {specialRules.firstYearRate}% interest (when down payment
-                    = 20%)
-                  </p>
-                  <p>
-                    • <strong>Option 2:</strong> First year at {specialRules.firstYearRate}%, subsequent years at{" "}
-                    {specialRules.subsequentYearRate}% (when down payment = 20%)
-                  </p>
-                  <p>• Rule only applies when down payment percentage is exactly 20%</p>
-                </div>
-              </div>
-
-              <div className="flex justify-end">
-                <Button onClick={saveSpecialRules} disabled={isSaving}>
-                  {isSaving ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Saving...
-                    </>
-                  ) : (
-                    <>
-                      <Save className="h-4 w-4 mr-2" />
-                      Save Special Rules
-                    </>
-                  )}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Calculator Settings Tab */}
-        <TabsContent value="settings" className="space-y-4">
-          <div className="grid gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Default Calculator Settings</CardTitle>
-                <CardDescription>Configure the default values for the loan calculator</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="defaultFinancing">Default Financing Option</Label>
-                    <Select
-                      value={defaultSettings.defaultFinancingOption}
-                      onValueChange={(value) =>
-                        setDefaultSettings((prev) => ({
-                          ...prev,
-                          defaultFinancingOption: value as FinancingOption,
-                        }))
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="in-house">In-House Financing</SelectItem>
-                        <SelectItem value="in-house-bridge">In-House Bridge</SelectItem>
-                        <SelectItem value="pag-ibig">Pag-IBIG</SelectItem>
-                        <SelectItem value="bank">Bank Financing</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="defaultPaymentTerm">Default Payment Term</Label>
-                    <Select
-                      value={defaultSettings.defaultPaymentTerm.toString()}
-                      onValueChange={(value) =>
-                        setDefaultSettings((prev) => ({
-                          ...prev,
-                          defaultPaymentTerm: Number(value) as PaymentTerm,
-                        }))
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="5">5 Years</SelectItem>
-                        <SelectItem value="10">10 Years</SelectItem>
-                        <SelectItem value="15">15 Years</SelectItem>
-                        <SelectItem value="20">20 Years</SelectItem>
-                        <SelectItem value="25">25 Years</SelectItem>
-                        <SelectItem value="30">30 Years</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="defaultDownPaymentTerm">Default Down Payment Term</Label>
-                    <Select
-                      value={defaultSettings.defaultDownPaymentTerm.toString()}
-                      onValueChange={(value) =>
-                        setDefaultSettings((prev) => ({
-                          ...prev,
-                          defaultDownPaymentTerm: Number(value) as DownPaymentTerm,
-                        }))
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="1">Lump Sum</SelectItem>
-                        <SelectItem value="3">3 Months</SelectItem>
-                        <SelectItem value="6">6 Months</SelectItem>
-                        <SelectItem value="12">12 Months</SelectItem>
-                        <SelectItem value="18">18 Months</SelectItem>
-                        <SelectItem value="24">24 Months</SelectItem>
-                        <SelectItem value="36">36 Months</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="defaultDownPaymentPercentage">Default Down Payment %</Label>
-                    <Input
-                      id="defaultDownPaymentPercentage"
-                      type="number"
-                      value={defaultSettings.defaultDownPaymentPercentage}
-                      onChange={(e) =>
-                        setDefaultSettings((prev) => ({
-                          ...prev,
-                          defaultDownPaymentPercentage: Number(e.target.value),
-                        }))
-                      }
-                    />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Calculator Constraints</CardTitle>
-                <CardDescription>Set minimum and maximum values for the calculator</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="minDownPayment">Minimum Down Payment %</Label>
-                    <Input
-                      id="minDownPayment"
-                      type="number"
-                      value={defaultSettings.minimumDownPaymentPercentage}
-                      onChange={(e) =>
-                        setDefaultSettings((prev) => ({
-                          ...prev,
-                          minimumDownPaymentPercentage: Number(e.target.value),
-                        }))
-                      }
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="maxDownPayment">Maximum Down Payment %</Label>
-                    <Input
-                      id="maxDownPayment"
-                      type="number"
-                      value={defaultSettings.maximumDownPaymentPercentage}
-                      onChange={(e) =>
-                        setDefaultSettings((prev) => ({
-                          ...prev,
-                          maximumDownPaymentPercentage: Number(e.target.value),
-                        }))
-                      }
-                    />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <div className="flex justify-end">
-              <Button onClick={saveDefaultSettings} disabled={isSaving}>
-                {isSaving ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Saving...
-                  </>
-                ) : (
-                  <>
-                    <Save className="h-4 w-4 mr-2" />
-                    Save Settings
-                  </>
-                )}
-              </Button>
-            </div>
-          </div>
-        </TabsContent>
-      </Tabs>
+        </CardContent>
+      </Card>
     </div>
   )
 }

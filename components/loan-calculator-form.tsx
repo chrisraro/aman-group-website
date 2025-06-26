@@ -1,11 +1,12 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useCallback, useMemo } from "react"
 import Link from "next/link"
+import { useSearchParams } from "next/navigation"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import * as z from "zod"
-import { ArrowLeft, Calculator, FileDown, FileText, Home, Loader2, Info } from "lucide-react"
+import { ArrowLeft, Calculator, FileDown, FileText, Home, Loader2, Info, Search, Building, MapPin } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -13,24 +14,15 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { formatCurrency } from "@/lib/utils"
-import type {
-  FinancingOption,
-  PaymentTerm,
-  DownPaymentTerm,
-  LoanCalculationResult,
-  PropertyType,
-} from "@/types/loan-calculator"
+import type { FinancingOption, PaymentTerm, LoanCalculationResult, PropertyType } from "@/types/loan-calculator"
 import { calculateCompleteLoanDetails, generateLoanAmortizationSchedule } from "@/lib/loan-calculations"
-// Add the import for the PDF export utility
 import { exportToPDF } from "@/components/pdf-export-utils"
-
-// Add useRouter and usePathname imports at the top of the file
 import { useRouter, usePathname } from "next/navigation"
-
-// Add this after the imports
-import { motion } from "framer-motion"
 import { useLoanCalculatorSettings } from "@/lib/hooks/useLoanCalculatorSettings"
+import { usePropertyData, type PropertyOption } from "@/lib/hooks/usePropertyData"
 
 // Helper function to format number with commas
 const formatNumberWithCommas = (value: number | undefined): string => {
@@ -39,10 +31,11 @@ const formatNumberWithCommas = (value: number | undefined): string => {
 }
 
 const formSchema = z.object({
+  selectedPropertyId: z.string().optional(),
   basePrice: z.number().min(1),
   propertyType: z.enum(["model-house", "lot-only"]),
-  downPayment: z.number().min(1),
-  downPaymentTerm: z.number().int().min(1).max(36),
+  lotPrice: z.number().optional(),
+  houseConstructionCost: z.number().optional(),
   financingOption: z.enum(["in-house", "in-house-bridge", "pag-ibig", "bank"]),
   paymentTerm: z.number().int().min(5).max(30),
 })
@@ -52,6 +45,8 @@ interface LoanCalculatorFormProps {
   returnUrl?: string
   modelName?: string
   propertyType?: PropertyType
+  lotPrice?: number
+  houseConstructionCost?: number
 }
 
 export function LoanCalculatorForm({
@@ -59,137 +54,189 @@ export function LoanCalculatorForm({
   returnUrl = "/model-houses",
   modelName,
   propertyType = "model-house",
+  lotPrice,
+  houseConstructionCost,
 }: LoanCalculatorFormProps) {
+  const searchParams = useSearchParams()
   const [result, setResult] = useState<LoanCalculationResult | null>(null)
   const [scheduleView, setScheduleView] = useState<"monthly" | "yearly">(() => {
-    // Check if we're in the browser environment
     if (typeof window !== "undefined") {
-      // Try to get the saved preference from localStorage
       const savedView = localStorage.getItem("amortizationScheduleView")
-      // Return saved preference if valid, otherwise default to monthly
       return savedView === "yearly" || savedView === "monthly" ? savedView : "monthly"
     }
-    // Default to monthly on server-side rendering
     return "monthly"
   })
-  const [downPaymentPercentage, setDownPaymentPercentage] = useState<number>(20)
   const [isExporting, setIsExporting] = useState(false)
-  // Replace with:
-  const { settings: calculatorSettings, loading: settingsLoading } = useLoanCalculatorSettings()
+  const [propertySearchOpen, setPropertySearchOpen] = useState(false)
+  const [selectedProperty, setSelectedProperty] = useState<PropertyOption | null>(null)
+  const [isInitialized, setIsInitialized] = useState(false)
+
+  // Hooks
+  const { settings: calculatorSettings, loading: settingsLoading, error: settingsError } = useLoanCalculatorSettings()
+  const { properties, isLoading: propertiesLoading, error: propertiesError, refreshData } = usePropertyData()
 
   const loanSummaryRef = useRef<HTMLDivElement>(null)
+  const router = useRouter()
+  const pathname = usePathname()
 
-  // Load calculator settings on component mount
-  // Remove the existing useEffect for loading settings
-  // useEffect(() => {
-  //   const loadSettings = async () => {
-  //     const savedSettings = await loadLoanCalculatorSettings()
-  //     if (savedSettings) {
-  //       setCalculatorSettings({ ...getDefaultLoanCalculatorSettings(), ...savedSettings })
-  //     }
-  //   }
-  //   loadSettings()
-  // }, [])
-
-  // Function to scroll to loan summary on mobile
-  const scrollToLoanSummary = () => {
-    if (window.innerWidth < 768 && loanSummaryRef.current) {
-      loanSummaryRef.current.scrollIntoView({ behavior: "smooth" })
-    }
-  }
-
-  // Default property price (changed from decimal to integer)
+  // Default property price
   const defaultPrice = 4707475
-
-  // Use the initial price from the model house if available
   const basePrice = initialPrice || defaultPrice
-
-  // Calculate default down payment (20%)
-  const defaultDownPayment = basePrice * 0.2
-
-  // Helper function to format number to two decimal places
-  const formatToTwoDecimals = (value: number): number => {
-    return Math.round(value * 100) / 100
-  }
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
+      selectedPropertyId: "",
       basePrice: basePrice,
       propertyType: propertyType,
-      downPayment: Math.round(basePrice * (downPaymentPercentage / 100)),
-      downPaymentTerm: 12,
+      lotPrice: lotPrice,
+      houseConstructionCost: houseConstructionCost,
       financingOption: "in-house",
       paymentTerm: 5,
     },
   })
 
-  // Update down payment when property price or percentage changes
-  useEffect(() => {
-    const currentPrice = form.getValues("basePrice")
-    if (currentPrice && !isNaN(currentPrice)) {
-      const newDownPayment = Math.round(currentPrice * (downPaymentPercentage / 100))
-      form.setValue("downPayment", newDownPayment)
-
-      // Add a small delay to trigger animation after value change
-      setTimeout(() => {
-        const downPaymentInput = document.getElementById("downPayment")
-        if (downPaymentInput) {
-          downPaymentInput.classList.add("animate-highlight")
-          setTimeout(() => {
-            downPaymentInput.classList.remove("animate-highlight")
-          }, 1000)
-        }
-      }, 10)
+  // Memoize URL parameters to prevent unnecessary re-renders
+  const urlParams = useMemo(() => {
+    if (!searchParams) return null
+    return {
+      propertyId: searchParams.get("propertyId"),
+      price: searchParams.get("price"),
+      propertyType: searchParams.get("propertyType"),
+      lotPrice: searchParams.get("lotPrice"),
+      houseConstructionCost: searchParams.get("houseConstructionCost"),
     }
-  }, [form, downPaymentPercentage])
+  }, [searchParams])
 
-  const router = useRouter()
-  const pathname = usePathname()
+  // Function to scroll to loan summary on mobile
+  const scrollToLoanSummary = useCallback(() => {
+    if (window.innerWidth < 768 && loanSummaryRef.current) {
+      loanSummaryRef.current.scrollIntoView({ behavior: "smooth" })
+    }
+  }, [])
 
-  // Reset form values when navigating directly from navbar
+  const handlePropertySelect = useCallback(
+    (property: PropertyOption) => {
+      setSelectedProperty(property)
+
+      // Update form values without triggering re-renders
+      const updates = {
+        selectedPropertyId: property.id,
+        basePrice: property.price,
+        propertyType: property.type === "lot-only" ? ("lot-only" as const) : ("model-house" as const),
+        lotPrice: property.type === "lot-only" ? undefined : property.lotPrice || 0,
+        houseConstructionCost: property.type === "lot-only" ? undefined : property.houseConstructionPrice || 0,
+      }
+
+      // Use batch updates to prevent multiple re-renders
+      Object.entries(updates).forEach(([key, value]) => {
+        form.setValue(key as keyof typeof updates, value, { shouldValidate: false })
+      })
+
+      setPropertySearchOpen(false)
+    },
+    [form],
+  )
+
+  // Initialize from URL parameters only once
   useEffect(() => {
-    // Check if we're on the loan calculator page directly (not via model house)
-    if (pathname === "/loan-calculator" && !initialPrice) {
-      // Reset to default values with integer values
+    if (!isInitialized && urlParams && properties.length > 0) {
+      if (urlParams.propertyId) {
+        const property = properties.find((p) => p.id === urlParams.propertyId)
+        if (property) {
+          handlePropertySelect(property)
+        }
+      } else if (urlParams.price) {
+        const price = Number.parseFloat(urlParams.price)
+        if (!isNaN(price)) {
+          form.setValue("basePrice", price, { shouldValidate: false })
+          if (urlParams.propertyType) {
+            form.setValue("propertyType", urlParams.propertyType as PropertyType, { shouldValidate: false })
+          }
+          if (urlParams.lotPrice) {
+            const lotPrice = Number.parseFloat(urlParams.lotPrice)
+            if (!isNaN(lotPrice)) {
+              form.setValue("lotPrice", lotPrice, { shouldValidate: false })
+            }
+          }
+          if (urlParams.houseConstructionCost) {
+            const houseConstructionCost = Number.parseFloat(urlParams.houseConstructionCost)
+            if (!isNaN(houseConstructionCost)) {
+              form.setValue("houseConstructionCost", houseConstructionCost, { shouldValidate: false })
+            }
+          }
+        }
+      }
+      setIsInitialized(true)
+    }
+  }, [urlParams, properties, handlePropertySelect, form, isInitialized])
+
+  // Reset form values when navigating directly from navbar - only once
+  useEffect(() => {
+    if (pathname === "/loan-calculator" && !initialPrice && !urlParams?.propertyId && !isInitialized) {
       form.reset({
+        selectedPropertyId: "",
         basePrice: defaultPrice,
         propertyType: "model-house",
-        downPayment: Math.round(defaultPrice * 0.2),
-        downPaymentTerm: 12,
+        lotPrice: undefined,
+        houseConstructionCost: undefined,
         financingOption: "in-house",
         paymentTerm: 5,
       })
-      // Clear any previous calculation results
       setResult(null)
+      setSelectedProperty(null)
+      setIsInitialized(true)
     }
-  }, [pathname, initialPrice, defaultPrice, form])
+  }, [pathname, initialPrice, urlParams, defaultPrice, form, isInitialized])
 
+  // Save schedule view preference
   useEffect(() => {
-    // Save the current view preference to localStorage
     if (typeof window !== "undefined") {
       localStorage.setItem("amortizationScheduleView", scheduleView)
     }
   }, [scheduleView])
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    const calculation = calculateCompleteLoanDetails(
-      values.basePrice,
-      values.propertyType,
-      values.downPayment,
-      values.downPaymentTerm as DownPaymentTerm,
-      values.financingOption as FinancingOption,
-      values.paymentTerm as PaymentTerm,
-      calculatorSettings.reservationFees,
-      calculatorSettings.governmentFeesConfig,
-    )
+  const onSubmit = useCallback(
+    (values: z.infer<typeof formSchema>) => {
+      if (!calculatorSettings) {
+        console.error("Calculator settings not available")
+        return
+      }
 
-    setResult(calculation)
-    setTimeout(() => scrollToLoanSummary(), 100)
-  }
+      try {
+        const calculation = calculateCompleteLoanDetails(
+          values.basePrice,
+          values.propertyType,
+          values.lotPrice,
+          values.houseConstructionCost,
+          values.financingOption as FinancingOption,
+          values.paymentTerm as PaymentTerm,
+          calculatorSettings.reservationFees || { modelHouse: 25000, lotOnly: 10000, isActive: true },
+          calculatorSettings.governmentFeesConfig || {
+            fixedAmountThreshold: 1000000,
+            fixedAmount: 205000,
+            percentageRate: 20.5,
+            isActive: true,
+          },
+          calculatorSettings.constructionFeesConfig || {
+            houseConstructionFeeRate: 8.5,
+            lotFeeRate: 8.5,
+            isActive: true,
+          },
+        )
+
+        setResult(calculation)
+        setTimeout(() => scrollToLoanSummary(), 100)
+      } catch (error) {
+        console.error("Error calculating loan:", error)
+        alert("Error calculating loan. Please check your inputs and try again.")
+      }
+    },
+    [calculatorSettings, scrollToLoanSummary],
+  )
 
   // Generate amortization schedule
-  const generateAmortizationSchedule = () => {
+  const generateAmortizationSchedule = useCallback(() => {
     if (!result) return []
 
     return generateLoanAmortizationSchedule(
@@ -198,93 +245,126 @@ export function LoanCalculatorForm({
       form.getValues("paymentTerm"),
       result.loanAmortization.monthlyPayment,
     )
-  }
+  }, [result, form])
 
   // Generate yearly amortization schedule
-  const generateYearlyAmortizationSchedule = () => {
-    if (!result) return []
+  const generateYearlyAmortizationSchedule = useCallback((monthlySchedule: any[], termYears: number) => {
+    const yearlySchedule = []
+
+    for (let year = 1; year <= termYears; year++) {
+      const startMonth = (year - 1) * 12 + 1
+      const endMonth = Math.min(year * 12, monthlySchedule.length)
+
+      let yearlyPrincipal = 0
+      let yearlyInterest = 0
+      let yearlyPayment = 0
+
+      for (let month = startMonth; month <= endMonth; month++) {
+        const monthData = monthlySchedule[month - 1]
+        if (monthData) {
+          yearlyPrincipal += monthData.principal
+          yearlyInterest += monthData.interest
+          yearlyPayment += monthData.payment
+        }
+      }
+
+      const lastMonthData = monthlySchedule[endMonth - 1]
+
+      yearlySchedule.push({
+        year,
+        principal: yearlyPrincipal,
+        interest: yearlyInterest,
+        payment: yearlyPayment,
+        balance: lastMonthData ? lastMonthData.balance : 0,
+      })
+    }
+
+    return yearlySchedule
+  }, [])
+
+  const handleExport = useCallback(
+    async (format: "csv" | "pdf") => {
+      if (!result) return
+
+      try {
+        setIsExporting(true)
+        const monthlySchedule = generateAmortizationSchedule()
+        const scheduleData =
+          scheduleView === "monthly"
+            ? monthlySchedule
+            : generateYearlyAmortizationSchedule(monthlySchedule, form.getValues("paymentTerm"))
+
+        if (format === "csv") {
+          let csvContent = "data:text/csv;charset=utf-8,"
+
+          const propertyName = selectedProperty?.name || modelName || "Property"
+          csvContent += `Property: ${propertyName}\n\n`
+
+          csvContent += `${scheduleView === "monthly" ? "Month" : "Year"},Principal,Interest,Payment,Balance\n`
+
+          scheduleData.forEach((row) => {
+            const rowData = [
+              scheduleView === "monthly" ? row.month : row.year,
+              row.principal.toFixed(2),
+              row.interest.toFixed(2),
+              row.payment.toFixed(2),
+              row.balance.toFixed(2),
+            ]
+            csvContent += rowData.join(",") + "\n"
+          })
+
+          const encodedUri = encodeURI(csvContent)
+          const link = document.createElement("a")
+          link.setAttribute("href", encodedUri)
+          link.setAttribute(
+            "download",
+            `amortization_schedule_${propertyName.replace(/\s+/g, "_")}_${scheduleView}.csv`,
+          )
+          document.body.appendChild(link)
+          link.click()
+          document.body.removeChild(link)
+        } else if (format === "pdf") {
+          exportToPDF(
+            scheduleData,
+            scheduleView,
+            {
+              propertyPrice: result.propertyBreakdown.totalAllInPrice,
+              downPayment: result.propertyBreakdown.totalAllInPrice * 0.2,
+              loanAmount: result.loanAmortization.loanAmount,
+              interestRate: result.loanAmortization.interestRate,
+              monthlyPayment: result.loanAmortization.monthlyPayment,
+              totalPayment: result.loanAmortization.totalPayment,
+              term: form.getValues("paymentTerm"),
+            },
+            selectedProperty?.name || modelName,
+          )
+        }
+      } catch (error) {
+        console.error("Error exporting:", error)
+        alert("Error exporting data. Please try again.")
+      } finally {
+        setIsExporting(false)
+      }
+    },
+    [
+      result,
+      scheduleView,
+      generateAmortizationSchedule,
+      generateYearlyAmortizationSchedule,
+      form,
+      selectedProperty,
+      modelName,
+    ],
+  )
+
+  const renderMobileTable = useCallback(() => {
+    if (!result) return null
 
     const monthlySchedule = generateAmortizationSchedule()
-    return generateYearlyAmortizationSchedule(monthlySchedule, form.getValues("paymentTerm"))
-  }
-
-  // Update the handleExport function to include modelName in both CSV and PDF exports
-  const handleExport = async (format: "csv" | "pdf") => {
-    if (!result) return
-
-    try {
-      setIsExporting(true)
-      const scheduleData =
-        scheduleView === "monthly" ? generateAmortizationSchedule() : generateYearlyAmortizationSchedule()
-
-      if (format === "csv") {
-        // Create CSV content
-        let csvContent = "data:text/csv;charset=utf-8,"
-
-        // Add property name if available
-        if (modelName) {
-          csvContent += `Property: ${modelName}\n\n`
-        }
-
-        // Add headers
-        csvContent += `${scheduleView === "monthly" ? "Month" : "Year"},Principal,Interest,Payment,Balance\n`
-
-        // Add data rows
-        scheduleData.forEach((row) => {
-          const rowData = [
-            scheduleView === "monthly" ? row.month : row.year,
-            row.principal.toFixed(2),
-            row.interest.toFixed(2),
-            row.payment.toFixed(2),
-            row.balance.toFixed(2),
-          ]
-          csvContent += rowData.join(",") + "\n"
-        })
-
-        // Create download link
-        const encodedUri = encodeURI(csvContent)
-        const link = document.createElement("a")
-        link.setAttribute("href", encodedUri)
-        link.setAttribute(
-          "download",
-          modelName
-            ? `amortization_schedule_${modelName.replace(/\s+/g, "_")}_${scheduleView}.csv`
-            : `amortization_schedule_${scheduleView}.csv`,
-        )
-        document.body.appendChild(link)
-
-        // Trigger download
-        link.click()
-
-        // Clean up
-        document.body.removeChild(link)
-      } else if (format === "pdf") {
-        // Direct download PDF
-        exportToPDF(
-          scheduleData,
-          scheduleView,
-          {
-            propertyPrice: result.propertyBreakdown.totalAllInPrice,
-            downPayment: form.getValues("downPayment"),
-            loanAmount: result.loanAmortization.loanAmount,
-            interestRate: result.loanAmortization.interestRate,
-            monthlyPayment: result.loanAmortization.monthlyPayment,
-            totalPayment: result.loanAmortization.totalPayment,
-            term: form.getValues("paymentTerm"),
-          },
-          modelName,
-        )
-      }
-    } catch (error) {
-      console.error("Error exporting:", error)
-    } finally {
-      setIsExporting(false)
-    }
-  }
-
-  // Add this function after the handleExport function to create a mobile-friendly view
-  const renderMobileTable = () => {
-    if (!result) return null
+    const schedule =
+      scheduleView === "monthly"
+        ? monthlySchedule
+        : generateYearlyAmortizationSchedule(monthlySchedule, form.getValues("paymentTerm"))
 
     return (
       <div className="md:hidden space-y-2">
@@ -310,23 +390,32 @@ export function LoanCalculatorForm({
         ))}
       </div>
     )
-  }
+  }, [result, scheduleView, generateAmortizationSchedule, generateYearlyAmortizationSchedule, form])
 
-  const schedule = result
-    ? scheduleView === "monthly"
-      ? generateAmortizationSchedule()
-      : generateYearlyAmortizationSchedule()
-    : []
+  // Memoize schedule data to prevent unnecessary recalculations
+  const scheduleData = useMemo(() => {
+    if (!result) return []
+    const monthlySchedule = generateAmortizationSchedule()
+    return scheduleView === "monthly"
+      ? monthlySchedule
+      : generateYearlyAmortizationSchedule(monthlySchedule, form.getValues("paymentTerm"))
+  }, [result, scheduleView, generateAmortizationSchedule, generateYearlyAmortizationSchedule, form])
 
-  // Add loading state to the form if needed
-  if (settingsLoading) {
-    return (
-      <div className="flex items-center justify-center py-8">
-        <Loader2 className="h-8 w-8 animate-spin" />
-        <span className="ml-2">Loading calculator settings...</span>
-      </div>
-    )
-  }
+  // Default financing options if settings are not available
+  const defaultFinancingOptions = [
+    { id: "in-house", name: "In-House Financing", value: "in-house", isActive: true },
+    { id: "pag-ibig", name: "Pag-IBIG", value: "pag-ibig", isActive: true },
+    { id: "bank", name: "Bank Financing", value: "bank", isActive: true },
+  ]
+
+  const availableFinancingOptions = useMemo(() => {
+    return calculatorSettings?.financingOptions?.filter((option) => option.isActive) || defaultFinancingOptions
+  }, [calculatorSettings?.financingOptions])
+
+  // Group properties by type for better organization
+  const modelHouseProperties = useMemo(() => properties.filter((p) => p.type === "model-house"), [properties])
+  const rfoProperties = useMemo(() => properties.filter((p) => p.type === "rfo-unit"), [properties])
+  const lotOnlyProperties = useMemo(() => properties.filter((p) => p.type === "lot-only"), [properties])
 
   return (
     <>
@@ -357,12 +446,14 @@ export function LoanCalculatorForm({
       <div className="mb-8">
         <h1 className="text-3xl font-bold flex items-center mb-2">
           <Calculator className="mr-3 h-8 w-8 text-primary" />
-          {modelName ? `Loan Calculator - ${modelName}` : "Loan Calculator"}
+          {selectedProperty?.name || modelName
+            ? `Loan Calculator - ${selectedProperty?.name || modelName}`
+            : "Loan Calculator"}
         </h1>
         <p className="text-muted-foreground">
-          {modelName
-            ? `Calculate monthly payments and loan details for ${modelName}.`
-            : "Calculate your monthly amortization based on different financing options."}
+          {selectedProperty?.name || modelName
+            ? `Calculate monthly payments and loan details for ${selectedProperty?.name || modelName}.`
+            : "Select a property and calculate your monthly amortization based on different financing options."}
         </p>
       </div>
 
@@ -387,28 +478,183 @@ export function LoanCalculatorForm({
             <TabsContent value="calculator" className="space-y-6 py-4">
               <Card>
                 <CardHeader>
-                  <CardTitle>Loan Parameters</CardTitle>
+                  <CardTitle>Property Selection & Loan Parameters</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                     <div className="grid gap-4">
+                      {/* Property Search */}
+                      <div className="space-y-2">
+                        <Label>Select Property (Optional)</Label>
+                        <Popover open={propertySearchOpen} onOpenChange={setPropertySearchOpen}>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="outline"
+                              role="combobox"
+                              aria-expanded={propertySearchOpen}
+                              className="w-full justify-between"
+                              type="button"
+                            >
+                              {selectedProperty ? (
+                                <div className="flex items-center gap-2">
+                                  <Building className="h-4 w-4" />
+                                  <span className="truncate">{selectedProperty.name}</span>
+                                  <Badge variant="outline" className="ml-auto">
+                                    {selectedProperty.type === "model-house"
+                                      ? "Model House"
+                                      : selectedProperty.type === "rfo-unit"
+                                        ? "RFO"
+                                        : "Lot Only"}
+                                  </Badge>
+                                </div>
+                              ) : (
+                                <div className="flex items-center gap-2">
+                                  <Search className="h-4 w-4" />
+                                  <span>Search properties...</span>
+                                </div>
+                              )}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-full p-0" align="start">
+                            <Command>
+                              <CommandInput placeholder="Search properties..." />
+                              <CommandList>
+                                <CommandEmpty>No properties found.</CommandEmpty>
+
+                                {modelHouseProperties.length > 0 && (
+                                  <CommandGroup heading="Model Houses">
+                                    {modelHouseProperties.map((property) => (
+                                      <CommandItem
+                                        key={property.id}
+                                        onSelect={() => handlePropertySelect(property)}
+                                        className="flex items-center justify-between"
+                                      >
+                                        <div className="flex flex-col">
+                                          <span className="font-medium">{property.name}</span>
+                                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                            <MapPin className="h-3 w-3" />
+                                            <span>{property.location}</span>
+                                            <span>•</span>
+                                            <span>{formatCurrency(property.price)}</span>
+                                          </div>
+                                        </div>
+                                        <Badge variant="outline">Model House</Badge>
+                                      </CommandItem>
+                                    ))}
+                                  </CommandGroup>
+                                )}
+
+                                {rfoProperties.length > 0 && (
+                                  <CommandGroup heading="Ready for Occupancy (RFO)">
+                                    {rfoProperties.map((property) => (
+                                      <CommandItem
+                                        key={property.id}
+                                        onSelect={() => handlePropertySelect(property)}
+                                        className="flex items-center justify-between"
+                                      >
+                                        <div className="flex flex-col">
+                                          <span className="font-medium">{property.name}</span>
+                                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                            <MapPin className="h-3 w-3" />
+                                            <span>{property.location}</span>
+                                            <span>•</span>
+                                            <span>{formatCurrency(property.price)}</span>
+                                          </div>
+                                        </div>
+                                        <Badge variant="outline">RFO</Badge>
+                                      </CommandItem>
+                                    ))}
+                                  </CommandGroup>
+                                )}
+
+                                {lotOnlyProperties.length > 0 && (
+                                  <CommandGroup heading="Lot Only Properties">
+                                    {lotOnlyProperties.map((property) => (
+                                      <CommandItem
+                                        key={property.id}
+                                        onSelect={() => handlePropertySelect(property)}
+                                        className="flex items-center justify-between"
+                                      >
+                                        <div className="flex flex-col">
+                                          <span className="font-medium">{property.name}</span>
+                                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                            <MapPin className="h-3 w-3" />
+                                            <span>{property.location}</span>
+                                            <span>•</span>
+                                            <span>{formatCurrency(property.price)}</span>
+                                          </div>
+                                        </div>
+                                        <Badge variant="outline">Lot Only</Badge>
+                                      </CommandItem>
+                                    ))}
+                                  </CommandGroup>
+                                )}
+                              </CommandList>
+                            </Command>
+                          </PopoverContent>
+                        </Popover>
+
+                        {selectedProperty && (
+                          <div className="p-3 bg-blue-50 rounded-lg">
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="font-medium">{selectedProperty.name}</span>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  setSelectedProperty(null)
+                                  form.setValue("selectedPropertyId", "", { shouldValidate: false })
+                                }}
+                              >
+                                Clear
+                              </Button>
+                            </div>
+                            <div className="grid grid-cols-2 gap-2 text-sm">
+                              <div>
+                                <span className="text-muted-foreground">Price:</span>
+                                <div className="font-semibold">{formatCurrency(selectedProperty.price)}</div>
+                              </div>
+                              <div>
+                                <span className="text-muted-foreground">Type:</span>
+                                <div className="font-semibold capitalize">
+                                  {selectedProperty.type === "model-house"
+                                    ? "Model House"
+                                    : selectedProperty.type === "rfo-unit"
+                                      ? "RFO Unit"
+                                      : "Lot Only"}
+                                </div>
+                              </div>
+                              {selectedProperty.floorArea && (
+                                <div>
+                                  <span className="text-muted-foreground">Area:</span>
+                                  <div className="font-semibold">{selectedProperty.floorArea}</div>
+                                </div>
+                              )}
+                              {selectedProperty.developer && (
+                                <div>
+                                  <span className="text-muted-foreground">Developer:</span>
+                                  <div className="font-semibold">{selectedProperty.developer}</div>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
                       <div className="space-y-2">
                         <Label htmlFor="basePrice">Base Property Price</Label>
                         <Input
                           id="basePrice"
                           type="text"
-                          disabled={!!initialPrice}
-                          value={formatNumberWithCommas(form.getValues("basePrice") || 0)}
+                          disabled={!!selectedProperty}
+                          value={formatNumberWithCommas(form.watch("basePrice") || 0)}
                           onChange={(e) => {
-                            // Remove commas and convert to number
                             const rawValue = e.target.value.replace(/,/g, "")
                             const value = rawValue ? Number(rawValue) : 0
 
                             if (!isNaN(value)) {
-                              form.setValue("basePrice", value)
-                              // Update down payment based on percentage
-                              const newDownPayment = Math.round(value * (downPaymentPercentage / 100))
-                              form.setValue("downPayment", newDownPayment)
+                              form.setValue("basePrice", value, { shouldValidate: false })
                             }
                           }}
                         />
@@ -417,9 +663,11 @@ export function LoanCalculatorForm({
                       <div className="space-y-2">
                         <Label htmlFor="propertyType">Property Type</Label>
                         <Select
-                          onValueChange={(value) => form.setValue("propertyType", value as PropertyType)}
-                          defaultValue={form.getValues("propertyType")}
-                          disabled={!!propertyType}
+                          onValueChange={(value) =>
+                            form.setValue("propertyType", value as PropertyType, { shouldValidate: false })
+                          }
+                          value={form.watch("propertyType")}
+                          disabled={!!selectedProperty}
                         >
                           <SelectTrigger>
                             <SelectValue placeholder="Select property type" />
@@ -431,136 +679,78 @@ export function LoanCalculatorForm({
                         </Select>
                       </div>
 
-                      <div className="space-y-2">
-                        <div className="flex justify-between">
-                          <Label htmlFor="downPayment">Down Payment</Label>
-                          <div className="flex items-center space-x-2">
-                            <Label htmlFor="downPaymentPercentage" className="text-xs text-muted-foreground">
-                              Percentage:
-                            </Label>
-                            <Select
-                              value={downPaymentPercentage.toString()}
-                              onValueChange={(value) => {
-                                setDownPaymentPercentage(Number(value))
-                                // Immediately update the down payment value
-                                const currentPrice = form.getValues("basePrice")
-                                if (currentPrice && !isNaN(currentPrice)) {
-                                  const newDownPayment = Math.round(currentPrice * (Number(value) / 100))
-                                  form.setValue("downPayment", newDownPayment)
+                      {form.watch("propertyType") === "model-house" && (
+                        <>
+                          <div className="space-y-2">
+                            <Label htmlFor="lotPrice">Lot Price</Label>
+                            <Input
+                              id="lotPrice"
+                              type="text"
+                              disabled={!!selectedProperty}
+                              value={formatNumberWithCommas(form.watch("lotPrice") || 0)}
+                              onChange={(e) => {
+                                const rawValue = e.target.value.replace(/,/g, "")
+                                const value = rawValue ? Number(rawValue) : 0
+
+                                if (!isNaN(value)) {
+                                  form.setValue("lotPrice", value, { shouldValidate: false })
                                 }
                               }}
-                            >
-                              <SelectTrigger className="h-7 w-[80px]">
-                                <SelectValue placeholder="%" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="5">5%</SelectItem>
-                                <SelectItem value="10">10%</SelectItem>
-                                <SelectItem value="15">15%</SelectItem>
-                                <SelectItem value="20">20%</SelectItem>
-                                <SelectItem value="25">25%</SelectItem>
-                                <SelectItem value="30">30%</SelectItem>
-                                <SelectItem value="35">35%</SelectItem>
-                                <SelectItem value="40">40%</SelectItem>
-                                <SelectItem value="45">45%</SelectItem>
-                                <SelectItem value="50">50%</SelectItem>
-                              </SelectContent>
-                            </Select>
+                            />
                           </div>
-                        </div>
-                        <motion.div
-                          initial={{ backgroundColor: "transparent" }}
-                          animate={{ backgroundColor: ["transparent", "rgba(101, 147, 45, 0.1)", "transparent"] }}
-                          transition={{ duration: 1, ease: "easeInOut" }}
-                          key={downPaymentPercentage} // This will trigger animation when percentage changes
-                        >
-                          <Input
-                            id="downPayment"
-                            type="text"
-                            disabled={!!initialPrice}
-                            value={formatNumberWithCommas(form.getValues("downPayment") || 0)}
-                            onChange={(e) => {
-                              // Remove commas and convert to number
-                              const rawValue = e.target.value.replace(/,/g, "")
-                              const value = rawValue ? Number(rawValue) : 0
 
-                              if (!isNaN(value)) {
-                                form.setValue("downPayment", value)
+                          <div className="space-y-2">
+                            <Label htmlFor="houseConstructionCost">House Construction Cost</Label>
+                            <Input
+                              id="houseConstructionCost"
+                              type="text"
+                              disabled={!!selectedProperty}
+                              value={formatNumberWithCommas(form.watch("houseConstructionCost") || 0)}
+                              onChange={(e) => {
+                                const rawValue = e.target.value.replace(/,/g, "")
+                                const value = rawValue ? Number(rawValue) : 0
 
-                                // Update percentage if property price is not zero
-                                const propertyPrice = form.getValues("basePrice")
-                                if (propertyPrice > 0) {
-                                  const calculatedPercentage = Math.round((value / propertyPrice) * 100)
-                                  // Only update if it's a valid percentage
-                                  if (calculatedPercentage >= 0 && calculatedPercentage <= 100) {
-                                    setDownPaymentPercentage(calculatedPercentage)
-                                  }
+                                if (!isNaN(value)) {
+                                  form.setValue("houseConstructionCost", value, { shouldValidate: false })
                                 }
-                              }
-                            }}
-                            className="transition-all duration-300"
-                          />
-                        </motion.div>
-                      </div>
+                              }}
+                            />
+                          </div>
+                        </>
+                      )}
 
                       <div className="space-y-2">
-                        <Label htmlFor="downPaymentTerm">Down Payment Terms</Label>
-                        <Select
-                          onValueChange={(value) => form.setValue("downPaymentTerm", Number.parseInt(value))}
-                          defaultValue={form.getValues("downPaymentTerm").toString()}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select down payment term" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {calculatorSettings.downPaymentTerms
-                              .filter((term) => term.isActive)
-                              .map((term) => {
-                                const is20PercentRule =
-                                  Math.abs(downPaymentPercentage - 20) < 0.1 &&
-                                  calculatorSettings.specialDownPaymentRules?.twentyPercentRule.isActive &&
-                                  calculatorSettings.specialDownPaymentRules.twentyPercentRule.applicableTerms.includes(
-                                    term.value,
-                                  )
-
-                                return (
-                                  <SelectItem key={term.id} value={term.value.toString()}>
-                                    <div className="flex flex-col">
-                                      <span>{term.name}</span>
-                                      {is20PercentRule ? (
-                                        <span className="text-xs text-green-600">Year 1: 0% • Year 2+: 8.5%</span>
-                                      ) : term.interestRate > 0 ? (
-                                        <span className="text-xs text-muted-foreground">
-                                          {term.interestRate}% interest
-                                        </span>
-                                      ) : (
-                                        <span className="text-xs text-muted-foreground">No interest</span>
-                                      )}
-                                    </div>
-                                  </SelectItem>
-                                )
-                              })}
-                          </SelectContent>
-                        </Select>
+                        <Label>Down Payment</Label>
+                        <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                          <div className="flex items-center justify-between">
+                            <span className="font-medium text-green-800">Fixed at 20%</span>
+                            <Badge variant="default" className="bg-green-600">
+                              Special Rate Applied
+                            </Badge>
+                          </div>
+                          <div className="text-sm text-green-700 mt-1">
+                            • First 12 months: 0% interest • Months 13-24: 8.5% interest per annum
+                          </div>
+                        </div>
                       </div>
 
                       <div className="space-y-2">
                         <Label htmlFor="financingOption">Financing Option</Label>
                         <Select
-                          onValueChange={(value) => form.setValue("financingOption", value as FinancingOption)}
-                          defaultValue={form.getValues("financingOption")}
+                          onValueChange={(value) =>
+                            form.setValue("financingOption", value as FinancingOption, { shouldValidate: false })
+                          }
+                          value={form.watch("financingOption")}
                         >
                           <SelectTrigger>
                             <SelectValue placeholder="Select financing option" />
                           </SelectTrigger>
                           <SelectContent>
-                            {calculatorSettings.financingOptions
-                              .filter((option) => option.isActive)
-                              .map((option) => (
-                                <SelectItem key={option.id} value={option.value}>
-                                  {option.name}
-                                </SelectItem>
-                              ))}
+                            {availableFinancingOptions.map((option) => (
+                              <SelectItem key={option.id} value={option.value}>
+                                {option.name}
+                              </SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
                       </div>
@@ -568,8 +758,10 @@ export function LoanCalculatorForm({
                       <div className="space-y-2">
                         <Label htmlFor="paymentTerm">Payment Term (Years)</Label>
                         <Select
-                          onValueChange={(value) => form.setValue("paymentTerm", Number.parseInt(value))}
-                          defaultValue={form.getValues("paymentTerm").toString()}
+                          onValueChange={(value) =>
+                            form.setValue("paymentTerm", Number.parseInt(value), { shouldValidate: false })
+                          }
+                          value={form.watch("paymentTerm").toString()}
                         >
                           <SelectTrigger>
                             <SelectValue placeholder="Select payment term" />
@@ -586,14 +778,23 @@ export function LoanCalculatorForm({
                       </div>
                     </div>
 
-                    <Button type="submit" className="w-full">
-                      Calculate
-                    </Button>
+                    <div className="flex gap-3">
+                      <Button type="submit" className="flex-1">
+                        <Calculator className="h-4 w-4 mr-2" />
+                        Calculate Loan
+                      </Button>
+                      {selectedProperty && (
+                        <Button type="button" variant="outline" onClick={() => onSubmit(form.getValues())}>
+                          Recalculate
+                        </Button>
+                      )}
+                    </div>
                   </form>
                 </CardContent>
               </Card>
             </TabsContent>
 
+            {/* Rest of the tabs remain the same as before */}
             <TabsContent value="breakdown" className="space-y-4 py-4">
               <Card>
                 <CardHeader>
@@ -614,6 +815,56 @@ export function LoanCalculatorForm({
                           <span className="font-medium">Base Property Price</span>
                           <span className="font-semibold">{formatCurrency(result.propertyBreakdown.basePrice)}</span>
                         </div>
+
+                        {result.propertyBreakdown.propertyType === "model-house" && (
+                          <>
+                            {result.propertyBreakdown.lotPrice && (
+                              <div className="flex justify-between items-center p-3 bg-purple-50 rounded-lg">
+                                <span className="font-medium">Lot Price</span>
+                                <span className="font-semibold">
+                                  {formatCurrency(result.propertyBreakdown.lotPrice)}
+                                </span>
+                              </div>
+                            )}
+
+                            {result.propertyBreakdown.houseConstructionCost && (
+                              <div className="flex justify-between items-center p-3 bg-orange-50 rounded-lg">
+                                <span className="font-medium">House Construction Cost</span>
+                                <span className="font-semibold">
+                                  {formatCurrency(result.propertyBreakdown.houseConstructionCost)}
+                                </span>
+                              </div>
+                            )}
+
+                            {result.propertyBreakdown.lotFees && (
+                              <div className="flex justify-between items-center p-3 bg-red-50 rounded-lg">
+                                <div className="flex items-center gap-2">
+                                  <span className="font-medium">Lot Fees</span>
+                                  <Badge variant="outline" className="text-xs">
+                                    8.5%
+                                  </Badge>
+                                </div>
+                                <span className="font-semibold">
+                                  {formatCurrency(result.propertyBreakdown.lotFees)}
+                                </span>
+                              </div>
+                            )}
+
+                            {result.propertyBreakdown.constructionFees && (
+                              <div className="flex justify-between items-center p-3 bg-pink-50 rounded-lg">
+                                <div className="flex items-center gap-2">
+                                  <span className="font-medium">Construction Fees</span>
+                                  <Badge variant="outline" className="text-xs">
+                                    8.5%
+                                  </Badge>
+                                </div>
+                                <span className="font-semibold">
+                                  {formatCurrency(result.propertyBreakdown.constructionFees)}
+                                </span>
+                              </div>
+                            )}
+                          </>
+                        )}
 
                         <div className="flex justify-between items-center p-3 bg-green-50 rounded-lg">
                           <div className="flex items-center gap-2">
@@ -664,6 +915,16 @@ export function LoanCalculatorForm({
                                 ? "Fixed ₱205,000 for properties ≥ ₱1M"
                                 : "20.5% of base price for properties < ₱1M"}
                             </p>
+                            {result.propertyBreakdown.propertyType === "model-house" && (
+                              <>
+                                <p>
+                                  • <strong>Construction Fees:</strong> 8.5% of house construction cost
+                                </p>
+                                <p>
+                                  • <strong>Lot Fees:</strong> 8.5% of lot price
+                                </p>
+                              </>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -688,7 +949,7 @@ export function LoanCalculatorForm({
                       <div className="mb-4 p-4 bg-blue-50 rounded-lg">
                         <div className="grid grid-cols-2 gap-4 text-sm">
                           <div>
-                            <span className="text-muted-foreground">Total Down Payment:</span>
+                            <span className="text-muted-foreground">Total Down Payment (20%):</span>
                             <div className="font-semibold">{formatCurrency(result.totalDownPayment)}</div>
                           </div>
                           <div>
@@ -698,20 +959,18 @@ export function LoanCalculatorForm({
                         </div>
                       </div>
 
-                      {result.specialRuleApplied && (
-                        <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
-                          <div className="flex items-center gap-2 mb-2">
-                            <Badge variant="default" className="bg-green-600">
-                              20% Special Rate
-                            </Badge>
-                            <span className="text-sm font-medium text-green-800">Applied</span>
-                          </div>
-                          <div className="text-sm text-green-700">
-                            <p>• First 12 months: 0% interest</p>
-                            <p>• Months 13+: 8.5% interest per annum</p>
-                          </div>
+                      <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Badge variant="default" className="bg-green-600">
+                            20% Special Rate
+                          </Badge>
+                          <span className="text-sm font-medium text-green-800">Applied</span>
                         </div>
-                      )}
+                        <div className="text-sm text-green-700">
+                          <p>• First 12 months: 0% interest</p>
+                          <p>• Months 13-24: 8.5% interest per annum</p>
+                        </div>
+                      </div>
 
                       {/* Desktop view */}
                       <div className="hidden md:block overflow-x-auto">
@@ -728,11 +987,7 @@ export function LoanCalculatorForm({
                               <div key={row.month} className="grid grid-cols-5 border-t p-3 text-sm">
                                 <div>{row.month}</div>
                                 <div>{formatCurrency(row.payment)}</div>
-                                <div
-                                  className={
-                                    row.isFirstYear && result.specialRuleApplied ? "text-green-600 font-medium" : ""
-                                  }
-                                >
+                                <div className={row.isFirstYear ? "text-green-600 font-medium" : ""}>
                                   {row.interestRate}%
                                 </div>
                                 <div>{formatCurrency(row.cumulativePaid)}</div>
@@ -839,7 +1094,7 @@ export function LoanCalculatorForm({
                             <div>Balance</div>
                           </div>
                           <div className="max-h-[400px] overflow-y-auto">
-                            {schedule.map((row) => (
+                            {scheduleData.map((row) => (
                               <div
                                 key={scheduleView === "monthly" ? row.month : row.year}
                                 className="grid grid-cols-4 border-t p-3 text-sm"
@@ -876,13 +1131,29 @@ export function LoanCalculatorForm({
                 </div>
               ) : (
                 <div className="space-y-4">
+                  {selectedProperty && (
+                    <div className="p-3 bg-blue-50 rounded-lg">
+                      <div className="text-sm text-muted-foreground">Selected Property</div>
+                      <div className="font-semibold">{selectedProperty.name}</div>
+                      <div className="text-xs text-muted-foreground mt-1">
+                        {selectedProperty.type === "model-house"
+                          ? "Model House"
+                          : selectedProperty.type === "rfo-unit"
+                            ? "RFO Unit"
+                            : "Lot Only"}
+                      </div>
+                    </div>
+                  )}
+
                   <div>
                     <p className="text-sm text-muted-foreground">Total All-In Price</p>
                     <p className="text-xl font-semibold">{formatCurrency(result.propertyBreakdown.totalAllInPrice)}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-muted-foreground">Down Payment Amount</p>
-                    <p className="text-xl font-semibold">{formatCurrency(form.getValues("downPayment"))}</p>
+                    <p className="text-sm text-muted-foreground">Down Payment Amount (20%)</p>
+                    <p className="text-xl font-semibold">
+                      {formatCurrency(result.propertyBreakdown.totalAllInPrice * 0.2)}
+                    </p>
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Down Payment Monthly</p>
