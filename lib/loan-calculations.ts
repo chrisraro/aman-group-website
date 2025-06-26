@@ -51,7 +51,7 @@ export const DOWN_PAYMENT_RATES = {
   18: 5.0, // 5% annual for 18 months
   24: 6.0, // 6% annual for 24 months
   36: 7.0, // 7% annual for 36 months
-  48: 8.0, // 8% annual for 48 months
+  48: 8.0, // 8.5% annual for 48 months
   60: 8.5, // 8.5% annual for 60 months
 } as const
 
@@ -448,29 +448,8 @@ export function generateYearlyAmortizationSchedule(
   return yearlySchedule
 }
 
-// Storage functions for loan calculator settings
-export async function saveLoanCalculatorSettings(settings: Partial<LoanCalculatorSettings>): Promise<void> {
-  try {
-    if (typeof window !== "undefined") {
-      localStorage.setItem("loanCalculatorSettings", JSON.stringify(settings))
-    }
-  } catch (error) {
-    console.error("Error saving loan calculator settings:", error)
-  }
-}
-
-export async function loadLoanCalculatorSettings(): Promise<Partial<LoanCalculatorSettings> | null> {
-  try {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("loanCalculatorSettings")
-      return saved ? JSON.parse(saved) : null
-    }
-    return null
-  } catch (error) {
-    console.error("Error loading loan calculator settings:", error)
-    return null
-  }
-}
+// Remove the existing saveLoanCalculatorSettings and loadLoanCalculatorSettings functions
+// They are no longer needed as we're using the API and KV storage
 
 export function getDefaultLoanCalculatorSettings(): LoanCalculatorSettings {
   return {

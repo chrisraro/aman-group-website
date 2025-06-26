@@ -152,3 +152,57 @@ export async function resetLotOnlyData() {
     return { success: false, error: error.message }
   }
 }
+
+// Loan Calculator Settings
+const LOAN_CALCULATOR_SETTINGS_KEY = "loan_calculator_settings"
+const LOAN_CALCULATOR_VERSION_KEY = "loan_calculator_version"
+
+// Get loan calculator settings
+export async function getLoanCalculatorSettings() {
+  try {
+    const storedData = await getValue(LOAN_CALCULATOR_SETTINGS_KEY)
+    const storedVersion = await getValue(LOAN_CALCULATOR_VERSION_KEY)
+
+    if (!storedData || storedVersion !== CURRENT_VERSION) {
+      // Import default settings
+      const { getDefaultLoanCalculatorSettings } = await import("@/lib/loan-calculations")
+      const defaultSettings = getDefaultLoanCalculatorSettings()
+      await setValue(LOAN_CALCULATOR_SETTINGS_KEY, defaultSettings)
+      await setValue(LOAN_CALCULATOR_VERSION_KEY, CURRENT_VERSION)
+      return defaultSettings
+    }
+
+    return storedData
+  } catch (error) {
+    console.error("Error fetching loan calculator settings:", error)
+    // Return default settings on error
+    const { getDefaultLoanCalculatorSettings } = await import("@/lib/loan-calculations")
+    return getDefaultLoanCalculatorSettings()
+  }
+}
+
+// Save loan calculator settings
+export async function saveLoanCalculatorSettings(settings: any) {
+  try {
+    await setValue(LOAN_CALCULATOR_SETTINGS_KEY, settings)
+    await setValue(LOAN_CALCULATOR_VERSION_KEY, CURRENT_VERSION)
+    return { success: true }
+  } catch (error) {
+    console.error("Error saving loan calculator settings:", error)
+    return { success: false, error: error.message }
+  }
+}
+
+// Reset loan calculator settings to default
+export async function resetLoanCalculatorSettings() {
+  try {
+    const { getDefaultLoanCalculatorSettings } = await import("@/lib/loan-calculations")
+    const defaultSettings = getDefaultLoanCalculatorSettings()
+    await setValue(LOAN_CALCULATOR_SETTINGS_KEY, defaultSettings)
+    await setValue(LOAN_CALCULATOR_VERSION_KEY, CURRENT_VERSION)
+    return { success: true }
+  } catch (error) {
+    console.error("Error resetting loan calculator settings:", error)
+    return { success: false, error: error.message }
+  }
+}

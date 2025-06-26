@@ -21,12 +21,7 @@ import type {
   LoanCalculationResult,
   PropertyType,
 } from "@/types/loan-calculator"
-import {
-  calculateCompleteLoanDetails,
-  generateLoanAmortizationSchedule,
-  loadLoanCalculatorSettings,
-  getDefaultLoanCalculatorSettings,
-} from "@/lib/loan-calculations"
+import { calculateCompleteLoanDetails, generateLoanAmortizationSchedule } from "@/lib/loan-calculations"
 // Add the import for the PDF export utility
 import { exportToPDF } from "@/components/pdf-export-utils"
 
@@ -35,6 +30,7 @@ import { useRouter, usePathname } from "next/navigation"
 
 // Add this after the imports
 import { motion } from "framer-motion"
+import { useLoanCalculatorSettings } from "@/lib/hooks/useLoanCalculatorSettings"
 
 // Helper function to format number with commas
 const formatNumberWithCommas = (value: number | undefined): string => {
@@ -78,20 +74,22 @@ export function LoanCalculatorForm({
   })
   const [downPaymentPercentage, setDownPaymentPercentage] = useState<number>(20)
   const [isExporting, setIsExporting] = useState(false)
-  const [calculatorSettings, setCalculatorSettings] = useState(getDefaultLoanCalculatorSettings())
+  // Replace with:
+  const { settings: calculatorSettings, loading: settingsLoading } = useLoanCalculatorSettings()
 
   const loanSummaryRef = useRef<HTMLDivElement>(null)
 
   // Load calculator settings on component mount
-  useEffect(() => {
-    const loadSettings = async () => {
-      const savedSettings = await loadLoanCalculatorSettings()
-      if (savedSettings) {
-        setCalculatorSettings({ ...getDefaultLoanCalculatorSettings(), ...savedSettings })
-      }
-    }
-    loadSettings()
-  }, [])
+  // Remove the existing useEffect for loading settings
+  // useEffect(() => {
+  //   const loadSettings = async () => {
+  //     const savedSettings = await loadLoanCalculatorSettings()
+  //     if (savedSettings) {
+  //       setCalculatorSettings({ ...getDefaultLoanCalculatorSettings(), ...savedSettings })
+  //     }
+  //   }
+  //   loadSettings()
+  // }, [])
 
   // Function to scroll to loan summary on mobile
   const scrollToLoanSummary = () => {
@@ -146,7 +144,6 @@ export function LoanCalculatorForm({
     }
   }, [form, downPaymentPercentage])
 
-  // Add this code after the form initialization
   const router = useRouter()
   const pathname = usePathname()
 
@@ -320,6 +317,16 @@ export function LoanCalculatorForm({
       ? generateAmortizationSchedule()
       : generateYearlyAmortizationSchedule()
     : []
+
+  // Add loading state to the form if needed
+  if (settingsLoading) {
+    return (
+      <div className="flex items-center justify-center py-8">
+        <Loader2 className="h-8 w-8 animate-spin" />
+        <span className="ml-2">Loading calculator settings...</span>
+      </div>
+    )
+  }
 
   return (
     <>
