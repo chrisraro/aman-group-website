@@ -92,7 +92,7 @@ export function LoanCalculatorForm({
       lotPrice: lotPrice,
       houseConstructionCost: houseConstructionCost,
       financingOption: "in-house",
-      paymentTerm: 5,
+      paymentTerm: 15,
     },
   })
 
