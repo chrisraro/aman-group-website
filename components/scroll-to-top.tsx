@@ -1,8 +1,6 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { ArrowUp } from "lucide-react"
-import { Button } from "@/components/ui/button"
 import { usePathname } from "next/navigation"
 
 export function ScrollToTop() {
@@ -39,17 +37,7 @@ export function ScrollToTop() {
     })
   }
 
-  return (
-    <>
-      {isVisible && (
-        <Button
-          onClick={scrollToTop}
-          className="fixed bottom-4 right-4 z-50 p-2 h-10 w-10 rounded-full shadow-md"
-          aria-label="Scroll to top"
-        >
-          <ArrowUp className="h-5 w-5" />
-        </Button>
-      )}
-    </>
-  )
+  // This component only handles auto-scroll on route change
+  // The visible button is handled by BackToTopButton component
+  return null
 }

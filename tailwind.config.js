@@ -17,6 +17,9 @@ module.exports = {
       },
     },
     extend: {
+      screens: {
+        xs: "475px",
+      },
       fontFamily: {
         sans: ["var(--font-noto-sans)", "sans-serif"],
         serif: ["var(--font-playfair)", "serif"],
@@ -138,6 +141,23 @@ module.exports = {
           from: { transform: "translateY(0)", opacity: 1 },
           to: { transform: "translateY(10px)", opacity: 0 },
         },
+        fadeIn: {
+          from: { opacity: 0, transform: "translateY(10px)" },
+          to: { opacity: 1, transform: "translateY(0)" },
+        },
+        pulseOnce: {
+          "0%, 100%": { transform: "scale(1)" },
+          "50%": { transform: "scale(1.05)" },
+        },
+        slideUp: {
+          from: { opacity: 0, transform: "translateY(20px)" },
+          to: { opacity: 1, transform: "translateY(0)" },
+        },
+        bounceGentle: {
+          "0%, 20%, 50%, 80%, 100%": { transform: "translateY(0)" },
+          "40%": { transform: "translateY(-3px)" },
+          "60%": { transform: "translateY(-2px)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -148,6 +168,9 @@ module.exports = {
         "scale-out": "scale-out 0.2s ease-out",
         "slide-in": "slide-in 0.2s ease-out",
         "slide-out": "slide-out 0.2s ease-out",
+        "pulse-once": "pulseOnce 0.6s ease-in-out",
+        "slide-up": "slideUp 0.3s ease-out",
+        "bounce-gentle": "bounceGentle 2s infinite",
       },
     },
   },
