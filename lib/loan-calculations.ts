@@ -97,7 +97,7 @@ export function calculatePropertyBreakdown(
 
   // Calculate government fees and taxes
   let governmentFeesAndTaxes = 0
-  if (governmentFeesConfig.isActive) {
+  if (governmentFeesConfig.isActive && validBasePrice > 0) {
     if (validBasePrice >= governmentFeesConfig.fixedAmountThreshold) {
       governmentFeesAndTaxes = governmentFeesConfig.fixedAmount
     } else {
@@ -109,10 +109,10 @@ export function calculatePropertyBreakdown(
   let constructionFees = 0
   let lotFees = 0
   if (propertyType === "model-house" && constructionFeesConfig.isActive) {
-    if (houseConstructionCost) {
+    if (houseConstructionCost && houseConstructionCost > 0) {
       constructionFees = houseConstructionCost * (constructionFeesConfig.houseConstructionFeeRate / 100)
     }
-    if (lotPrice) {
+    if (lotPrice && lotPrice > 0) {
       lotFees = lotPrice * (constructionFeesConfig.lotFeeRate / 100)
     }
   }

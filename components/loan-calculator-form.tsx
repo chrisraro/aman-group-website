@@ -73,7 +73,7 @@ export function LoanCalculatorForm({
 
   // Hooks
   const { settings: calculatorSettings, loading: settingsLoading, error: settingsError } = useLoanCalculatorSettings()
-  const { properties, isLoading: propertiesLoading, error: propertiesError, refreshData } = usePropertyData()
+  const { properties, isLoading: propertiesLoading, error: propertiesError } = usePropertyData()
 
   const loanSummaryRef = useRef<HTMLDivElement>(null)
   const router = useRouter()
@@ -96,18 +96,6 @@ export function LoanCalculatorForm({
     },
   })
 
-  // Memoize URL parameters to prevent unnecessary re-renders
-  const urlParams = useMemo(() => {
-    if (!searchParams) return null
-    return {
-      propertyId: searchParams.get("propertyId"),
-      price: searchParams.get("price"),
-      propertyType: searchParams.get("propertyType"),
-      lotPrice: searchParams.get("lotPrice"),
-      houseConstructionCost: searchParams.get("houseConstructionCost"),
-    }
-  }, [searchParams])
-
   // Function to scroll to loan summary on mobile
   const scrollToLoanSummary = useCallback(() => {
     if (window.innerWidth < 768 && loanSummaryRef.current) {
@@ -119,19 +107,20 @@ export function LoanCalculatorForm({
     (property: PropertyOption) => {
       setSelectedProperty(property)
 
-      // Update form values without triggering re-renders
-      const updates = {
-        selectedPropertyId: property.id,
-        basePrice: property.price,
-        propertyType: property.type === "lot-only" ? ("lot-only" as const) : ("model-house" as const),
-        lotPrice: property.type === "lot-only" ? undefined : property.lotPrice || 0,
-        houseConstructionCost: property.type === "lot-only" ? undefined : property.houseConstructionPrice || 0,
-      }
-
-      // Use batch updates to prevent multiple re-renders
-      Object.entries(updates).forEach(([key, value]) => {
-        form.setValue(key as keyof typeof updates, value, { shouldValidate: false })
+      // Update form values
+      form.setValue("selectedPropertyId", property.id, { shouldValidate: false })
+      form.setValue("basePrice", property.price, { shouldValidate: false })
+      form.setValue("propertyType", property.type === "lot-only" ? "lot-only" : "model-house", {
+        shouldValidate: false,
       })
+
+      if (property.type !== "lot-only") {
+        form.setValue("lotPrice", property.lotPrice || 0, { shouldValidate: false })
+        form.setValue("houseConstructionCost", property.houseConstructionPrice || 0, { shouldValidate: false })
+      } else {
+        form.setValue("lotPrice", undefined, { shouldValidate: false })
+        form.setValue("houseConstructionCost", undefined, { shouldValidate: false })
+      }
 
       setPropertySearchOpen(false)
     },
@@ -140,54 +129,24 @@ export function LoanCalculatorForm({
 
   // Initialize from URL parameters only once
   useEffect(() => {
-    if (!isInitialized && urlParams && properties.length > 0) {
-      if (urlParams.propertyId) {
-        const property = properties.find((p) => p.id === urlParams.propertyId)
+    if (!isInitialized && properties.length > 0) {
+      const urlPropertyId = searchParams?.get("propertyId")
+      const urlPrice = searchParams?.get("price")
+
+      if (urlPropertyId) {
+        const property = properties.find((p) => p.id === urlPropertyId)
         if (property) {
           handlePropertySelect(property)
         }
-      } else if (urlParams.price) {
-        const price = Number.parseFloat(urlParams.price)
+      } else if (urlPrice) {
+        const price = Number.parseFloat(urlPrice)
         if (!isNaN(price)) {
           form.setValue("basePrice", price, { shouldValidate: false })
-          if (urlParams.propertyType) {
-            form.setValue("propertyType", urlParams.propertyType as PropertyType, { shouldValidate: false })
-          }
-          if (urlParams.lotPrice) {
-            const lotPrice = Number.parseFloat(urlParams.lotPrice)
-            if (!isNaN(lotPrice)) {
-              form.setValue("lotPrice", lotPrice, { shouldValidate: false })
-            }
-          }
-          if (urlParams.houseConstructionCost) {
-            const houseConstructionCost = Number.parseFloat(urlParams.houseConstructionCost)
-            if (!isNaN(houseConstructionCost)) {
-              form.setValue("houseConstructionCost", houseConstructionCost, { shouldValidate: false })
-            }
-          }
         }
       }
       setIsInitialized(true)
     }
-  }, [urlParams, properties, handlePropertySelect, form, isInitialized])
-
-  // Reset form values when navigating directly from navbar - only once
-  useEffect(() => {
-    if (pathname === "/loan-calculator" && !initialPrice && !urlParams?.propertyId && !isInitialized) {
-      form.reset({
-        selectedPropertyId: "",
-        basePrice: defaultPrice,
-        propertyType: "model-house",
-        lotPrice: undefined,
-        houseConstructionCost: undefined,
-        financingOption: "in-house",
-        paymentTerm: 5,
-      })
-      setResult(null)
-      setSelectedProperty(null)
-      setIsInitialized(true)
-    }
-  }, [pathname, initialPrice, urlParams, defaultPrice, form, isInitialized])
+  }, [properties, searchParams, handlePropertySelect, form, isInitialized])
 
   // Save schedule view preference
   useEffect(() => {
@@ -417,6 +376,28 @@ export function LoanCalculatorForm({
   const rfoProperties = useMemo(() => properties.filter((p) => p.type === "rfo-unit"), [properties])
   const lotOnlyProperties = useMemo(() => properties.filter((p) => p.type === "lot-only"), [properties])
 
+  // Show loading state
+  if (settingsLoading || propertiesLoading) {
+    return (
+      <div className="flex items-center justify-center py-8">
+        <Loader2 className="h-8 w-8 animate-spin" />
+        <span className="ml-2">Loading calculator...</span>
+      </div>
+    )
+  }
+
+  // Show error state
+  if (settingsError || propertiesError) {
+    return (
+      <div className="flex items-center justify-center py-8">
+        <div className="text-center">
+          <div className="text-red-600 mb-4">Error loading calculator data</div>
+          <Button onClick={() => window.location.reload()}>Retry</Button>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <>
       {/* Breadcrumb and Back Button */}
@@ -492,7 +473,7 @@ export function LoanCalculatorForm({
                               variant="outline"
                               role="combobox"
                               aria-expanded={propertySearchOpen}
-                              className="w-full justify-between"
+                              className="w-full justify-between bg-transparent"
                               type="button"
                             >
                               {selectedProperty ? (
@@ -519,7 +500,9 @@ export function LoanCalculatorForm({
                             <Command>
                               <CommandInput placeholder="Search properties..." />
                               <CommandList>
-                                <CommandEmpty>No properties found.</CommandEmpty>
+                                <CommandEmpty>
+                                  {propertiesLoading ? "Loading properties..." : "No properties found."}
+                                </CommandEmpty>
 
                                 {modelHouseProperties.length > 0 && (
                                   <CommandGroup heading="Model Houses">
@@ -527,7 +510,7 @@ export function LoanCalculatorForm({
                                       <CommandItem
                                         key={property.id}
                                         onSelect={() => handlePropertySelect(property)}
-                                        className="flex items-center justify-between"
+                                        className="flex items-center justify-between cursor-pointer"
                                       >
                                         <div className="flex flex-col">
                                           <span className="font-medium">{property.name}</span>
@@ -550,7 +533,7 @@ export function LoanCalculatorForm({
                                       <CommandItem
                                         key={property.id}
                                         onSelect={() => handlePropertySelect(property)}
-                                        className="flex items-center justify-between"
+                                        className="flex items-center justify-between cursor-pointer"
                                       >
                                         <div className="flex flex-col">
                                           <span className="font-medium">{property.name}</span>
@@ -573,7 +556,7 @@ export function LoanCalculatorForm({
                                       <CommandItem
                                         key={property.id}
                                         onSelect={() => handlePropertySelect(property)}
-                                        className="flex items-center justify-between"
+                                        className="flex items-center justify-between cursor-pointer"
                                       >
                                         <div className="flex flex-col">
                                           <span className="font-medium">{property.name}</span>
@@ -794,7 +777,6 @@ export function LoanCalculatorForm({
               </Card>
             </TabsContent>
 
-            {/* Rest of the tabs remain the same as before */}
             <TabsContent value="breakdown" className="space-y-4 py-4">
               <Card>
                 <CardHeader>
@@ -818,7 +800,7 @@ export function LoanCalculatorForm({
 
                         {result.propertyBreakdown.propertyType === "model-house" && (
                           <>
-                            {result.propertyBreakdown.lotPrice && (
+                            {result.propertyBreakdown.lotPrice && result.propertyBreakdown.lotPrice > 0 && (
                               <div className="flex justify-between items-center p-3 bg-purple-50 rounded-lg">
                                 <span className="font-medium">Lot Price</span>
                                 <span className="font-semibold">
@@ -827,16 +809,17 @@ export function LoanCalculatorForm({
                               </div>
                             )}
 
-                            {result.propertyBreakdown.houseConstructionCost && (
-                              <div className="flex justify-between items-center p-3 bg-orange-50 rounded-lg">
-                                <span className="font-medium">House Construction Cost</span>
-                                <span className="font-semibold">
-                                  {formatCurrency(result.propertyBreakdown.houseConstructionCost)}
-                                </span>
-                              </div>
-                            )}
+                            {result.propertyBreakdown.houseConstructionCost &&
+                              result.propertyBreakdown.houseConstructionCost > 0 && (
+                                <div className="flex justify-between items-center p-3 bg-orange-50 rounded-lg">
+                                  <span className="font-medium">House Construction Cost</span>
+                                  <span className="font-semibold">
+                                    {formatCurrency(result.propertyBreakdown.houseConstructionCost)}
+                                  </span>
+                                </div>
+                              )}
 
-                            {result.propertyBreakdown.lotFees && (
+                            {result.propertyBreakdown.lotFees && result.propertyBreakdown.lotFees > 0 && (
                               <div className="flex justify-between items-center p-3 bg-red-50 rounded-lg">
                                 <div className="flex items-center gap-2">
                                   <span className="font-medium">Lot Fees</span>
@@ -850,45 +833,50 @@ export function LoanCalculatorForm({
                               </div>
                             )}
 
-                            {result.propertyBreakdown.constructionFees && (
-                              <div className="flex justify-between items-center p-3 bg-pink-50 rounded-lg">
-                                <div className="flex items-center gap-2">
-                                  <span className="font-medium">Construction Fees</span>
-                                  <Badge variant="outline" className="text-xs">
-                                    8.5%
-                                  </Badge>
+                            {result.propertyBreakdown.constructionFees &&
+                              result.propertyBreakdown.constructionFees > 0 && (
+                                <div className="flex justify-between items-center p-3 bg-pink-50 rounded-lg">
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-medium">Construction Fees</span>
+                                    <Badge variant="outline" className="text-xs">
+                                      8.5%
+                                    </Badge>
+                                  </div>
+                                  <span className="font-semibold">
+                                    {formatCurrency(result.propertyBreakdown.constructionFees)}
+                                  </span>
                                 </div>
-                                <span className="font-semibold">
-                                  {formatCurrency(result.propertyBreakdown.constructionFees)}
-                                </span>
-                              </div>
-                            )}
+                              )}
                           </>
                         )}
 
-                        <div className="flex justify-between items-center p-3 bg-green-50 rounded-lg">
-                          <div className="flex items-center gap-2">
-                            <span className="font-medium">Reservation Fee</span>
-                            <Badge variant="outline" className="text-xs">
-                              {result.propertyBreakdown.propertyType === "model-house" ? "Model House" : "Lot Only"}
-                            </Badge>
+                        {result.propertyBreakdown.reservationFee > 0 && (
+                          <div className="flex justify-between items-center p-3 bg-green-50 rounded-lg">
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium">Reservation Fee</span>
+                              <Badge variant="outline" className="text-xs">
+                                {result.propertyBreakdown.propertyType === "model-house" ? "Model House" : "Lot Only"}
+                              </Badge>
+                            </div>
+                            <span className="font-semibold">
+                              {formatCurrency(result.propertyBreakdown.reservationFee)}
+                            </span>
                           </div>
-                          <span className="font-semibold">
-                            {formatCurrency(result.propertyBreakdown.reservationFee)}
-                          </span>
-                        </div>
+                        )}
 
-                        <div className="flex justify-between items-center p-3 bg-yellow-50 rounded-lg">
-                          <div className="flex items-center gap-2">
-                            <span className="font-medium">Government Fees & Taxes</span>
-                            <Badge variant="outline" className="text-xs">
-                              {result.propertyBreakdown.basePrice >= 1000000 ? "Fixed ₱205K" : "20.5%"}
-                            </Badge>
+                        {result.propertyBreakdown.governmentFeesAndTaxes > 0 && (
+                          <div className="flex justify-between items-center p-3 bg-yellow-50 rounded-lg">
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium">Government Fees & Taxes</span>
+                              <Badge variant="outline" className="text-xs">
+                                {result.propertyBreakdown.basePrice >= 1000000 ? "Fixed ₱205K" : "20.5%"}
+                              </Badge>
+                            </div>
+                            <span className="font-semibold">
+                              {formatCurrency(result.propertyBreakdown.governmentFeesAndTaxes)}
+                            </span>
                           </div>
-                          <span className="font-semibold">
-                            {formatCurrency(result.propertyBreakdown.governmentFeesAndTaxes)}
-                          </span>
-                        </div>
+                        )}
 
                         <div className="border-t pt-4">
                           <div className="flex justify-between items-center p-4 bg-primary/10 rounded-lg">
