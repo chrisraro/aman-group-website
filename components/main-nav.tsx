@@ -279,6 +279,7 @@ export function MainNav() {
                               ? "bg-primary/10 text-primary font-semibold"
                               : "text-muted-foreground hover:bg-gray-50",
                           )}
+                          aria-expanded={isExpanded}
                         >
                           <span>{item.label}</span>
                           <ChevronDown
@@ -303,7 +304,7 @@ export function MainNav() {
                                     key={subItem.href}
                                     href={subItem.href}
                                     className={cn(
-                                      "flex items-center py-3 px-8 text-base transition-all min-h-[48px]",
+                                      "flex items-center py-3 px-8 text-base transition-all min-h-[48px] m3-state-layer", // Added m3-state-layer
                                       pathname === subItem.href
                                         ? "text-primary font-semibold bg-primary/5"
                                         : "text-muted-foreground hover:bg-gray-100",
@@ -332,7 +333,7 @@ export function MainNav() {
                       <Link
                         href={item.href}
                         className={cn(
-                          "flex items-center justify-between py-4 px-5 text-lg font-medium rounded-xl transition-all min-h-[56px] shadow-sm border border-gray-100",
+                          "flex items-center justify-between py-4 px-5 text-lg font-medium rounded-xl transition-all min-h-[56px] shadow-sm border border-gray-100 m3-state-layer", // Added m3-state-layer
                           pathname === item.href
                             ? "bg-primary/10 text-primary font-semibold"
                             : "text-muted-foreground hover:bg-gray-50",
