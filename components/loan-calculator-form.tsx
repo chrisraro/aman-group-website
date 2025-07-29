@@ -13,13 +13,11 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Check, ChevronsUpDown, Calculator, Download, Search, Loader2, AlertCircle, RefreshCw } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { calculateLoan, formatCurrency } from "@/lib/loan-calculations"
+import { calculateLoan, formatCurrency, generateLoanAmortizationSchedule } from "@/lib/loan-calculations"
 import { useLoanCalculatorSettings } from "@/lib/hooks/useLoanCalculatorSettings"
 import { usePropertyData } from "@/lib/hooks/usePropertyData"
 import { LoanCalculatorNote } from "./loan-calculator-note"
-import jsPDF from "jspdf"
-import "jspdf-autotable"
-import type { DownPaymentScheduleItem } from "@/types/loan-calculator"
+import { exportToPDF as exportToPDFUtil } from "@/components/pdf-export-utils" // Import the utility function
 
 interface Property {
   id: string
@@ -148,118 +146,33 @@ export function LoanCalculatorForm({ initialPropertyId, initialPropertyType }: L
     }
   }, [initialPropertyId, properties, selectedProperty, handlePropertySelect])
 
-  // Export to PDF
-  const exportToPDF = useCallback(() => {
+  // Export to PDF using the utility function
+  const handleExportToPDF = useCallback(() => {
     if (!calculation) return
 
-    const doc = new jsPDF()
-    const pageWidth = doc.internal.pageSize.width
-    const margin = 20
-
-    // Header
-    doc.setFontSize(20)
-    doc.setFont("helvetica", "bold")
-    doc.text("Loan Calculator Report", pageWidth / 2, 30, { align: "center" })
-
-    // Property details
-    doc.setFontSize(12)
-    doc.setFont("helvetica", "normal")
-    let yPos = 50
-
-    if (selectedProperty) {
-      doc.text(`Property: ${selectedProperty.name}`, margin, yPos)
-      yPos += 8
-      doc.text(`Location: ${selectedProperty.location}`, margin, yPos)
-      yPos += 8
-      doc.text(`Type: ${selectedProperty.type.replace("-", " ").toUpperCase()}`, margin, yPos)
-      yPos += 15
-    }
-
-    // Loan details table
-    const loanData = [
-      ["Property Price", formatCurrency(calculation.propertyPrice)],
-      ["Down Payment", `${calculation.downPaymentPercentage}% (${formatCurrency(calculation.downPayment)})`],
-      ["Loan Amount", formatCurrency(calculation.loanAmount)],
-      ["Interest Rate (Loan)", `${calculation.interestRate}% per annum`],
-      ["Loan Term", `${calculation.loanTermYears} years`],
-      ["Monthly Loan Payment", formatCurrency(calculation.monthlyPayment)],
-      ["Monthly Downpayment (1st Year)", formatCurrency(calculation.downPaymentSchedule[0]?.payment || 0)], // Added
-    ]
-
-    if (selectedProperty?.houseConstructionPrice !== undefined) {
-      loanData.push(["House Construction Cost", formatCurrency(selectedProperty.houseConstructionPrice || 0)])
-    }
-    if (selectedProperty?.lotPrice !== undefined) {
-      loanData.push(["Lot Cost", formatCurrency(selectedProperty.lotPrice || 0)])
-    }
-
-    doc.autoTable({
-      startY: yPos,
-      head: [["Loan Details", "Amount"]],
-      body: loanData,
-      theme: "grid",
-      headStyles: { fillColor: [65, 147, 45] },
-      margin: { left: margin, right: margin },
-    })
-
-    yPos = (doc as any).lastAutoTable.finalY + 15
-
-    // Breakdown table if there are fees
-    const breakdownData = []
-    if (calculation.reservationFee > 0) {
-      breakdownData.push(["Reservation Fee", formatCurrency(calculation.reservationFee)])
-    }
-    if (calculation.governmentFees > 0) {
-      breakdownData.push(["Government Fees", formatCurrency(calculation.governmentFees)])
-    }
-    if (calculation.constructionFees > 0) {
-      breakdownData.push(["Construction Fees", formatCurrency(calculation.constructionFees)])
-    }
-
-    if (breakdownData.length > 0) {
-      doc.autoTable({
-        startY: yPos,
-        head: [["Additional Fees", "Amount"]],
-        body: breakdownData,
-        theme: "grid",
-        headStyles: { fillColor: [4, 0, 157] },
-        margin: { left: margin, right: margin },
-      })
-    }
-
-    // Down Payment Schedule table
-    if (calculation.downPaymentSchedule && calculation.downPaymentSchedule.length > 0) {
-      yPos = (doc as any).lastAutoTable.finalY + 15
-      const dpScheduleData = calculation.downPaymentSchedule.map((item: DownPaymentScheduleItem) => [
-        item.month,
-        formatCurrency(item.payment),
-        `${item.interestRate}%`,
-        formatCurrency(item.balance),
-      ])
-
-      doc.autoTable({
-        startY: yPos,
-        head: [["Month", "Payment", "Interest Rate", "Balance"]],
-        body: dpScheduleData,
-        theme: "grid",
-        headStyles: { fillColor: [100, 100, 100] }, // Grey color for DP schedule header
-        margin: { left: margin, right: margin },
-      })
-    }
-
-    // Footer
-    const currentDate = new Date().toLocaleDateString()
-    doc.setFontSize(10)
-    doc.text(
-      `Generated on ${currentDate} by Aman Group Loan Calculator`,
-      pageWidth / 2,
-      doc.internal.pageSize.height - 20,
-      {
-        align: "center",
-      },
+    const monthlyLoanSchedule = generateLoanAmortizationSchedule(
+      calculation.loanAmount,
+      calculation.interestRate,
+      calculation.loanTermYears,
+      calculation.monthlyPayment,
     )
 
-    doc.save(`loan-calculation-${selectedProperty?.name || "property"}-${currentDate}.pdf`)
+    const loanDetailsForPdf = {
+      propertyPrice: calculation.propertyPrice,
+      downPayment: calculation.downPayment,
+      loanAmount: calculation.loanAmount,
+      interestRate: calculation.interestRate,
+      monthlyPayment: calculation.monthlyPayment,
+      totalPayment: calculation.totalAmount, // Use totalAmount from calculation
+      term: calculation.loanTermYears,
+    }
+
+    exportToPDFUtil(
+      monthlyLoanSchedule,
+      "monthly", // Assuming we want to show monthly schedule for the loan
+      loanDetailsForPdf,
+      selectedProperty?.name,
+    )
   }, [calculation, selectedProperty])
 
   if (settingsLoading) {
@@ -658,7 +571,7 @@ export function LoanCalculatorForm({ initialPropertyId, initialPropertyType }: L
             </Tabs>
 
             <div className="flex gap-2">
-              <Button onClick={exportToPDF} variant="outline" className="flex items-center gap-2 bg-transparent">
+              <Button onClick={handleExportToPDF} variant="outline" className="flex items-center gap-2 bg-transparent">
                 <Download className="h-4 w-4" />
                 Export PDF
               </Button>

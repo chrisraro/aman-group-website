@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import { useSearchParams } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
-import { ArrowRight, ChevronRight, Building2, Users, Award, Leaf, Trophy, Star } from "lucide-react"
+import { ArrowRight, ChevronRight, Building2, Users, Award, Leaf, Trophy, Star, CheckCircle } from "lucide-react" // Added CheckCircle
 import { motion, AnimatePresence } from "framer-motion"
 
 import { Button } from "@/components/ui/button"
@@ -123,9 +123,9 @@ export default function Home() {
           <AnimatePresence mode="wait">
             <motion.div
               key={currentImageIndex}
-              initial={{ opacity: 0, scale: 1.1 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
+              initial={{ x: "100%" }} // Start off-screen to the right
+              animate={{ x: "0%" }} // Slide to center
+              exit={{ x: "-100%" }} // Slide off-screen to the left
               transition={{ duration: 1.5, ease: "easeInOut" }}
               className="absolute inset-0"
             >
@@ -136,7 +136,7 @@ export default function Home() {
                 className="object-cover"
                 priority
               />
-              <div className="absolute inset-0 bg-black/40" />
+              {/* Removed the overlay div */}
             </motion.div>
           </AnimatePresence>
         </div>
@@ -529,6 +529,49 @@ export default function Home() {
                 showControls={true}
                 className="mb-0"
               />
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* ARISE Technology Section */}
+      <section className="py-20 bg-white">
+        <div className="container mx-auto px-4">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            viewport={{ once: true }}
+            className="max-w-4xl mx-auto bg-green-50 rounded-2xl shadow-lg p-8 md:p-12 flex flex-col md:flex-row items-center gap-8"
+          >
+            <div className="flex-shrink-0 w-48 h-48 md:w-64 md:h-64 relative">
+              <Image
+                src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/ARISE%20Technology%20Logo%20Transparent%201-wRAQvPKaMIwjzf3Y29ijvjlO0Wmvlh.png"
+                alt="ARISE Technology Logo"
+                fill
+                className="object-contain"
+              />
+            </div>
+            <div className="flex-grow text-center md:text-left">
+              <h3 className="text-2xl md:text-3xl font-bold text-green-700 mb-6">What is ARISE Technology</h3>
+              <ul className="space-y-3 text-lg text-gray-800">
+                <li className="flex items-center justify-center md:justify-start gap-3">
+                  <CheckCircle className="h-6 w-6 text-green-600 flex-shrink-0" />
+                  <span>Aman Engineering</span>
+                </li>
+                <li className="flex items-center justify-center md:justify-start gap-3">
+                  <CheckCircle className="h-6 w-6 text-green-600 flex-shrink-0" />
+                  <span>Reliable Innovation for Stronger</span>
+                </li>
+                <li className="flex items-center justify-center md:justify-start gap-3">
+                  <CheckCircle className="h-6 w-6 text-green-600 flex-shrink-0" />
+                  <span>Economical and;</span>
+                </li>
+                <li className="flex items-center justify-center md:justify-start gap-3">
+                  <CheckCircle className="h-6 w-6 text-green-600 flex-shrink-0" />
+                  <span>Environment Friendly Technology</span>
+                </li>
+              </ul>
             </div>
           </motion.div>
         </div>
