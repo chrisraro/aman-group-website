@@ -49,23 +49,20 @@ export function YouTubeEmbed({
 
   return (
     <div className={cn("flex flex-col items-center py-4 md:py-6", className)}>
-      <div className="w-full max-w-4xl mx-auto mb-4 md:mb-6 border rounded-lg overflow-hidden bg-white relative">
-        {isLoading && (
-          <div className="absolute inset-0 flex items-center justify-center bg-gray-50">
-            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-          </div>
-        )}
-        <iframe
-          src={youtubeUrl}
-          width="100%"
-          className={cn("border-0 w-full", height || "h-[400px] md:h-[600px]")}
-          onLoad={() => setIsLoading(false)}
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-          allowFullScreen
-          title={title}
-        />
-      </div>
-
+      {isLoading && (
+        <div className="absolute inset-0 flex items-center justify-center bg-gray-50">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+      )}
+      <iframe
+        src={youtubeUrl}
+        width="100%"
+        className={cn("border-0 w-full", height || "h-[400px] md:h-[600px]")}
+        onLoad={() => setIsLoading(false)}
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+        allowFullScreen
+        title={title}
+      />
       {showControls && (
         <Button
           asChild

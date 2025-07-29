@@ -4,13 +4,13 @@ import { useEffect, useState } from "react"
 import { useSearchParams } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
-import { ArrowRight, ChevronRight, Building2, Users, Award, Leaf, Trophy, Star, CheckCircle } from "lucide-react" // Added CheckCircle
+import { ArrowRight, ChevronRight, Building2, Users, Award, Leaf, Trophy, Star, CheckCircle } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 
 import { Button } from "@/components/ui/button"
 import { getBrokerageFromParams } from "@/lib/brokerage-links"
 import { storeBrokerageInfo } from "@/lib/storage-utils"
-import { YouTubeEmbed } from "@/components/youtube-embed"
+import { YouTubeEmbed } from "@/components/youtube-embed" // Corrected import to named export
 
 // Hero background images - Updated with new model houses and clubhouse
 const heroImages = [
@@ -245,6 +245,49 @@ export default function Home() {
                 </div>
               </Link>
             ))}
+          </motion.div>
+        </div>
+      </section>
+
+      {/* ARISE Technology Section - Moved here */}
+      <section className="py-20 bg-white">
+        <div className="container mx-auto px-4">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            viewport={{ once: true }}
+            className="max-w-4xl mx-auto bg-green-50 rounded-2xl shadow-lg p-8 md:p-12 flex flex-col md:flex-row items-center gap-8"
+          >
+            <div className="flex-shrink-0 w-48 h-48 md:w-64 md:h-64 relative">
+              <Image
+                src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/ARISE%20Technology%20Logo%20Transparent%201-wRAQvPKaMIwjzf3Y29ijvjlO0Wmvlh.png"
+                alt="ARISE Technology Logo"
+                fill
+                className="object-contain"
+              />
+            </div>
+            <div className="flex-grow text-center md:text-left">
+              <h3 className="text-2xl md:text-3xl font-bold text-green-700 mb-6">What is ARISE Technology</h3>
+              <ul className="space-y-3 text-lg text-gray-800">
+                <li className="flex items-center justify-center md:justify-start gap-3">
+                  <CheckCircle className="h-6 w-6 text-green-600 flex-shrink-0" />
+                  <span>Aman Engineering</span>
+                </li>
+                <li className="flex items-center justify-center md:justify-start gap-3">
+                  <CheckCircle className="h-6 w-6 text-green-600 flex-shrink-0" />
+                  <span>Reliable Innovation for Stronger</span>
+                </li>
+                <li className="flex items-center justify-center md:justify-start gap-3">
+                  <CheckCircle className="h-6 w-6 text-green-600 flex-shrink-0" />
+                  <span>Economical and;</span>
+                </li>
+                <li className="flex items-center justify-center md:justify-start gap-3">
+                  <CheckCircle className="h-6 w-6 text-green-600 flex-shrink-0" />
+                  <span>Environment Friendly Technology</span>
+                </li>
+              </ul>
+            </div>
           </motion.div>
         </div>
       </section>
@@ -534,7 +577,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ARISE Technology Section */}
+      {/* Construction Innovation Section */}
       <section className="py-20 bg-white">
         <div className="container mx-auto px-4">
           <motion.div
@@ -542,38 +585,85 @@ export default function Home() {
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
             viewport={{ once: true }}
-            className="max-w-4xl mx-auto bg-green-50 rounded-2xl shadow-lg p-8 md:p-12 flex flex-col md:flex-row items-center gap-8"
+            className="text-center mb-16"
           >
-            <div className="flex-shrink-0 w-48 h-48 md:w-64 md:h-64 relative">
-              <Image
-                src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/ARISE%20Technology%20Logo%20Transparent%201-wRAQvPKaMIwjzf3Y29ijvjlO0Wmvlh.png"
-                alt="ARISE Technology Logo"
-                fill
-                className="object-contain"
-              />
-            </div>
-            <div className="flex-grow text-center md:text-left">
-              <h3 className="text-2xl md:text-3xl font-bold text-green-700 mb-6">What is ARISE Technology</h3>
-              <ul className="space-y-3 text-lg text-gray-800">
-                <li className="flex items-center justify-center md:justify-start gap-3">
-                  <CheckCircle className="h-6 w-6 text-green-600 flex-shrink-0" />
-                  <span>Aman Engineering</span>
-                </li>
-                <li className="flex items-center justify-center md:justify-start gap-3">
-                  <CheckCircle className="h-6 w-6 text-green-600 flex-shrink-0" />
-                  <span>Reliable Innovation for Stronger</span>
-                </li>
-                <li className="flex items-center justify-center md:justify-start gap-3">
-                  <CheckCircle className="h-6 w-6 text-green-600 flex-shrink-0" />
-                  <span>Economical and;</span>
-                </li>
-                <li className="flex items-center justify-center md:justify-start gap-3">
-                  <CheckCircle className="h-6 w-6 text-green-600 flex-shrink-0" />
-                  <span>Environment Friendly Technology</span>
-                </li>
-              </ul>
-            </div>
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">Construction Innovation</h2>
           </motion.div>
+
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
+            {[
+              {
+                image:
+                  "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Buhos%20card%201-AlvLbTq6Jf6SEv6SixDhatJuLhMXpR.webp",
+                alt: "House under construction with concrete walls",
+                title: "SOLID CONCRETE (BUHOS)",
+                description:
+                  "poured directly into molds, creating seamless, durable, and strong structures ideal for foundations and walls.",
+              },
+              {
+                image:
+                  "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/pest%20card-l3JIGHaFSVrQGu9mRNbyhmeUy2hBpz.webp",
+                alt: "Person in hazmat suit spraying for pests",
+                title: "Pest-Resistant",
+                description:
+                  "enhance the longevity of buildings, crops, and goods by preventing the entry or survival of pests.",
+              },
+              {
+                image:
+                  "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Thalia%20Palm-aDfirJaIwHX0KDTkYBIcEYpswbFe3D.webp", // Thalia Palm for Earthquake-Resistant
+                alt: "Modern two-story house with a car",
+                title: "Earthquake-Resistant",
+                description:
+                  "structures are designed to withstand seismic forces, minimizing damage and ensuring safety during earthquakes.",
+              },
+              {
+                image:
+                  "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/kate%20palm-hyzgRK7tpVazkfnSaDnLpQnlT1ffgb.webp", // Kate Palm for Typhoon-Resistant
+                alt: "Modern single-story house with a car",
+                title: "Typhoon-Resistant",
+                description:
+                  "structures are built to endure strong winds and heavy rain, using reinforced materials and design techniques to prevent damage and ensure safety during severe storms.",
+              },
+              {
+                image:
+                  "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/thalia%20fusion-DXc2ZQLi0UqXljipiJVkH3TgAJIdd8.webp", // Thalia Fusion for Fire-Resistant
+                alt: "Modern two-story house with a car",
+                title: "Fire-Resistant",
+                description:
+                  "materials or structures are designed to withstand high temperatures and slow the spread of fire, providing enhanced safety and protection during a fire.",
+              },
+              {
+                image:
+                  "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/chelsea%20palm-txrxcXI5ijceI1EqcyQJ3fQ5U65Ff0.webp", // Chelsea Palm for Future-Expansion-Ready
+                alt: "Modern single-story house with a car",
+                title: "Future-Expansion-Ready",
+                description:
+                  "designs or structures are built with the capability to easily accommodate future growth or additions, minimizing disruptions and costs when expanding.",
+              },
+            ].map((feature, index) => (
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: index * 0.1 }}
+                viewport={{ once: true }}
+                className="bg-gray-50 rounded-2xl shadow-md overflow-hidden hover:shadow-lg transition-all duration-300 group"
+              >
+                <div className="relative w-full h-48">
+                  <Image
+                    src={feature.image || "/placeholder.svg"}
+                    alt={feature.alt}
+                    fill
+                    className="object-cover rounded-t-2xl"
+                  />
+                </div>
+                <div className="p-6 text-center">
+                  <h3 className="text-xl font-bold mb-2 text-gray-900">{feature.title}</h3>
+                  <p className="text-muted-foreground text-sm leading-relaxed">{feature.description}</p>
+                </div>
+              </motion.div>
+            ))}
+          </div>
         </div>
       </section>
     </div>
