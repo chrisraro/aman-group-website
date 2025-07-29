@@ -166,4 +166,5 @@ export interface LoanCalculationInput {
   interestRate: number
   propertyType: "model-house" | "lot-only"
   settings?: LoanCalculatorSettings // Changed type here
+  downPaymentTermMonths?: number // Added for dynamic down payment term
 }

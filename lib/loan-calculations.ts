@@ -256,7 +256,6 @@ function calculateSpecial20PercentSchedule(
         date: new Date(Date.now() + month * 30 * 24 * 60 * 60 * 1000),
         payment: monthlyPayment,
         balance: Math.max(0, balance),
-        cumulativePaid,
         interestRate: subsequentYearRate,
         isFirstYear: false,
       })
@@ -456,9 +455,10 @@ export function calculateLoan(input: LoanCalculationInput): LoanCalculation {
     loanTermYears,
     interestRate,
     propertyType,
+    downPaymentTermMonths: selectedDownPaymentTermMonths, // New parameter for DP term
   } = input
 
-  // Extract relevant settings for calculations
+  // Extract relevant settings for fees
   const reservationFeeModelHouse = effectiveSettings.reservationFees?.modelHouse ?? DEFAULT_RESERVATION_FEES.modelHouse
   const reservationFeeLotOnly = effectiveSettings.reservationFees?.lotOnly ?? DEFAULT_RESERVATION_FEES.lotOnly
   const enableReservationFee = effectiveSettings.reservationFees?.isActive ?? DEFAULT_RESERVATION_FEES.isActive
@@ -477,9 +477,40 @@ export function calculateLoan(input: LoanCalculationInput): LoanCalculation {
 
   const specialDownPaymentRules = effectiveSettings.specialDownPaymentRules ?? DEFAULT_SPECIAL_RULES
 
+  // Calculate fees first, as reservation fee affects down payment schedule
+  let reservationFee = 0
+  if (enableReservationFee) {
+    if (propertyType === "model-house" && reservationFeeModelHouse > 0) {
+      reservationFee = reservationFeeModelHouse
+    } else if (propertyType === "lot-only" && reservationFeeLotOnly > 0) {
+      reservationFee = reservationFeeLotOnly
+    }
+  }
+
+  let governmentFees = 0
+  if (enableGovernmentFee) {
+    if (propertyPrice >= governmentFeeThreshold) {
+      governmentFees = governmentFeeFixed
+    } else {
+      governmentFees = (propertyPrice * governmentFeePercentage) / 100
+    }
+  }
+
+  let constructionFees = 0
+  if (enableConstructionFee && propertyType === "model-house") {
+    if (lotPrice > 0) {
+      constructionFees += (lotPrice * constructionFeePercentage) / 100
+    }
+    if (constructionCost > 0) {
+      constructionFees += (constructionCost * constructionFeePercentage) / 100
+    }
+  }
+
+  const totalFees = reservationFee + governmentFees + constructionFees
+
   // Basic loan calculations
   const downPayment = (propertyPrice * downPaymentPercentage) / 100
-  const loanAmount = propertyPrice - downPayment
+  const loanAmount = propertyPrice - downPayment // Loan amount is based on full 20% down payment
 
   // Monthly interest rate for the main loan
   const monthlyRate = interestRate / 100 / 12
@@ -498,57 +529,37 @@ export function calculateLoan(input: LoanCalculationInput): LoanCalculation {
   const totalPayable = monthlyPayment * numberOfPayments // Total principal + interest for the loan
   const totalInterest = totalPayable - loanAmount // Total interest for the loan
 
-  // Calculate fees
-  let reservationFee = 0
-  let governmentFees = 0
-  let constructionFees = 0
+  // Calculate down payment schedule
+  // The amount to be paid in installments for the down payment is the total down payment
+  // minus the reservation fee (as it's paid upfront and reduces the installment amount).
+  const amountForDownPaymentSchedule = Math.max(0, downPayment - reservationFee)
 
-  // Reservation Fee - only if enabled and greater than 0
-  if (enableReservationFee) {
-    if (propertyType === "model-house" && reservationFeeModelHouse > 0) {
-      reservationFee = reservationFeeModelHouse
-    } else if (propertyType === "lot-only" && reservationFeeLotOnly > 0) {
-      reservationFee = reservationFeeLotOnly
-    }
-  }
+  // Use the selected down payment term, or fallback to default from settings
+  const dpTermMonths =
+    selectedDownPaymentTermMonths ||
+    effectiveSettings.defaultSettings?.fixedDownPaymentTermMonths ||
+    DEFAULT_SPECIAL_RULES.twentyPercentRule.downPaymentTermMonths
 
-  // Government Fees - only if enabled
-  if (enableGovernmentFee) {
-    if (propertyPrice >= governmentFeeThreshold) {
-      governmentFees = governmentFeeFixed
-    } else {
-      governmentFees = (propertyPrice * governmentFeePercentage) / 100
-    }
-  }
-
-  // Construction Fees - only for model houses and if enabled
-  if (enableConstructionFee && propertyType === "model-house") {
-    if (lotPrice > 0) {
-      constructionFees += (lotPrice * constructionFeePercentage) / 100
-    }
-    if (constructionCost > 0) {
-      constructionFees += (constructionCost * constructionFeePercentage) / 100
-    }
-  }
-
-  const totalFees = reservationFee + governmentFees + constructionFees
-
-  // Calculate down payment schedule with special rules
-  const downPaymentSchedule = calculateDownPaymentSchedule(downPayment, specialDownPaymentRules)
+  const downPaymentSchedule = calculateDownPaymentSchedule(amountForDownPaymentSchedule, {
+    twentyPercentRule: {
+      ...specialDownPaymentRules.twentyPercentRule, // Keep other rules from settings
+      downPaymentTermMonths: dpTermMonths, // Use the dynamic term
+    },
+  })
 
   // Total amount should include property price (which covers down payment and loan principal), total interest, and total fees
-  const totalAmount = propertyPrice + totalInterest + totalFees
+  const totalAmount = propertyPrice + totalInterest + totalFees // This is the total project cost
 
   return {
     propertyPrice,
     downPaymentPercentage,
-    downPayment,
+    downPayment, // This is the full 20%
     loanAmount,
     interestRate,
     loanTermYears,
     monthlyPayment,
     totalInterest,
-    totalAmount,
+    totalAmount, // Total project cost
     reservationFee,
     governmentFees,
     constructionFees,

@@ -28,8 +28,7 @@ interface Property {
   price: number
   type: "model-house" | "lot-only"
   lotPrice?: number
-  // Changed from constructionCost to houseConstructionPrice to match usePropertyData
-  houseConstructionPrice?: number
+  houseConstructionPrice?: number // Corrected property name
 }
 
 interface LoanCalculatorFormProps {
@@ -46,6 +45,7 @@ export function LoanCalculatorForm({ initialPropertyId, initialPropertyType }: L
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null)
   const [propertySearchOpen, setPropertySearchOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
+  const [downPaymentTerm, setDownPaymentTerm] = useState("24") // New state for down payment term (in months)
 
   // Data hooks
   const {
@@ -62,6 +62,7 @@ export function LoanCalculatorForm({ initialPropertyId, initialPropertyType }: L
     const downPayment = Number.parseFloat(downPaymentPercentage) || 0
     const term = Number.parseInt(loanTermYears) || 0
     const rate = Number.parseFloat(interestRate) || 0
+    const dpTermMonths = Number.parseInt(downPaymentTerm) || 24 // Parse selected down payment term
 
     if (price <= 0 || downPayment < 0 || term <= 0 || rate < 0) {
       return null
@@ -74,8 +75,8 @@ export function LoanCalculatorForm({ initialPropertyId, initialPropertyType }: L
       interestRate: rate,
       propertyType: selectedProperty?.type || "lot-only",
       lotPrice: selectedProperty?.lotPrice || 0,
-      // Pass houseConstructionPrice as constructionCost to the calculateLoan function
-      constructionCost: selectedProperty?.houseConstructionPrice || 0,
+      constructionCost: selectedProperty?.houseConstructionPrice || 0, // Pass houseConstructionPrice
+      downPaymentTermMonths: dpTermMonths, // Pass the selected down payment term
       settings: settings || {
         // Pass the actual settings object
         baseInterestRate: 8.5,
@@ -86,7 +87,6 @@ export function LoanCalculatorForm({ initialPropertyId, initialPropertyType }: L
         insuranceFeePercentage: 0.5,
         constructionFeePercentage: 8.5,
         specialRuleEnabled: true,
-        // Add other default settings if needed for a complete fallback
         financingOptions: [],
         reservationFees: { modelHouse: 25000, lotOnly: 10000, isActive: true },
         governmentFeesConfig: {
@@ -101,7 +101,7 @@ export function LoanCalculatorForm({ initialPropertyId, initialPropertyType }: L
             isActive: true,
             firstYearInterestRate: 0,
             subsequentYearInterestRate: 8.5,
-            downPaymentTermMonths: 24,
+            downPaymentTermMonths: 24, // Default fallback
           },
         },
         defaultSettings: {
@@ -114,7 +114,7 @@ export function LoanCalculatorForm({ initialPropertyId, initialPropertyType }: L
         updatedAt: new Date(),
       },
     })
-  }, [propertyPrice, downPaymentPercentage, loanTermYears, interestRate, selectedProperty, settings])
+  }, [propertyPrice, downPaymentPercentage, loanTermYears, interestRate, selectedProperty, settings, downPaymentTerm])
 
   // Filter properties based on search
   const filteredProperties = useMemo(() => {
@@ -183,7 +183,7 @@ export function LoanCalculatorForm({ initialPropertyId, initialPropertyType }: L
       ["Interest Rate (Loan)", `${calculation.interestRate}% per annum`],
       ["Loan Term", `${calculation.loanTermYears} years`],
       ["Monthly Loan Payment", formatCurrency(calculation.monthlyPayment)],
-      ["Total Loan Interest", formatCurrency(calculation.totalInterest)],
+      ["Monthly Downpayment (1st Year)", formatCurrency(calculation.downPaymentSchedule[0]?.payment || 0)], // Added
     ]
 
     if (selectedProperty?.houseConstructionPrice !== undefined) {
@@ -461,6 +461,20 @@ export function LoanCalculatorForm({ initialPropertyId, initialPropertyType }: L
               step="0.1"
             />
           </div>
+
+          {/* New: Down Payment Term dropdown */}
+          <div className="space-y-2">
+            <Label htmlFor="down-payment-term">Down Payment Term</Label>
+            <Select value={downPaymentTerm} onValueChange={setDownPaymentTerm}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select down payment term" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="12">1 Year (12 Months)</SelectItem>
+                <SelectItem value="24">2 Years (24 Months)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
         {/* Results */}
@@ -470,8 +484,6 @@ export function LoanCalculatorForm({ initialPropertyId, initialPropertyType }: L
 
             <Tabs defaultValue="summary" className="w-full">
               <TabsList className="grid w-full grid-cols-3">
-                {" "}
-                {/* Changed to grid-cols-3 for 4 cards */}
                 <TabsTrigger value="summary">Summary</TabsTrigger>
                 <TabsTrigger value="breakdown">Fees Breakdown</TabsTrigger>
                 <TabsTrigger value="down-payment-schedule">Down Payment Schedule</TabsTrigger>
@@ -479,8 +491,6 @@ export function LoanCalculatorForm({ initialPropertyId, initialPropertyType }: L
 
               <TabsContent value="summary" className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                  {" "}
-                  {/* Changed to grid-cols-4 */}
                   <Card>
                     <CardContent className="pt-6">
                       <div className="text-2xl font-bold text-primary">
@@ -491,11 +501,13 @@ export function LoanCalculatorForm({ initialPropertyId, initialPropertyType }: L
                   </Card>
                   <Card>
                     <CardContent className="pt-6">
-                      <div className="text-2xl font-bold">{formatCurrency(calculation.totalInterest)}</div>
-                      <p className="text-sm text-muted-foreground">Total Loan Interest</p>
+                      <div className="text-2xl font-bold">
+                        {formatCurrency(calculation.downPaymentSchedule[0]?.payment || 0)}
+                      </div>
+                      <p className="text-sm text-muted-foreground">Monthly Downpayment (1st Year)</p>
                     </CardContent>
                   </Card>
-                  {/* New Card for House Construction Cost */}
+                  {/* House Construction Cost Card */}
                   <Card>
                     <CardContent className="pt-6">
                       <div className="text-2xl font-bold">
@@ -504,7 +516,7 @@ export function LoanCalculatorForm({ initialPropertyId, initialPropertyType }: L
                       <p className="text-sm text-muted-foreground">House Construction Cost</p>
                     </CardContent>
                   </Card>
-                  {/* New Card for Lot Cost */}
+                  {/* Lot Cost Card */}
                   <Card>
                     <CardContent className="pt-6">
                       <div className="text-2xl font-bold">{formatCurrency(selectedProperty?.lotPrice || 0)}</div>
@@ -553,8 +565,10 @@ export function LoanCalculatorForm({ initialPropertyId, initialPropertyType }: L
                       </div>
                     )}
                     <div className="flex justify-between">
-                      <span>Total Loan Payments:</span>
-                      <span className="font-medium">{calculation.loanTermYears * 12} months</span>
+                      <span>Monthly Downpayment (1st Year):</span>
+                      <span className="font-medium">
+                        {formatCurrency(calculation.downPaymentSchedule[0]?.payment || 0)}
+                      </span>
                     </div>
                   </div>
                 </div>
