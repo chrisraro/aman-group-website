@@ -13,21 +13,13 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Check, ChevronsUpDown, Calculator, Download, Search, Loader2, AlertCircle, RefreshCw } from "lucide-react"
 import { cn } from "@/lib/utils"
-import {
-  calculateLoan,
-  formatCurrency,
-  calculateAmortizationSchedule,
-  calculateDownPaymentSchedule,
-} from "@/lib/loan-calculations"
+import { calculateLoan, formatCurrency } from "@/lib/loan-calculations"
 import { useLoanCalculatorSettings } from "@/lib/hooks/useLoanCalculatorSettings"
 import { usePropertyData } from "@/lib/hooks/usePropertyData"
 import { LoanCalculatorNote } from "./loan-calculator-note"
-import { exportToPDF } from "./pdf-export-utils"
-import {
-  type MonthlyScheduleItem,
-  type YearlyScheduleItem,
-  DEFAULT_LOAN_CALCULATOR_SETTINGS,
-} from "@/types/loan-calculator"
+import jsPDF from "jspdf"
+import "jspdf-autotable"
+import type { DownPaymentScheduleItem } from "@/types/loan-calculator"
 
 interface Property {
   id: string
@@ -36,7 +28,8 @@ interface Property {
   price: number
   type: "model-house" | "lot-only"
   lotPrice?: number
-  constructionCost?: number
+  // Changed from constructionCost to houseConstructionPrice to match usePropertyData
+  houseConstructionPrice?: number
 }
 
 interface LoanCalculatorFormProps {
@@ -44,44 +37,15 @@ interface LoanCalculatorFormProps {
   initialPropertyType?: "model-house" | "lot-only"
 }
 
-// Generate yearly schedule from monthly - moved outside component
-const generateYearlySchedule = (monthlySchedule: MonthlyScheduleItem[], years: number): YearlyScheduleItem[] => {
-  const yearlySchedule: YearlyScheduleItem[] = []
-
-  for (let year = 1; year <= years; year++) {
-    const yearStart = (year - 1) * 12
-    const yearEnd = year * 12
-    const yearMonths = monthlySchedule.slice(yearStart, yearEnd)
-
-    if (yearMonths.length === 0) continue
-
-    const totalPrincipal = yearMonths.reduce((sum, month) => sum + month.principal, 0)
-    const totalInterest = yearMonths.reduce((sum, month) => sum + month.interest, 0)
-    const totalPayment = yearMonths.reduce((sum, month) => sum + month.payment, 0)
-    const balance = yearMonths[yearMonths.length - 1]?.balance || 0
-
-    yearlySchedule.push({
-      year,
-      principal: totalPrincipal,
-      interest: totalInterest,
-      payment: totalPayment,
-      balance,
-    })
-  }
-
-  return yearlySchedule
-}
-
 export function LoanCalculatorForm({ initialPropertyId, initialPropertyType }: LoanCalculatorFormProps) {
   // Form state
   const [propertyPrice, setPropertyPrice] = useState("")
   const [downPaymentPercentage, setDownPaymentPercentage] = useState("20")
   const [loanTermYears, setLoanTermYears] = useState("15")
-  const [interestRate, setInterestRate] = useState("8.5")
+  const [interestRate, setInterestRate] = useState("6")
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null)
   const [propertySearchOpen, setPropertySearchOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
-  const [scheduleView, setScheduleView] = useState<"monthly" | "yearly">("monthly")
 
   // Data hooks
   const {
@@ -103,9 +67,6 @@ export function LoanCalculatorForm({ initialPropertyId, initialPropertyType }: L
       return null
     }
 
-    // Use settings from hook, or fallback to DEFAULT_LOAN_CALCULATOR_SETTINGS
-    const currentSettings = settings || DEFAULT_LOAN_CALCULATOR_SETTINGS
-
     return calculateLoan({
       propertyPrice: price,
       downPaymentPercentage: downPayment,
@@ -113,33 +74,47 @@ export function LoanCalculatorForm({ initialPropertyId, initialPropertyType }: L
       interestRate: rate,
       propertyType: selectedProperty?.type || "lot-only",
       lotPrice: selectedProperty?.lotPrice || 0,
-      constructionCost: selectedProperty?.constructionCost || 0,
-      settings: currentSettings,
+      // Pass houseConstructionPrice as constructionCost to the calculateLoan function
+      constructionCost: selectedProperty?.houseConstructionPrice || 0,
+      settings: settings || {
+        // Pass the actual settings object
+        baseInterestRate: 8.5,
+        specialRuleInterestRate: 8.5,
+        processingFeePercentage: 1,
+        appraisalFee: 5000,
+        notarialFeePercentage: 1,
+        insuranceFeePercentage: 0.5,
+        constructionFeePercentage: 8.5,
+        specialRuleEnabled: true,
+        // Add other default settings if needed for a complete fallback
+        financingOptions: [],
+        reservationFees: { modelHouse: 25000, lotOnly: 10000, isActive: true },
+        governmentFeesConfig: {
+          fixedAmountThreshold: 1000000,
+          fixedAmount: 205000,
+          percentageRate: 20.5,
+          isActive: true,
+        },
+        constructionFeesConfig: { houseConstructionFeeRate: 8.5, lotFeeRate: 8.5, isActive: true },
+        specialDownPaymentRules: {
+          twentyPercentRule: {
+            isActive: true,
+            firstYearInterestRate: 0,
+            subsequentYearInterestRate: 8.5,
+            downPaymentTermMonths: 24,
+          },
+        },
+        defaultSettings: {
+          defaultFinancingOption: "in-house",
+          defaultPaymentTerm: 5,
+          fixedDownPaymentPercentage: 20,
+          fixedDownPaymentTermMonths: 24,
+        },
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
     })
   }, [propertyPrice, downPaymentPercentage, loanTermYears, interestRate, selectedProperty, settings])
-
-  // Calculate amortization schedule
-  const amortizationSchedule = useMemo(() => {
-    if (!calculation) return { monthly: [], yearly: [] }
-
-    const monthlySchedule = calculateAmortizationSchedule(calculation)
-    const yearlySchedule = generateYearlySchedule(monthlySchedule, calculation.loanTermYears)
-
-    return { monthly: monthlySchedule, yearly: yearlySchedule }
-  }, [calculation])
-
-  // Calculate down payment schedule using the special rule
-  const downPaymentSchedule = useMemo(() => {
-    if (!calculation || !settings) return []
-
-    // Use the down payment amount from the main calculation
-    const downPaymentAmount = calculation.downPayment
-
-    // Use the special down payment rules from settings
-    const specialRules = settings.specialDownPaymentRules
-
-    return calculateDownPaymentSchedule(downPaymentAmount, specialRules)
-  }, [calculation, settings])
 
   // Filter properties based on search
   const filteredProperties = useMemo(() => {
@@ -174,23 +149,118 @@ export function LoanCalculatorForm({ initialPropertyId, initialPropertyType }: L
   }, [initialPropertyId, properties, selectedProperty, handlePropertySelect])
 
   // Export to PDF
-  const handleExportToPDF = useCallback(() => {
+  const exportToPDF = useCallback(() => {
     if (!calculation) return
 
-    const loanSchedule = scheduleView === "monthly" ? amortizationSchedule.monthly : amortizationSchedule.yearly
-    const loanDetails = {
-      propertyPrice: calculation.propertyPrice,
-      downPayment: calculation.downPayment,
-      loanAmount: calculation.loanAmount,
-      interestRate: calculation.interestRate,
-      monthlyPayment: calculation.monthlyPayments.subsequentYears, // Use subsequent years for main monthly payment
-      firstYearMonthlyPayment: calculation.monthlyPayments.firstYear, // First year loan payment
-      totalPayment: calculation.totalAmount,
-      term: calculation.loanTermYears,
+    const doc = new jsPDF()
+    const pageWidth = doc.internal.pageSize.width
+    const margin = 20
+
+    // Header
+    doc.setFontSize(20)
+    doc.setFont("helvetica", "bold")
+    doc.text("Loan Calculator Report", pageWidth / 2, 30, { align: "center" })
+
+    // Property details
+    doc.setFontSize(12)
+    doc.setFont("helvetica", "normal")
+    let yPos = 50
+
+    if (selectedProperty) {
+      doc.text(`Property: ${selectedProperty.name}`, margin, yPos)
+      yPos += 8
+      doc.text(`Location: ${selectedProperty.location}`, margin, yPos)
+      yPos += 8
+      doc.text(`Type: ${selectedProperty.type.replace("-", " ").toUpperCase()}`, margin, yPos)
+      yPos += 15
     }
 
-    exportToPDF(loanSchedule, scheduleView, loanDetails, downPaymentSchedule, selectedProperty?.name)
-  }, [calculation, amortizationSchedule, scheduleView, downPaymentSchedule, selectedProperty])
+    // Loan details table
+    const loanData = [
+      ["Property Price", formatCurrency(calculation.propertyPrice)],
+      ["Down Payment", `${calculation.downPaymentPercentage}% (${formatCurrency(calculation.downPayment)})`],
+      ["Loan Amount", formatCurrency(calculation.loanAmount)],
+      ["Interest Rate (Loan)", `${calculation.interestRate}% per annum`],
+      ["Loan Term", `${calculation.loanTermYears} years`],
+      ["Monthly Loan Payment", formatCurrency(calculation.monthlyPayment)],
+      ["Total Loan Interest", formatCurrency(calculation.totalInterest)],
+    ]
+
+    if (selectedProperty?.houseConstructionPrice !== undefined) {
+      loanData.push(["House Construction Cost", formatCurrency(selectedProperty.houseConstructionPrice || 0)])
+    }
+    if (selectedProperty?.lotPrice !== undefined) {
+      loanData.push(["Lot Cost", formatCurrency(selectedProperty.lotPrice || 0)])
+    }
+
+    doc.autoTable({
+      startY: yPos,
+      head: [["Loan Details", "Amount"]],
+      body: loanData,
+      theme: "grid",
+      headStyles: { fillColor: [65, 147, 45] },
+      margin: { left: margin, right: margin },
+    })
+
+    yPos = (doc as any).lastAutoTable.finalY + 15
+
+    // Breakdown table if there are fees
+    const breakdownData = []
+    if (calculation.reservationFee > 0) {
+      breakdownData.push(["Reservation Fee", formatCurrency(calculation.reservationFee)])
+    }
+    if (calculation.governmentFees > 0) {
+      breakdownData.push(["Government Fees", formatCurrency(calculation.governmentFees)])
+    }
+    if (calculation.constructionFees > 0) {
+      breakdownData.push(["Construction Fees", formatCurrency(calculation.constructionFees)])
+    }
+
+    if (breakdownData.length > 0) {
+      doc.autoTable({
+        startY: yPos,
+        head: [["Additional Fees", "Amount"]],
+        body: breakdownData,
+        theme: "grid",
+        headStyles: { fillColor: [4, 0, 157] },
+        margin: { left: margin, right: margin },
+      })
+    }
+
+    // Down Payment Schedule table
+    if (calculation.downPaymentSchedule && calculation.downPaymentSchedule.length > 0) {
+      yPos = (doc as any).lastAutoTable.finalY + 15
+      const dpScheduleData = calculation.downPaymentSchedule.map((item: DownPaymentScheduleItem) => [
+        item.month,
+        formatCurrency(item.payment),
+        `${item.interestRate}%`,
+        formatCurrency(item.balance),
+      ])
+
+      doc.autoTable({
+        startY: yPos,
+        head: [["Month", "Payment", "Interest Rate", "Balance"]],
+        body: dpScheduleData,
+        theme: "grid",
+        headStyles: { fillColor: [100, 100, 100] }, // Grey color for DP schedule header
+        margin: { left: margin, right: margin },
+      })
+    }
+
+    // Footer
+    const currentDate = new Date().toLocaleDateString()
+    doc.setFontSize(10)
+    doc.text(
+      `Generated on ${currentDate} by Aman Group Loan Calculator`,
+      pageWidth / 2,
+      doc.internal.pageSize.height - 20,
+      {
+        align: "center",
+      },
+    )
+
+    doc.save(`loan-calculation-${selectedProperty?.name || "property"}-${currentDate}.pdf`)
+  }, [calculation, selectedProperty])
 
   if (settingsLoading) {
     return (
@@ -399,37 +469,46 @@ export function LoanCalculatorForm({ initialPropertyId, initialPropertyType }: L
             <Separator />
 
             <Tabs defaultValue="summary" className="w-full">
-              <TabsList className="grid w-full grid-cols-4">
+              <TabsList className="grid w-full grid-cols-3">
+                {" "}
+                {/* Changed to grid-cols-3 for 4 cards */}
                 <TabsTrigger value="summary">Summary</TabsTrigger>
-                <TabsTrigger value="breakdown">Breakdown</TabsTrigger>
-                <TabsTrigger value="down-payment">Down Payment</TabsTrigger>
-                <TabsTrigger value="amortization">Amortization</TabsTrigger>
+                <TabsTrigger value="breakdown">Fees Breakdown</TabsTrigger>
+                <TabsTrigger value="down-payment-schedule">Down Payment Schedule</TabsTrigger>
               </TabsList>
 
               <TabsContent value="summary" className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  {" "}
+                  {/* Changed to grid-cols-4 */}
                   <Card>
                     <CardContent className="pt-6">
                       <div className="text-2xl font-bold text-primary">
-                        {formatCurrency(calculation.monthlyPayments.firstYear)}
+                        {formatCurrency(calculation.monthlyPayment)}
                       </div>
-                      <p className="text-sm text-muted-foreground">Monthly Loan Payment (1st Year)</p>
+                      <p className="text-sm text-muted-foreground">Monthly Loan Payment</p>
                     </CardContent>
                   </Card>
-
-                  <Card>
-                    <CardContent className="pt-6">
-                      <div className="text-2xl font-bold text-blue-600">
-                        {formatCurrency(downPaymentSchedule[0]?.payment || 0)}
-                      </div>
-                      <p className="text-sm text-muted-foreground">Monthly Down Payment (1st Month)</p>
-                    </CardContent>
-                  </Card>
-
                   <Card>
                     <CardContent className="pt-6">
                       <div className="text-2xl font-bold">{formatCurrency(calculation.totalInterest)}</div>
-                      <p className="text-sm text-muted-foreground">Total Interest</p>
+                      <p className="text-sm text-muted-foreground">Total Loan Interest</p>
+                    </CardContent>
+                  </Card>
+                  {/* New Card for House Construction Cost */}
+                  <Card>
+                    <CardContent className="pt-6">
+                      <div className="text-2xl font-bold">
+                        {formatCurrency(selectedProperty?.houseConstructionPrice || 0)}
+                      </div>
+                      <p className="text-sm text-muted-foreground">House Construction Cost</p>
+                    </CardContent>
+                  </Card>
+                  {/* New Card for Lot Cost */}
+                  <Card>
+                    <CardContent className="pt-6">
+                      <div className="text-2xl font-bold">{formatCurrency(selectedProperty?.lotPrice || 0)}</div>
+                      <p className="text-sm text-muted-foreground">Lot Cost</p>
                     </CardContent>
                   </Card>
                 </div>
@@ -452,16 +531,30 @@ export function LoanCalculatorForm({ initialPropertyId, initialPropertyType }: L
 
                   <div className="space-y-2">
                     <div className="flex justify-between">
-                      <span>Interest Rate:</span>
+                      <span>Interest Rate (Loan):</span>
                       <span className="font-medium">{calculation.interestRate}% per annum</span>
                     </div>
                     <div className="flex justify-between">
                       <span>Loan Term:</span>
                       <span className="font-medium">{calculation.loanTermYears} years</span>
                     </div>
+                    {selectedProperty?.houseConstructionPrice !== undefined && (
+                      <div className="flex justify-between">
+                        <span>House Construction Cost:</span>
+                        <span className="font-medium">
+                          {formatCurrency(selectedProperty.houseConstructionPrice || 0)}
+                        </span>
+                      </div>
+                    )}
+                    {selectedProperty?.lotPrice !== undefined && (
+                      <div className="flex justify-between">
+                        <span>Lot Cost:</span>
+                        <span className="font-medium">{formatCurrency(selectedProperty.lotPrice || 0)}</span>
+                      </div>
+                    )}
                     <div className="flex justify-between">
-                      <span>Total Amount:</span>
-                      <span className="font-medium">{formatCurrency(calculation.totalAmount)}</span>
+                      <span>Total Loan Payments:</span>
+                      <span className="font-medium">{calculation.loanTermYears * 12} months</span>
                     </div>
                   </div>
                 </div>
@@ -502,94 +595,56 @@ export function LoanCalculatorForm({ initialPropertyId, initialPropertyType }: L
                 </div>
               </TabsContent>
 
-              <TabsContent value="down-payment" className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h4 className="font-semibold">
-                    Down Payment Schedule ({settings?.defaultSettings?.fixedDownPaymentTermMonths} Months)
-                  </h4>
-                  <div className="text-sm text-muted-foreground">
-                    Monthly Payment (1st Year): {formatCurrency(downPaymentSchedule[0]?.payment || 0)}
-                  </div>
-                </div>
-
-                <div className="max-h-96 overflow-y-auto">
-                  <table className="w-full text-sm">
-                    <thead className="sticky top-0 bg-background">
-                      <tr className="border-b">
-                        <th className="text-left p-2">Month</th>
-                        <th className="text-right p-2">Payment</th>
-                        <th className="text-right p-2">Balance</th>
-                        <th className="text-right p-2">Cumulative</th>
-                        <th className="text-right p-2">Interest Rate</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {downPaymentSchedule.map((item) => (
-                        <tr key={item.month} className="border-b">
-                          <td className="p-2">{item.month}</td>
-                          <td className="text-right p-2">{formatCurrency(item.payment)}</td>
-                          <td className="text-right p-2">{formatCurrency(item.balance)}</td>
-                          <td className="text-right p-2">{formatCurrency(item.cumulativePaid)}</td>
-                          <td className="text-right p-2">{item.interestRate}%</td>
+              {/* New Tab Content for Down Payment Schedule */}
+              <TabsContent value="down-payment-schedule" className="space-y-4">
+                <h4 className="font-semibold">Down Payment Installment Schedule</h4>
+                {calculation.downPaymentSchedule && calculation.downPaymentSchedule.length > 0 ? (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+                      <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+                        <tr>
+                          <th scope="col" className="px-6 py-3">
+                            Month
+                          </th>
+                          <th scope="col" className="px-6 py-3">
+                            Payment
+                          </th>
+                          <th scope="col" className="px-6 py-3">
+                            Interest Rate
+                          </th>
+                          <th scope="col" className="px-6 py-3">
+                            Balance
+                          </th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </TabsContent>
-
-              <TabsContent value="amortization" className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h4 className="font-semibold">Loan Amortization Schedule</h4>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant={scheduleView === "monthly" ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setScheduleView("monthly")}
-                    >
-                      Monthly
-                    </Button>
-                    <Button
-                      variant={scheduleView === "yearly" ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setScheduleView("yearly")}
-                    >
-                      Yearly
-                    </Button>
-                  </div>
-                </div>
-
-                <div className="max-h-96 overflow-y-auto">
-                  <table className="w-full text-sm">
-                    <thead className="sticky top-0 bg-background">
-                      <tr className="border-b">
-                        <th className="text-left p-2">{scheduleView === "monthly" ? "Month" : "Year"}</th>
-                        <th className="text-right p-2">Principal</th>
-                        <th className="text-right p-2">Interest</th>
-                        <th className="text-right p-2">Payment</th>
-                        <th className="text-right p-2">Balance</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {(scheduleView === "monthly" ? amortizationSchedule.monthly : amortizationSchedule.yearly).map(
-                        (item, index) => (
-                          <tr key={index} className="border-b">
-                            <td className="p-2">{scheduleView === "monthly" ? index + 1 : item.year}</td>
-                            <td className="text-right p-2">{formatCurrency(item.principal)}</td>
-                            <td className="text-right p-2">{formatCurrency(item.interest)}</td>
-                            <td className="text-right p-2">{formatCurrency(item.payment)}</td>
-                            <td className="text-right p-2">{formatCurrency(item.balance)}</td>
+                      </thead>
+                      <tbody>
+                        {calculation.downPaymentSchedule.map((item, index) => (
+                          <tr key={index} className="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
+                            <td className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+                              {item.month}
+                            </td>
+                            <td className="px-6 py-4">{formatCurrency(item.payment)}</td>
+                            <td className="px-6 py-4">{item.interestRate}%</td>
+                            <td className="px-6 py-4">{formatCurrency(item.balance)}</td>
                           </tr>
-                        ),
-                      )}
-                    </tbody>
-                  </table>
-                </div>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <p className="text-muted-foreground text-center py-4">
+                    Down payment schedule not available or not applicable.
+                  </p>
+                )}
+                <p className="text-sm text-muted-foreground mt-2">
+                  Note: The first 12 months of the down payment schedule are calculated at 0% interest, as per the
+                  special rule.
+                </p>
               </TabsContent>
             </Tabs>
 
             <div className="flex gap-2">
-              <Button onClick={handleExportToPDF} variant="outline" className="flex items-center gap-2 bg-transparent">
+              <Button onClick={exportToPDF} variant="outline" className="flex items-center gap-2 bg-transparent">
                 <Download className="h-4 w-4" />
                 Export PDF
               </Button>
