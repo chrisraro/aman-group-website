@@ -13,7 +13,6 @@ import type {
   ConstructionFeesConfig,
   SpecialDownPaymentRules,
   LoanCalculatorSettings,
-  LoanCalculation,
 } from "@/types/loan-calculator"
 
 // Financing options with their interest rates
@@ -452,14 +451,14 @@ interface CalculateLoanParams {
   settings: LoanCalculatorSettings
 }
 
-export function calculateLoan({
+export function calculateLoanDetails({
   totalPrice,
   lotOnlyPrice = 0,
   houseConstructionPrice = 0,
   propertyType,
   loanTermYears,
   settings,
-}: CalculateLoanParams): LoanCalculation {
+}: CalculateLoanParams): LoanCalculationResult {
   // Fixed 20% down payment
   const downPaymentPercentage = 0.2
   const downPayment = totalPrice * downPaymentPercentage
@@ -550,18 +549,207 @@ export function calculateLoan({
   const totalCost = totalPrice + totalFees + totalInterest
 
   return {
-    totalPrice,
+    propertyBreakdown: {
+      basePrice: totalPrice,
+      lotPrice: propertyType === "Model House" ? lotOnlyPrice : undefined,
+      houseConstructionCost: propertyType === "Model House" ? houseConstructionPrice : undefined,
+      reservationFee: 0,
+      governmentFeesAndTaxes: 0,
+      constructionFees: 0,
+      lotFees: 0,
+      totalAllInPrice: totalPrice,
+      propertyType,
+    },
+    loanAmortization: {
+      monthlyPayment: subsequentYearsMonthlyPayment,
+      totalPayment: totalCost,
+      totalInterest: totalInterest,
+      loanAmount: loanAmount,
+      interestRate: settings.specialRuleInterestRate,
+    },
+    downPaymentSchedule: [],
+    totalDownPayment: downPayment,
+    downPaymentMonthlyAmount: downPayment / settings.defaultSettings.fixedDownPaymentTermMonths,
+    totalProjectCost: totalCost,
+    netLoanAmount: loanAmount,
+    specialRuleApplied: true,
+    downPaymentPercentage: downPaymentPercentage * 100,
+  }
+}
+
+export function formatCurrency(amount: number): string {
+  return new Intl.NumberFormat("en-PH", {
+    style: "currency",
+    currency: "PHP",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(amount)
+}
+
+export function formatNumber(num: number): string {
+  return new Intl.NumberFormat("en-PH").format(num)
+}
+
+// New interfaces and function for loan calculation
+export interface LoanCalculationSettings {
+  reservationFeeModelHouse: number
+  reservationFeeLotOnly: number
+  governmentFeeThreshold: number
+  governmentFeeFixed: number
+  governmentFeePercentage: number
+  constructionFeePercentage: number
+  enableReservationFee: boolean
+  enableGovernmentFee: boolean
+  enableConstructionFee: boolean
+}
+
+export interface LoanCalculationInput {
+  propertyPrice: number
+  lotPrice?: number
+  constructionCost?: number
+  downPaymentPercentage: number
+  loanTermYears: number
+  interestRate: number
+  propertyType: "model-house" | "lot-only"
+  settings?: LoanCalculationSettings
+}
+
+export interface LoanCalculation {
+  propertyPrice: number
+  downPaymentPercentage: number
+  downPayment: number
+  loanAmount: number
+  interestRate: number
+  loanTermYears: number
+  monthlyPayment: number
+  totalInterest: number
+  totalAmount: number
+  reservationFee: number
+  governmentFees: number
+  constructionFees: number
+}
+
+const DEFAULT_SETTINGS: LoanCalculationSettings = {
+  reservationFeeModelHouse: 25000,
+  reservationFeeLotOnly: 10000,
+  governmentFeeThreshold: 1000000,
+  governmentFeeFixed: 205000,
+  governmentFeePercentage: 20.5,
+  constructionFeePercentage: 8.5,
+  enableReservationFee: true,
+  enableGovernmentFee: true,
+  enableConstructionFee: true,
+}
+
+export function calculateLoan(input: LoanCalculationInput): LoanCalculation {
+  const settings = { ...DEFAULT_SETTINGS, ...input.settings }
+
+  const {
+    propertyPrice,
+    lotPrice = 0,
+    constructionCost = 0,
+    downPaymentPercentage,
+    loanTermYears,
+    interestRate,
+    propertyType,
+  } = input
+
+  // Basic loan calculations
+  const downPayment = (propertyPrice * downPaymentPercentage) / 100
+  const loanAmount = propertyPrice - downPayment
+
+  // Monthly interest rate
+  const monthlyRate = interestRate / 100 / 12
+  const numberOfPayments = loanTermYears * 12
+
+  // Monthly payment calculation using PMT formula
+  let monthlyPayment = 0
+  if (monthlyRate > 0) {
+    monthlyPayment =
+      (loanAmount * (monthlyRate * Math.pow(1 + monthlyRate, numberOfPayments))) /
+      (Math.pow(1 + monthlyRate, numberOfPayments) - 1)
+  } else {
+    monthlyPayment = loanAmount / numberOfPayments
+  }
+
+  const totalPayable = monthlyPayment * numberOfPayments
+  const totalInterest = totalPayable - loanAmount
+
+  // Calculate fees
+  let reservationFee = 0
+  let governmentFees = 0
+  let constructionFees = 0
+
+  // Reservation Fee - only if enabled and greater than 0
+  if (settings.enableReservationFee) {
+    if (propertyType === "model-house" && settings.reservationFeeModelHouse > 0) {
+      reservationFee = settings.reservationFeeModelHouse
+    } else if (propertyType === "lot-only" && settings.reservationFeeLotOnly > 0) {
+      reservationFee = settings.reservationFeeLotOnly
+    }
+  }
+
+  // Government Fees - only if enabled
+  if (settings.enableGovernmentFee) {
+    if (propertyPrice >= settings.governmentFeeThreshold) {
+      governmentFees = settings.governmentFeeFixed
+    } else {
+      governmentFees = (propertyPrice * settings.governmentFeePercentage) / 100
+    }
+  }
+
+  // Construction Fees - only for model houses and if enabled
+  if (settings.enableConstructionFee && propertyType === "model-house") {
+    if (lotPrice > 0) {
+      constructionFees += (lotPrice * settings.constructionFeePercentage) / 100
+    }
+    if (constructionCost > 0) {
+      constructionFees += (constructionCost * settings.constructionFeePercentage) / 100
+    }
+  }
+
+  const totalFees = reservationFee + governmentFees + constructionFees
+
+  return {
+    propertyPrice,
+    downPaymentPercentage,
     downPayment,
     loanAmount,
-    fees,
-    totalFees,
-    monthlyPayments: {
-      firstYear: firstYearMonthlyPayment,
-      subsequentYears: subsequentYearsMonthlyPayment,
-    },
-    totalCost,
+    interestRate,
     loanTermYears,
-    interestRate: settings.specialRuleInterestRate,
-    specialRuleApplied: true,
+    monthlyPayment,
+    totalInterest,
+    totalAmount: totalPayable + totalFees,
+    reservationFee,
+    governmentFees,
+    constructionFees,
   }
+}
+
+export function calculateAmortizationSchedule(calculation: LoanCalculation): Array<{
+  payment: number
+  principal: number
+  interest: number
+  balance: number
+}> {
+  const schedule = []
+  let remainingBalance = calculation.loanAmount
+  const monthlyInterestRate = calculation.interestRate / 100 / 12
+
+  for (let i = 1; i <= calculation.loanTermYears * 12; i++) {
+    const interestPayment = remainingBalance * monthlyInterestRate
+    const principalPayment = calculation.monthlyPayment - interestPayment
+    remainingBalance -= principalPayment
+
+    schedule.push({
+      payment: i,
+      principal: principalPayment,
+      interest: interestPayment,
+      balance: Math.max(0, remainingBalance),
+    })
+
+    if (remainingBalance <= 0) break
+  }
+
+  return schedule
 }

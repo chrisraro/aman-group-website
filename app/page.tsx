@@ -1,15 +1,74 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { useSearchParams } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
-import { ArrowRight } from "lucide-react"
+import { ArrowRight, ChevronRight, Building2, Users, Award, Leaf, Trophy, Star } from "lucide-react"
+import { motion, AnimatePresence } from "framer-motion"
 
 import { Button } from "@/components/ui/button"
 import { getBrokerageFromParams } from "@/lib/brokerage-links"
 import { storeBrokerageInfo } from "@/lib/storage-utils"
 import { YouTubeEmbed } from "@/components/youtube-embed"
+
+// Hero background images - Updated with new model houses and clubhouse
+const heroImages = [
+  {
+    url: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/cLUBHOUSE.png-YqdpqiLoX7n1eYq3Ogzz1HkdjIx2Yc.jpeg",
+    alt: "Palm Village Clubhouse - Modern community amenities",
+  },
+  {
+    url: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Thalia-uWDz1KBb3XrSKGozyP717XnDyXAujv.png",
+    alt: "Thalia Model House - Contemporary two-story design",
+  },
+  {
+    url: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Cheska%2072.jpg-JJvfHbooDPfbPjZhxtIWdmGgomU1lm.jpeg",
+    alt: "Cheska 72 Model House - Modern single-story home",
+  },
+  {
+    url: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/jASMINE%2045.jpg-zolLI9D28SdWBHLdPl2M0aoqswm4C8.jpeg",
+    alt: "Jasmine 45 Model House - Elegant townhouse design",
+  },
+  {
+    url: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/qUEENIE%2072.jpg-AV7GXsYHd8bqNNZk7UpR3GXzOtiQh9.jpeg",
+    alt: "Queenie 72 Model House - Affordable family home",
+  },
+]
+
+// Project logos for carousel
+const projectLogos = [
+  {
+    name: "Parkview Village",
+    logo: "https://8ybl2ah7tkcii6tt.public.blob.vercel-storage.com/Project_images/Palm%20Village/Palm%20Logo%20with%20address-XwMEbdcNRDx5PEhg99DIfr0HINt6TY.jpg",
+    href: "/enjoy-realty/palm-village",
+  },
+  {
+    name: "Parkview Employees' Village",
+    logo: "https://8ybl2ah7tkcii6tt.public.blob.vercel-storage.com/Project_images/Parkview%20Executive/Logo_PET_Transparent_Back-zZOkOK4fHnC03bfEMvKvw01Czhht7f.png",
+    href: "/enjoy-realty/parkview-executive-townhouse",
+  },
+  {
+    name: "Parkview Naga Urban Residences",
+    logo: "https://8ybl2ah7tkcii6tt.public.blob.vercel-storage.com/Project_images/Parkview%20NUR/parkview%20Naga%20Urban%20residences%20new%20logo-L7bsoG9mPT3iPBF5pMezIOAJXxH4Oo.jpg",
+    href: "/aman-engineering/parkview-naga",
+  },
+  {
+    name: "Palm Village",
+    logo: "https://8ybl2ah7tkcii6tt.public.blob.vercel-storage.com/Project_images/Palm%20Village/Palm%20Logo%20with%20address-XwMEbdcNRDx5PEhg99DIfr0HINt6TY.jpg",
+    href: "/enjoy-realty/palm-village",
+  },
+  {
+    name: "Haciendas de Naga",
+    logo: "https://8ybl2ah7tkcii6tt.public.blob.vercel-storage.com/Project_images/Haciendas/hdn%202-QC0xhtuzso5HOf0sAr1S6P2MDXIJa7.jpg",
+    href: "/enjoy-realty/haciendas-de-naga",
+  },
+  {
+    name: "Parkview Executive Townhome",
+    logo: "https://8ybl2ah7tkcii6tt.public.blob.vercel-storage.com/Project_images/Parkview%20Executive/Logo_PET_Transparent_Back-zZOkOK4fHnC03bfEMvKvw01Czhht7f.png",
+    href: "/enjoy-realty/parkview-executive-townhouse",
+  },
+]
 
 // Developer data
 const developers = [
@@ -37,178 +96,441 @@ const developers = [
 
 export default function Home() {
   const searchParams = useSearchParams()
+  const [currentImageIndex, setCurrentImageIndex] = useState(0)
+
+  // Auto-slide hero images
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentImageIndex((prev) => (prev + 1) % heroImages.length)
+    }, 5000)
+    return () => clearInterval(interval)
+  }, [])
 
   // Check for brokerage parameters and store them
   useEffect(() => {
     const brokerageInfo = getBrokerageFromParams(searchParams)
     if (brokerageInfo) {
-      // Store the brokerage info in localStorage
       storeBrokerageInfo(brokerageInfo)
     }
   }, [searchParams])
 
   return (
-    <div className="container mx-auto px-4 py-8 md:py-12">
-      <section className="text-center mb-8 md:mb-12 px-4">
-        <h1 className="text-3xl md:text-4xl font-bold mb-3 md:mb-6">Aman Group of Companies</h1>
-        <p className="text-base md:text-lg text-muted-foreground max-w-3xl mx-auto">
-          Building quality homes and communities for Bicolano families.
-        </p>
+    <div className="min-h-screen">
+      {/* Hero Section */}
+      <section className="relative h-screen flex items-center justify-center overflow-hidden">
+        {/* Animated Background Images */}
+        <div className="absolute inset-0 z-0">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={currentImageIndex}
+              initial={{ opacity: 0, scale: 1.1 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              transition={{ duration: 1.5, ease: "easeInOut" }}
+              className="absolute inset-0"
+            >
+              <Image
+                src={heroImages[currentImageIndex].url || "/placeholder.svg"}
+                alt={heroImages[currentImageIndex].alt}
+                fill
+                className="object-cover"
+                priority
+              />
+              <div className="absolute inset-0 bg-black/40" />
+            </motion.div>
+          </AnimatePresence>
+        </div>
+
+        {/* Hero Content */}
+        <div className="relative z-10 container mx-auto px-4 text-center text-white">
+          <motion.div
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 1, delay: 0.5 }}
+            className="max-w-4xl mx-auto"
+          >
+            <h1 className="text-5xl md:text-7xl font-bold mb-6 leading-tight">
+              Building Dreams,
+              <br />
+              <span className="text-primary">Creating Communities</span>
+            </h1>
+            <p className="text-xl md:text-2xl mb-8 text-gray-200 max-w-3xl mx-auto leading-relaxed">
+              Quality homes and sustainable communities for Bicolano families since 1989
+            </p>
+
+            {/* CTA Buttons */}
+            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+              {developers.map((developer, index) => (
+                <motion.div
+                  key={developer.id}
+                  initial={{ opacity: 0, y: 30 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.8, delay: 0.8 + index * 0.2 }}
+                >
+                  <Link href={`/${developer.slug}`}>
+                    <Button
+                      size="lg"
+                      className="text-lg px-8 py-4 rounded-full font-semibold transition-all duration-300 hover:scale-105"
+                      style={{
+                        backgroundColor: developer.primary_color,
+                        borderColor: developer.primary_color,
+                      }}
+                    >
+                      {developer.name === "Enjoy Realty & Development" ? "Enjoy Realty" : "Aman Engineering"}
+                      <ArrowRight className="ml-2 h-5 w-5" />
+                    </Button>
+                  </Link>
+                </motion.div>
+              ))}
+            </div>
+          </motion.div>
+        </div>
+
+        {/* Scroll Indicator */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 1, delay: 1.5 }}
+          className="absolute bottom-8 left-1/2 transform -translate-x-1/2 text-white"
+        >
+          <motion.div
+            animate={{ y: [0, 10, 0] }}
+            transition={{ duration: 2, repeat: Number.POSITIVE_INFINITY }}
+            className="flex flex-col items-center"
+          >
+            <span className="text-sm mb-2">Scroll to explore</span>
+            <ChevronRight className="h-6 w-6 rotate-90" />
+          </motion.div>
+        </motion.div>
       </section>
 
-      <section className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 max-w-6xl mx-auto px-4">
-        {developers.map((developer) => (
-          <div
-            key={developer.id}
-            className="bg-white rounded-xl shadow-md overflow-hidden border hover:shadow-lg transition-all duration-300"
+      {/* Featured Projects Carousel */}
+      <section className="py-16 bg-gray-50 overflow-hidden">
+        <div className="container mx-auto px-4 mb-12">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            viewport={{ once: true }}
+            className="text-center"
           >
-            <div className="h-48 sm:h-56 lg:h-64 relative">
-              <Image
-                src={developer.logo_url || `/placeholder.svg?height=400&width=600&text=${developer.name}`}
-                alt={developer.name}
-                fill
-                className="object-contain p-6 sm:p-8"
-              />
-              <div
-                className="absolute inset-0 bg-gradient-to-t from-opacity-80 to-transparent"
-                style={{
-                  backgroundImage: `linear-gradient(to top, ${developer.primary_color}20, transparent)`,
-                }}
-              ></div>
-            </div>
-            <div
-              className="p-6 lg:p-8 border-t-4"
-              style={{
-                borderColor: developer.secondary_color || developer.primary_color,
-              }}
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">Our Featured Projects</h2>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              Discover our premium residential developments across the Bicol Region
+            </p>
+          </motion.div>
+        </div>
+
+        {/* Continuous Carousel */}
+        <div className="relative">
+          <motion.div
+            animate={{ x: [0, -100 * projectLogos.length] }}
+            transition={{
+              duration: 30,
+              repeat: Number.POSITIVE_INFINITY,
+              ease: "linear",
+            }}
+            className="flex gap-8 w-max"
+          >
+            {[...projectLogos, ...projectLogos].map((project, index) => (
+              <Link key={`${project.name}-${index}`} href={project.href} className="flex-shrink-0 group">
+                <div className="w-48 h-32 bg-white rounded-xl shadow-md hover:shadow-lg transition-all duration-300 group-hover:scale-105 flex items-center justify-center p-4">
+                  <Image
+                    src={project.logo || "/placeholder.svg"}
+                    alt={project.name}
+                    width={180}
+                    height={120}
+                    className="object-contain max-w-full max-h-full"
+                  />
+                </div>
+              </Link>
+            ))}
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Mission & Vision Section */}
+      <section className="py-20 bg-white">
+        <div className="container mx-auto px-4">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            viewport={{ once: true }}
+            className="text-center mb-16"
+          >
+            <p className="text-primary font-semibold mb-4">Our Vision & Mission</p>
+            <h2 className="text-4xl md:text-5xl font-bold mb-8 max-w-4xl mx-auto leading-tight">
+              Leading the Way in Premium Real Estate Development and Sustainable Living
+            </h2>
+          </motion.div>
+
+          <div className="grid lg:grid-cols-2 gap-12 items-center max-w-7xl mx-auto">
+            <motion.div
+              initial={{ opacity: 0, x: -50 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.8 }}
+              viewport={{ once: true }}
+              className="space-y-6"
             >
-              <h2 className="text-xl sm:text-2xl font-bold mb-3 lg:mb-4" style={{ color: developer.primary_color }}>
-                {developer.slug === "enjoy-realty"
-                  ? "Enjoy Realty & Development Corporation"
-                  : "Aman Engineering Enterprises"}
-              </h2>
-              <p className="mb-6 text-muted-foreground text-sm sm:text-base leading-relaxed">{developer.description}</p>
-              <Link href={`/${developer.slug}`}>
-                <Button
-                  className="w-full hover:opacity-90 mobile-touch-target text-base font-medium"
+              <p className="text-lg leading-relaxed text-gray-700">
+                At Enjoy Realty & Development Corporation (ERDC), we are committed to leading the real estate industry
+                in the Bicol Region through innovative house construction technology and the creation of vibrant,
+                sustainable communities.
+              </p>
+              <p className="text-lg leading-relaxed text-gray-700">
+                Our team of dedicated professionals works tirelessly to deliver exceptional service and value to our
+                clients. We offer thoughtfully designed house-and-lot packages, townhouses, and themed residential
+                estates that promote a premium and healthy lifestyle.
+              </p>
+              <p className="text-lg leading-relaxed text-gray-700">
+                With a strong emphasis on environmental protection, we strive to build eco-friendly communities where
+                residents can thrive.
+              </p>
+
+              <div className="flex flex-wrap gap-4 pt-4">
+                <div className="flex items-center gap-2 text-primary">
+                  <Building2 className="h-5 w-5" />
+                  <span className="font-semibold">Premium Construction</span>
+                </div>
+                <div className="flex items-center gap-2 text-primary">
+                  <Leaf className="h-5 w-5" />
+                  <span className="font-semibold">Sustainable Living</span>
+                </div>
+                <div className="flex items-center gap-2 text-primary">
+                  <Users className="h-5 w-5" />
+                  <span className="font-semibold">Community Focus</span>
+                </div>
+              </div>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, x: 50 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.8 }}
+              viewport={{ once: true }}
+              className="relative"
+            >
+              <div className="relative rounded-2xl overflow-hidden shadow-2xl bg-white p-6">
+                <Image
+                  src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/achievements.jpg-R8nzEbAGFa4sejCMOBMdvQOctX465L.jpeg"
+                  alt="Awards and recognitions from Housing and Land Use Regulatory Board"
+                  width={600}
+                  height={400}
+                  className="object-cover w-full h-[400px] rounded-lg"
+                />
+
+                {/* Recognition Text Below Image */}
+                <div className="mt-6 space-y-4">
+                  <div className="text-center">
+                    <div className="flex items-center justify-center gap-2 mb-3">
+                      <Trophy className="h-6 w-6 text-yellow-600" />
+                      <h3 className="text-xl font-bold text-gray-900">Our Achievements</h3>
+                      <Trophy className="h-6 w-6 text-yellow-600" />
+                    </div>
+
+                    <div className="space-y-3">
+                      <div className="bg-gradient-to-r from-yellow-50 to-orange-50 p-4 rounded-lg border-l-4 border-yellow-500">
+                        <div className="flex items-center justify-center gap-2 mb-2">
+                          <Star className="h-5 w-5 text-yellow-600" />
+                          <span className="font-bold text-lg text-gray-900">BEST DEVELOPMENT DESIGN</span>
+                          <Star className="h-5 w-5 text-yellow-600" />
+                        </div>
+                        <p className="text-sm text-gray-600 font-medium">Housing and Land Use Regulatory Board</p>
+                      </div>
+
+                      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-lg border-l-4 border-blue-500">
+                        <div className="flex items-center justify-center gap-2 mb-2">
+                          <Award className="h-5 w-5 text-blue-600" />
+                          <span className="font-bold text-lg text-gray-900">
+                            LEADING DEVELOPER FOR ECONOMIC HOUSING REGION 5
+                          </span>
+                          <Award className="h-5 w-5 text-blue-600" />
+                        </div>
+                        <p className="text-sm text-gray-600 font-medium">
+                          Land Development Category • Housing and Land Use Regulatory Board
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
+      {/* Developer Showcase */}
+      <section className="py-20 bg-gray-50">
+        <div className="container mx-auto px-4">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            viewport={{ once: true }}
+            className="text-center mb-16"
+          >
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">Our Developers</h2>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              Two trusted names in real estate development, working together to build your dreams
+            </p>
+          </motion.div>
+
+          <div className="grid lg:grid-cols-2 gap-8 max-w-6xl mx-auto">
+            {developers.map((developer, index) => (
+              <motion.div
+                key={developer.id}
+                initial={{ opacity: 0, y: 50 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, delay: index * 0.2 }}
+                viewport={{ once: true }}
+                className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 group"
+              >
+                <div className="h-64 relative">
+                  <Image
+                    src={developer.logo_url || "/placeholder.svg"}
+                    alt={developer.name}
+                    fill
+                    className="object-contain p-8 group-hover:scale-105 transition-transform duration-300"
+                  />
+                  <div
+                    className="absolute inset-0 bg-gradient-to-t from-opacity-80 to-transparent opacity-10"
+                    style={{
+                      backgroundImage: `linear-gradient(to top, ${developer.primary_color}, transparent)`,
+                    }}
+                  />
+                </div>
+                <div
+                  className="p-8 border-t-4"
                   style={{
-                    backgroundColor: developer.primary_color,
-                    borderColor: developer.primary_color,
+                    borderColor: developer.secondary_color || developer.primary_color,
                   }}
                 >
-                  View Projects <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
-              </Link>
-            </div>
+                  <h3 className="text-2xl font-bold mb-4" style={{ color: developer.primary_color }}>
+                    {developer.slug === "enjoy-realty"
+                      ? "Enjoy Realty & Development Corporation"
+                      : "Aman Engineering Enterprises"}
+                  </h3>
+                  <p className="mb-6 text-muted-foreground leading-relaxed">{developer.description}</p>
+                  <Link href={`/${developer.slug}`}>
+                    <Button
+                      className="w-full text-base font-medium group-hover:scale-105 transition-transform duration-300"
+                      style={{
+                        backgroundColor: developer.primary_color,
+                        borderColor: developer.primary_color,
+                      }}
+                    >
+                      Explore Projects <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  </Link>
+                </div>
+              </motion.div>
+            ))}
           </div>
-        ))}
+        </div>
       </section>
 
-      <section className="mt-16 lg:mt-20 text-center px-4">
-        <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-4 lg:mb-6">Our Commitment</h2>
-        <p className="text-base sm:text-lg text-muted-foreground max-w-4xl mx-auto mb-8 lg:mb-12 leading-relaxed">
-          At Aman Group of Companies, we are committed to building quality homes and communities that enhance the lives
-          of Bicolano families.
-        </p>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8 max-w-6xl mx-auto">
-          <div className="p-6 lg:p-8 bg-white rounded-xl shadow-sm border hover:shadow-md transition-shadow">
-            <div className="h-14 w-14 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4 lg:mb-6">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-7 w-7 text-primary"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
-                />
-              </svg>
-            </div>
-            <h3 className="text-lg sm:text-xl font-semibold mb-3 text-gray-900">Quality Construction</h3>
-            <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
-              Built with premium materials and expert craftsmanship for lasting value.
+      {/* Why Choose Us */}
+      <section className="py-20 bg-white">
+        <div className="container mx-auto px-4">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            viewport={{ once: true }}
+            className="text-center mb-16"
+          >
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">Why Choose Aman Group</h2>
+            <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
+              With over 30 years of experience, we've built a reputation for excellence, quality, and trust in the Bicol
+              Region
             </p>
-          </div>
+          </motion.div>
 
-          <div className="p-6 lg:p-8 bg-white rounded-xl shadow-sm border hover:shadow-md transition-shadow">
-            <div className="h-14 w-14 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4 lg:mb-6">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-7 w-7 text-primary"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
+            {[
+              {
+                icon: Building2,
+                title: "Quality Construction",
+                description: "Built with premium materials and expert craftsmanship for lasting value and durability.",
+              },
+              {
+                icon: Users,
+                title: "Strategic Locations",
+                description: "Prime locations with access to essential amenities, schools, and transportation hubs.",
+              },
+              {
+                icon: Award,
+                title: "Affordable Options",
+                description: "Flexible payment terms and financing options to make homeownership accessible to all.",
+              },
+              {
+                icon: Leaf,
+                title: "Sustainable Development",
+                description:
+                  "Eco-friendly communities designed with environmental protection and green living in mind.",
+              },
+              {
+                icon: Building2,
+                title: "Proven Track Record",
+                description: "Over 30 years of successful projects and thousands of satisfied homeowners across Bicol.",
+              },
+              {
+                icon: Users,
+                title: "Community Focus",
+                description: "Creating vibrant neighborhoods where families can grow, connect, and thrive together.",
+              },
+            ].map((feature, index) => (
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: index * 0.1 }}
+                viewport={{ once: true }}
+                className="text-center p-8 bg-gray-50 rounded-2xl hover:shadow-lg transition-all duration-300 group"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-            </div>
-            <h3 className="text-lg sm:text-xl font-semibold mb-3 text-gray-900">Strategic Locations</h3>
-            <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
-              Prime locations with access to essential amenities and transportation.
-            </p>
-          </div>
-
-          <div className="p-6 lg:p-8 bg-white rounded-xl shadow-sm border hover:shadow-md transition-shadow">
-            <div className="h-14 w-14 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4 lg:mb-6">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-7 w-7 text-primary"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7"
-                />
-              </svg>
-            </div>
-            <h3 className="text-lg sm:text-xl font-semibold mb-3 text-gray-900">Affordable Options</h3>
-            <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
-              Flexible payment terms and financing options to make homeownership accessible.
-            </p>
+                <div className="h-16 w-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:bg-primary/20 transition-colors duration-300">
+                  <feature.icon className="h-8 w-8 text-primary" />
+                </div>
+                <h3 className="text-xl font-semibold mb-4 text-gray-900">{feature.title}</h3>
+                <p className="text-muted-foreground leading-relaxed">{feature.description}</p>
+              </motion.div>
+            ))}
           </div>
         </div>
       </section>
 
       {/* Company Profile Video Section */}
-      <section className="py-12 md:py-16 bg-gray-50 rounded-xl mt-12 md:mt-16 mb-16 md:mb-24">
+      <section className="py-20 bg-gray-50">
         <div className="container mx-auto px-4">
-          <div className="max-w-5xl mx-auto">
-            <div className="text-center mb-8 md:mb-10">
-              <h2 className="text-2xl md:text-3xl font-bold mb-4">Our Company Profile</h2>
-              <p className="text-base md:text-lg text-muted-foreground max-w-3xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            viewport={{ once: true }}
+            className="max-w-5xl mx-auto"
+          >
+            <div className="text-center mb-12">
+              <h2 className="text-3xl md:text-4xl font-bold mb-4">Our Company Story</h2>
+              <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
                 Discover the story of Aman Group of Companies and our commitment to building quality homes and
-                communities in the Bicol Region. Watch our company profile video to learn more about our vision,
-                mission, and values.
+                communities in the Bicol Region
               </p>
             </div>
 
-            <div className="bg-white rounded-lg shadow-md overflow-hidden">
+            <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
               <YouTubeEmbed
                 videoId="tZsoxfR2TbY"
                 title="Aman Group of Companies Profile"
-                height="h-[250px] md:h-[450px]"
-                autoplay={true}
-                muted={true}
-                loop={true}
+                height="h-[300px] md:h-[500px]"
+                autoplay={false}
+                muted={false}
+                loop={false}
                 showControls={true}
                 className="mb-0"
               />
             </div>
-          </div>
+          </motion.div>
         </div>
       </section>
     </div>
