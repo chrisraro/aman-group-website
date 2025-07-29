@@ -13,6 +13,7 @@ import type {
   ConstructionFeesConfig,
   SpecialDownPaymentRules,
   LoanCalculatorSettings,
+  LoanCalculation,
 } from "@/types/loan-calculator"
 
 // Financing options with their interest rates
@@ -199,7 +200,10 @@ function calculateSpecial20PercentSchedule(
 
   // Calculate payments for first year (0% interest)
   const firstYearMonths = Math.min(12, numberOfPayments)
-  const firstYearPayment = downPaymentAmount / numberOfPayments // Equal payments, no interest
+  let firstYearPayment = 0
+  if (firstYearMonths > 0) {
+    firstYearPayment = downPaymentAmount / numberOfPayments // Distribute principal evenly for first year
+  }
 
   let balance = downPaymentAmount
   let cumulativePaid = 0
@@ -439,29 +443,39 @@ export function getDefaultLoanCalculatorSettings(): LoanCalculatorSettings {
     insuranceFeePercentage: 0.5,
     constructionFeePercentage: 8.5,
     specialRuleInterestRate: 8.5,
+    baseInterestRate: 8.5,
+    specialRuleEnabled: true,
   }
 }
 
 interface CalculateLoanParams {
-  totalPrice: number
-  lotOnlyPrice?: number
+  propertyPrice: number
+  lotPrice?: number
   houseConstructionPrice?: number
-  propertyType: "Model House" | "Lot Only"
+  propertyType: "model-house" | "lot-only"
+  downPaymentPercentage: number
   loanTermYears: number
+  interestRate: number
   settings: LoanCalculatorSettings
 }
 
-export function calculateLoanDetails({
-  totalPrice,
-  lotOnlyPrice = 0,
+export function calculateLoan({
+  propertyPrice,
+  lotPrice = 0,
   houseConstructionPrice = 0,
   propertyType,
+  downPaymentPercentage,
   loanTermYears,
+  interestRate,
   settings,
-}: CalculateLoanParams): LoanCalculationResult {
-  // Fixed 20% down payment
-  const downPaymentPercentage = 0.2
-  const downPayment = totalPrice * downPaymentPercentage
+}: CalculateLoanParams): LoanCalculation {
+  // Calculate total price including property, lot, and construction if applicable
+  let totalPrice = propertyPrice
+  if (propertyType === "model-house") {
+    totalPrice = propertyPrice + lotPrice + houseConstructionPrice
+  }
+
+  const downPayment = totalPrice * (downPaymentPercentage / 100)
 
   // Calculate fees
   const fees: Array<{ name: string; amount: number; percentage?: number }> = []
@@ -496,85 +510,151 @@ export function calculateLoanDetails({
     percentage: settings.insuranceFeePercentage,
   })
 
-  // Model House specific fees (17% total)
-  if (propertyType === "Model House" && lotOnlyPrice > 0 && houseConstructionPrice > 0) {
-    // 8.5% of lot price
-    const lotFee = lotOnlyPrice * (settings.constructionFeePercentage / 100)
-    fees.push({
-      name: "Lot Development Fee",
-      amount: lotFee,
-      percentage: settings.constructionFeePercentage,
-    })
-
-    // 8.5% of house construction cost
-    const houseFee = houseConstructionPrice * (settings.constructionFeePercentage / 100)
-    fees.push({
-      name: "House Construction Fee",
-      amount: houseFee,
-      percentage: settings.constructionFeePercentage,
-    })
+  // Construction Fees - only for model houses and if enabled
+  let constructionFees = 0
+  if (settings.constructionFeesConfig.isActive && propertyType === "model-house") {
+    if (lotPrice > 0) {
+      constructionFees += (lotPrice * settings.constructionFeesConfig.lotFeeRate) / 100
+    }
+    if (houseConstructionPrice > 0) {
+      constructionFees += (houseConstructionPrice * settings.constructionFeesConfig.houseConstructionFeeRate) / 100
+    }
   }
 
-  const totalFees = fees.reduce((sum, fee) => sum + fee.amount, 0)
+  const totalFees = fees.reduce((sum, fee) => sum + fee.amount, 0) + constructionFees
 
   // Loan amount (total price minus down payment)
   const loanAmount = totalPrice - downPayment
 
-  // Special rule: Always applied since down payment is always 20%
-  // First year: 0% interest
-  // Second year onwards: 8.5% per annum
+  // Loan amortization with special rule (0% first year, then specialRuleInterestRate)
+  const numberOfPayments = loanTermYears * 12
+  const firstYearMonths = Math.min(12, numberOfPayments)
+  const remainingMonths = numberOfPayments - firstYearMonths
 
-  const monthlyLoanAmount = loanAmount / (loanTermYears * 12)
-  const monthlyInterestRate = settings.specialRuleInterestRate / 100 / 12
-
-  // First year payment (no interest)
-  const firstYearMonthlyPayment = monthlyLoanAmount
-
-  // Calculate remaining balance after first year
-  const remainingBalance = loanAmount - firstYearMonthlyPayment * 12
-  const remainingTermMonths = (loanTermYears - 1) * 12
-
-  // Subsequent years payment (with 8.5% interest)
+  let firstYearMonthlyPayment = 0
   let subsequentYearsMonthlyPayment = 0
-  if (remainingTermMonths > 0 && monthlyInterestRate > 0) {
-    subsequentYearsMonthlyPayment =
-      (remainingBalance * monthlyInterestRate * Math.pow(1 + monthlyInterestRate, remainingTermMonths)) /
-      (Math.pow(1 + monthlyInterestRate, remainingTermMonths) - 1)
-  } else if (remainingTermMonths > 0) {
-    subsequentYearsMonthlyPayment = remainingBalance / remainingTermMonths
+  let totalInterest = 0
+
+  if (settings.specialRuleEnabled && loanTermYears > 0) {
+    // First year (0% interest)
+    firstYearMonthlyPayment = loanAmount / numberOfPayments // Distribute principal evenly for first year
+
+    // Calculate remaining balance after first year's principal payments
+    const principalPaidFirstYear = firstYearMonthlyPayment * firstYearMonths
+    const remainingBalanceAfterFirstYear = loanAmount - principalPaidFirstYear
+
+    // Subsequent years (with specialRuleInterestRate)
+    if (remainingMonths > 0) {
+      const monthlyInterestRateSubsequent = settings.specialRuleInterestRate / 100 / 12
+      if (monthlyInterestRateSubsequent > 0) {
+        subsequentYearsMonthlyPayment =
+          (remainingBalanceAfterFirstYear *
+            monthlyInterestRateSubsequent *
+            Math.pow(1 + monthlyInterestRateSubsequent, remainingMonths)) /
+          (Math.pow(1 + monthlyInterestRateSubsequent, remainingMonths) - 1)
+      } else {
+        subsequentYearsMonthlyPayment = remainingBalanceAfterFirstYear / remainingMonths
+      }
+      totalInterest = subsequentYearsMonthlyPayment * remainingMonths - remainingBalanceAfterFirstYear
+    }
+  } else {
+    // Standard amortization if special rule is not enabled or loan term is 0
+    const monthlyInterestRate = interestRate / 100 / 12
+    if (monthlyInterestRate > 0) {
+      firstYearMonthlyPayment =
+        (loanAmount * (monthlyInterestRate * Math.pow(1 + monthlyInterestRate, numberOfPayments))) /
+        (Math.pow(1 + monthlyInterestRate, numberOfPayments) - 1)
+      subsequentYearsMonthlyPayment = firstYearMonthlyPayment // Same for all years
+      totalInterest = firstYearMonthlyPayment * numberOfPayments - loanAmount
+    } else {
+      firstYearMonthlyPayment = loanAmount / numberOfPayments
+      subsequentYearsMonthlyPayment = firstYearMonthlyPayment
+      totalInterest = 0
+    }
   }
 
-  // Total cost calculation
-  const totalInterest = subsequentYearsMonthlyPayment * remainingTermMonths - remainingBalance
-  const totalCost = totalPrice + totalFees + totalInterest
+  const totalAmount =
+    firstYearMonthlyPayment * firstYearMonths + subsequentYearsMonthlyPayment * remainingMonths + totalFees
+
+  // Reservation Fee - only if enabled and greater than 0
+  let reservationFee = 0
+  if (settings.reservationFees.isActive) {
+    if (propertyType === "model-house" && settings.reservationFees.modelHouse > 0) {
+      reservationFee = settings.reservationFees.modelHouse
+    } else if (propertyType === "lot-only" && settings.reservationFees.lotOnly > 0) {
+      reservationFee = settings.reservationFees.lotOnly
+    }
+  }
+
+  // Government Fees - only if enabled
+  let governmentFees = 0
+  if (settings.governmentFeesConfig.isActive) {
+    if (propertyPrice >= settings.governmentFeesConfig.fixedAmountThreshold) {
+      governmentFees = settings.governmentFeesConfig.fixedAmount
+    } else {
+      governmentFees = (propertyPrice * settings.governmentFeesConfig.percentageRate) / 100
+    }
+  }
 
   return {
-    propertyBreakdown: {
-      basePrice: totalPrice,
-      lotPrice: propertyType === "Model House" ? lotOnlyPrice : undefined,
-      houseConstructionCost: propertyType === "Model House" ? houseConstructionPrice : undefined,
-      reservationFee: 0,
-      governmentFeesAndTaxes: 0,
-      constructionFees: 0,
-      lotFees: 0,
-      totalAllInPrice: totalPrice,
-      propertyType,
+    propertyPrice: totalPrice, // Use calculated total price here
+    downPaymentPercentage,
+    downPayment,
+    loanAmount,
+    interestRate,
+    loanTermYears,
+    monthlyPayments: {
+      firstYear: firstYearMonthlyPayment,
+      subsequentYears: subsequentYearsMonthlyPayment,
     },
-    loanAmortization: {
-      monthlyPayment: subsequentYearsMonthlyPayment,
-      totalPayment: totalCost,
-      totalInterest: totalInterest,
-      loanAmount: loanAmount,
-      interestRate: settings.specialRuleInterestRate,
-    },
-    downPaymentSchedule: [],
-    totalDownPayment: downPayment,
-    downPaymentMonthlyAmount: downPayment / settings.defaultSettings.fixedDownPaymentTermMonths,
-    totalProjectCost: totalCost,
-    netLoanAmount: loanAmount,
-    specialRuleApplied: true,
-    downPaymentPercentage: downPaymentPercentage * 100,
+    totalInterest,
+    totalAmount,
+    reservationFee,
+    governmentFees,
+    constructionFees,
   }
+}
+
+export function calculateAmortizationSchedule(calculation: LoanCalculation): Array<{
+  month: number
+  principal: number
+  interest: number
+  payment: number
+  balance: number
+}> {
+  const schedule = []
+  let remainingBalance = calculation.loanAmount
+  const numberOfPayments = calculation.loanTermYears * 12
+
+  for (let i = 1; i <= numberOfPayments; i++) {
+    // Determine the interest rate based on the year
+    const currentYear = Math.ceil(i / 12)
+    const monthlyInterestRate =
+      currentYear === 1 && calculation.specialRuleApplied // Assuming specialRuleApplied means 0% first year for loan
+        ? 0
+        : calculation.interestRate / 100 / 12 // Use the general interest rate for subsequent years
+
+    let currentMonthlyPayment = calculation.monthlyPayments.subsequentYears
+    if (currentYear === 1) {
+      currentMonthlyPayment = calculation.monthlyPayments.firstYear
+    }
+
+    const interestPayment = remainingBalance * monthlyInterestRate
+    const principalPayment = currentMonthlyPayment - interestPayment
+    remainingBalance -= principalPayment
+
+    schedule.push({
+      month: i,
+      principal: principalPayment,
+      interest: interestPayment,
+      payment: currentMonthlyPayment,
+      balance: Math.max(0, remainingBalance),
+    })
+
+    if (remainingBalance <= 0) break
+  }
+
+  return schedule
 }
 
 export function formatCurrency(amount: number): string {
@@ -588,168 +668,4 @@ export function formatCurrency(amount: number): string {
 
 export function formatNumber(num: number): string {
   return new Intl.NumberFormat("en-PH").format(num)
-}
-
-// New interfaces and function for loan calculation
-export interface LoanCalculationSettings {
-  reservationFeeModelHouse: number
-  reservationFeeLotOnly: number
-  governmentFeeThreshold: number
-  governmentFeeFixed: number
-  governmentFeePercentage: number
-  constructionFeePercentage: number
-  enableReservationFee: boolean
-  enableGovernmentFee: boolean
-  enableConstructionFee: boolean
-}
-
-export interface LoanCalculationInput {
-  propertyPrice: number
-  lotPrice?: number
-  constructionCost?: number
-  downPaymentPercentage: number
-  loanTermYears: number
-  interestRate: number
-  propertyType: "model-house" | "lot-only"
-  settings?: LoanCalculationSettings
-}
-
-export interface LoanCalculation {
-  propertyPrice: number
-  downPaymentPercentage: number
-  downPayment: number
-  loanAmount: number
-  interestRate: number
-  loanTermYears: number
-  monthlyPayment: number
-  totalInterest: number
-  totalAmount: number
-  reservationFee: number
-  governmentFees: number
-  constructionFees: number
-}
-
-const DEFAULT_SETTINGS: LoanCalculationSettings = {
-  reservationFeeModelHouse: 25000,
-  reservationFeeLotOnly: 10000,
-  governmentFeeThreshold: 1000000,
-  governmentFeeFixed: 205000,
-  governmentFeePercentage: 20.5,
-  constructionFeePercentage: 8.5,
-  enableReservationFee: true,
-  enableGovernmentFee: true,
-  enableConstructionFee: true,
-}
-
-export function calculateLoan(input: LoanCalculationInput): LoanCalculation {
-  const settings = { ...DEFAULT_SETTINGS, ...input.settings }
-
-  const {
-    propertyPrice,
-    lotPrice = 0,
-    constructionCost = 0,
-    downPaymentPercentage,
-    loanTermYears,
-    interestRate,
-    propertyType,
-  } = input
-
-  // Basic loan calculations
-  const downPayment = (propertyPrice * downPaymentPercentage) / 100
-  const loanAmount = propertyPrice - downPayment
-
-  // Monthly interest rate
-  const monthlyRate = interestRate / 100 / 12
-  const numberOfPayments = loanTermYears * 12
-
-  // Monthly payment calculation using PMT formula
-  let monthlyPayment = 0
-  if (monthlyRate > 0) {
-    monthlyPayment =
-      (loanAmount * (monthlyRate * Math.pow(1 + monthlyRate, numberOfPayments))) /
-      (Math.pow(1 + monthlyRate, numberOfPayments) - 1)
-  } else {
-    monthlyPayment = loanAmount / numberOfPayments
-  }
-
-  const totalPayable = monthlyPayment * numberOfPayments
-  const totalInterest = totalPayable - loanAmount
-
-  // Calculate fees
-  let reservationFee = 0
-  let governmentFees = 0
-  let constructionFees = 0
-
-  // Reservation Fee - only if enabled and greater than 0
-  if (settings.enableReservationFee) {
-    if (propertyType === "model-house" && settings.reservationFeeModelHouse > 0) {
-      reservationFee = settings.reservationFeeModelHouse
-    } else if (propertyType === "lot-only" && settings.reservationFeeLotOnly > 0) {
-      reservationFee = settings.reservationFeeLotOnly
-    }
-  }
-
-  // Government Fees - only if enabled
-  if (settings.enableGovernmentFee) {
-    if (propertyPrice >= settings.governmentFeeThreshold) {
-      governmentFees = settings.governmentFeeFixed
-    } else {
-      governmentFees = (propertyPrice * settings.governmentFeePercentage) / 100
-    }
-  }
-
-  // Construction Fees - only for model houses and if enabled
-  if (settings.enableConstructionFee && propertyType === "model-house") {
-    if (lotPrice > 0) {
-      constructionFees += (lotPrice * settings.constructionFeePercentage) / 100
-    }
-    if (constructionCost > 0) {
-      constructionFees += (constructionCost * settings.constructionFeePercentage) / 100
-    }
-  }
-
-  const totalFees = reservationFee + governmentFees + constructionFees
-
-  return {
-    propertyPrice,
-    downPaymentPercentage,
-    downPayment,
-    loanAmount,
-    interestRate,
-    loanTermYears,
-    monthlyPayment,
-    totalInterest,
-    totalAmount: totalPayable + totalFees,
-    reservationFee,
-    governmentFees,
-    constructionFees,
-  }
-}
-
-export function calculateAmortizationSchedule(calculation: LoanCalculation): Array<{
-  payment: number
-  principal: number
-  interest: number
-  balance: number
-}> {
-  const schedule = []
-  let remainingBalance = calculation.loanAmount
-  const monthlyInterestRate = calculation.interestRate / 100 / 12
-
-  for (let i = 1; i <= calculation.loanTermYears * 12; i++) {
-    const interestPayment = remainingBalance * monthlyInterestRate
-    const principalPayment = calculation.monthlyPayment - interestPayment
-    remainingBalance -= principalPayment
-
-    schedule.push({
-      payment: i,
-      principal: principalPayment,
-      interest: interestPayment,
-      balance: Math.max(0, remainingBalance),
-    })
-
-    if (remainingBalance <= 0) break
-  }
-
-  return schedule
 }
