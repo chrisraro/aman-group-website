@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button"
 import { getBrokerageFromParams } from "@/lib/brokerage-links"
 import { storeBrokerageInfo } from "@/lib/storage-utils"
 import { YouTubeEmbed } from "@/components/youtube-embed"
+import { Card, CardContent } from "@/components/ui/card" // Import Card components
 
 // Hero background images - Updated with new model houses and clubhouse
 const heroImages = [
@@ -94,12 +95,38 @@ const developers = [
   },
 ]
 
-// Facebook Post URLs for Social Proof section (last link removed)
-const facebookPosts = [
-  "https://www.facebook.com/enjoyrealty/posts/pfbid0RxXgSxZ9p8H96vunkSaJr3PPVBY1aZfZPrfK6KiUMGPy9NCtEMFcCzv4Lyq93pmyl",
-  "https://www.facebook.com/enjoyrealty/posts/pfbid047ungR92akbSLejs6A7FLeg9RcRPdnycT6BzgzsGrbcBravAUj7ZWJdqNA6rGc49l",
-  "https://www.facebook.com/enjoyrealty/posts/pfbid04V6cwjZJgcud6BW9p2hVdSf7nsN95cRg9rakzs2fjAqwi9QJ7mBKuve9LgfAuC1Ul",
-  "https://www.facebook.com/enjoyrealty/posts/pfbid02X6ZcepKwuAoi8iPq22DpgydP4mXVC3j9gdRrdpHRbtcK1qW2M3WbsAKDXbfreYUql",
+// Social Proof Images and Links
+const socialProofItems = [
+  {
+    image_url: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/image.png-dhpSzlcBVw5yGxrTh8G8wdsoUCwwNB.jpeg",
+    alt_text: "Happy family receiving keys to their new single-story home.",
+    link_url:
+      "https://www.facebook.com/enjoyrealty/posts/pfbid0RxXgSxZ9p8H96vunkSaJr3PPVBY1aZfZPrfK6KiUMGPy9NCtEMFcCzv4Lyq93pmyl",
+  },
+  {
+    image_url: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/image.png-EPFlOuR99Ij5myVPhMmSY9VT0vfmVC.jpeg",
+    alt_text: "Family receiving keys to their new green townhouse unit.",
+    link_url:
+      "https://www.facebook.com/enjoyrealty/posts/pfbid047ungR92akbSLejs6A7FLeg9RcRPdnycT6BzgzsGrbcBravAUj7ZWJdqNA6rGc49l",
+  },
+  {
+    image_url: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/image.png-E4m8AjzzamSIcJ7eieI4VMLItCpYye.jpeg",
+    alt_text: "Another happy family receiving keys to their new single-story home.",
+    link_url:
+      "https://www.facebook.com/enjoyrealty/posts/pfbid04V6cwjZJgcud6BW9p2hVdSf7nsN95cRg9rakzs2fjAqwi9QJ7mBKuve9LgfAuC1Ul",
+  },
+  {
+    image_url: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/image.png-bpMsZ4fcLbBCzKTCwuWA2mbO4W01cI.jpeg",
+    alt_text: "Family and agents celebrating inside a new home's garage.",
+    link_url:
+      "https://www.facebook.com/enjoyrealty/posts/pfbid02X6ZcepKwuAoi8iPq22DpgydP4mXVC3j9gdRrdpHRbtcK1qW2M3WbsAKDXbfreYUql",
+  },
+  {
+    image_url: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/image-ZwKtAyRdkE07by9pEHeD793gAM2XMc.png",
+    alt_text: "Group photo of a family and agents in front of a new single-story house.",
+    link_url:
+      "https://www.facebook.com/enjoyrealty/posts/pfbid02X6ZcepKwuAoi8iPq22DpgydP4mXVC3j9gdRrdpHRbtcK1qW2M3WbsAKDXbfreYUql", // Reusing a link as there were only 4 unique FB links provided previously
+  },
 ]
 
 export default function Home() {
@@ -129,7 +156,7 @@ export default function Home() {
 
   // Calculate track width dynamically for infinite social proof carousel
   useEffect(() => {
-    if (socialProofCarouselTrackRef.current && facebookPosts.length > 0) {
+    if (socialProofCarouselTrackRef.current && socialProofItems.length > 0) {
       // Get the width of the first card, including its margins
       const firstCard = socialProofCarouselTrackRef.current.children[0] as HTMLElement
       if (firstCard) {
@@ -138,10 +165,10 @@ export default function Home() {
         const marginLeft = Number.parseFloat(cardComputedStyle.marginLeft)
         const marginRight = Number.parseFloat(cardComputedStyle.marginRight)
         const totalCardWidth = cardWidth + marginLeft + marginRight
-        setSocialProofTrackWidth(totalCardWidth * facebookPosts.length)
+        setSocialProofTrackWidth(totalCardWidth * socialProofItems.length)
       }
     }
-  }, [facebookPosts.length])
+  }, [socialProofItems.length])
 
   // Start social proof carousel animation when trackWidth is known
   useEffect(() => {
@@ -152,13 +179,13 @@ export default function Home() {
           x: {
             repeat: Number.POSITIVE_INFINITY,
             repeatType: "loop",
-            duration: facebookPosts.length * 5, // Adjust duration for speed
+            duration: socialProofItems.length * 5, // Adjust duration for speed
             ease: "linear",
           },
         },
       })
     }
-  }, [socialProofTrackWidth, socialProofCarouselControls, facebookPosts.length])
+  }, [socialProofTrackWidth, socialProofCarouselControls, socialProofItems.length])
 
   const handleSocialProofCarouselMouseEnter = () => {
     socialProofCarouselControls.stop() // Stop the animation on hover
@@ -172,7 +199,7 @@ export default function Home() {
         x: {
           repeat: Number.POSITIVE_INFINITY,
           repeatType: "loop",
-          duration: facebookPosts.length * 5,
+          duration: socialProofItems.length * 5,
           ease: "linear",
         },
       },
@@ -741,7 +768,7 @@ export default function Home() {
           >
             <h2 className="text-3xl md:text-4xl font-bold mb-4">What Our Community Says</h2>
             <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
-              See what our satisfied clients and community members are sharing on Facebook
+              See what our satisfied clients and community members are sharing
             </p>
           </motion.div>
 
@@ -756,28 +783,33 @@ export default function Home() {
               className="flex w-max" // w-max allows content to define width
               animate={socialProofCarouselControls}
             >
-              {/* Duplicate posts for infinite loop illusion */}
-              {[...facebookPosts, ...facebookPosts].map((postUrl, index) => (
-                <div
+              {/* Duplicate items for infinite loop illusion */}
+              {[...socialProofItems, ...socialProofItems].map((item, index) => (
+                <Link
                   key={index}
-                  className="flex-shrink-0 w-full md:w-[calc(50%-1rem)] lg:w-[calc(33.333%-1rem)] xl:w-[calc(25%-1rem)] mx-2 bg-gray-50 rounded-2xl shadow-md overflow-hidden flex items-center justify-center"
-                  style={{ height: "650px" }} // Adjusted height to emphasize image
+                  href={item.link_url}
+                  target="_blank" // Open link in new tab
+                  rel="noopener noreferrer" // Security best practice for target="_blank"
+                  className="flex-shrink-0 w-full md:w-[calc(50%-1rem)] lg:w-[calc(33.333%-1rem)] xl:w-[calc(25%-1rem)] mx-2 group"
                 >
-                  <iframe
-                    src={`https://www.facebook.com/plugins/post.php?href=${encodeURIComponent(
-                      postUrl,
-                    )}&width=500&show_text=true&height=650&appId=`} // Updated height to 650
-                    width="100%"
-                    height="650" // Updated height to 650
-                    style={{ border: "none", overflow: "hidden" }}
-                    scrolling="no"
-                    frameBorder="0"
-                    allowFullScreen={true}
-                    allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"
-                    title={`Facebook Post ${index + 1}`}
-                    className="w-full h-full"
-                  ></iframe>
-                </div>
+                  <Card className="w-full rounded-2xl shadow-md overflow-hidden hover:shadow-lg transition-all duration-300">
+                    <CardContent className="p-0 relative w-full aspect-square">
+                      <Image
+                        src={item.image_url || "/placeholder.svg"}
+                        alt={item.alt_text}
+                        fill
+                        className="object-cover rounded-2xl"
+                      />
+                      <div className="absolute inset-0 bg-black bg-opacity-20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                        <span className="text-white text-lg font-semibold">View Post</span>
+                      </div>
+                    </CardContent>
+                    {/* You can add a CardFooter here if you want to display text below the image */}
+                    {/* <CardFooter className="p-4 text-center">
+                      <p className="text-sm text-muted-foreground">{item.alt_text}</p>
+                    </CardFooter> */}
+                  </Card>
+                </Link>
               ))}
             </motion.div>
           </div>
