@@ -1,11 +1,11 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import { useSearchParams } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
 import { ArrowRight, ChevronRight, Building2, Users, Award, Leaf, Trophy, Star, CheckCircle } from "lucide-react"
-import { motion, AnimatePresence } from "framer-motion"
+import { motion, AnimatePresence, useAnimation } from "framer-motion"
 
 import { Button } from "@/components/ui/button"
 import { getBrokerageFromParams } from "@/lib/brokerage-links"
@@ -94,9 +94,22 @@ const developers = [
   },
 ]
 
+// Facebook Post URLs for Social Proof section (last link removed)
+const facebookPosts = [
+  "https://www.facebook.com/enjoyrealty/posts/pfbid0RxXgSxZ9p8H96vunkSaJr3PPVBY1aZfZPrfK6KiUMGPy9NCtEMFcCzv4Lyq93pmyl",
+  "https://www.facebook.com/enjoyrealty/posts/pfbid047ungR92akbSLejs6A7FLeg9RcRPdnycT6BzgzsGrbcBravAUj7ZWJdqNA6rGc49l",
+  "https://www.facebook.com/enjoyrealty/posts/pfbid04V6cwjZJgcud6BW9p2hVdSf7nsN95cRg9rakzs2fjAqwi9QJ7mBKuve9LgfAuC1Ul",
+  "https://www.facebook.com/enjoyrealty/posts/pfbid02X6ZcepKwuAoi8iPq22DpgydP4mXVC3j9gdRrdpHRbtcK1qW2M3WbsAKDXbfreYUql",
+]
+
 export default function Home() {
   const searchParams = useSearchParams()
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
+
+  // Carousel animation controls for social proof
+  const socialProofCarouselControls = useAnimation()
+  const socialProofCarouselTrackRef = useRef<HTMLDivElement>(null)
+  const [socialProofTrackWidth, setSocialProofTrackWidth] = useState(0)
 
   // Auto-slide hero images
   useEffect(() => {
@@ -113,6 +126,58 @@ export default function Home() {
       storeBrokerageInfo(brokerageInfo)
     }
   }, [searchParams])
+
+  // Calculate track width dynamically for infinite social proof carousel
+  useEffect(() => {
+    if (socialProofCarouselTrackRef.current && facebookPosts.length > 0) {
+      // Get the width of the first card, including its margins
+      const firstCard = socialProofCarouselTrackRef.current.children[0] as HTMLElement
+      if (firstCard) {
+        const cardComputedStyle = window.getComputedStyle(firstCard)
+        const cardWidth = firstCard.offsetWidth
+        const marginLeft = Number.parseFloat(cardComputedStyle.marginLeft)
+        const marginRight = Number.parseFloat(cardComputedStyle.marginRight)
+        const totalCardWidth = cardWidth + marginLeft + marginRight
+        setSocialProofTrackWidth(totalCardWidth * facebookPosts.length)
+      }
+    }
+  }, [facebookPosts.length])
+
+  // Start social proof carousel animation when trackWidth is known
+  useEffect(() => {
+    if (socialProofTrackWidth > 0) {
+      socialProofCarouselControls.start({
+        x: [0, -socialProofTrackWidth], // Animate from 0 to negative width of one set of posts
+        transition: {
+          x: {
+            repeat: Number.POSITIVE_INFINITY,
+            repeatType: "loop",
+            duration: facebookPosts.length * 5, // Adjust duration for speed
+            ease: "linear",
+          },
+        },
+      })
+    }
+  }, [socialProofTrackWidth, socialProofCarouselControls, facebookPosts.length])
+
+  const handleSocialProofCarouselMouseEnter = () => {
+    socialProofCarouselControls.stop() // Stop the animation on hover
+  }
+
+  const handleSocialProofCarouselMouseLeave = () => {
+    // Resume animation from the beginning of the loop cycle
+    socialProofCarouselControls.start({
+      x: [0, -socialProofTrackWidth],
+      transition: {
+        x: {
+          repeat: Number.POSITIVE_INFINITY,
+          repeatType: "loop",
+          duration: facebookPosts.length * 5,
+          ease: "linear",
+        },
+      },
+    })
+  }
 
   return (
     <div className="min-h-screen">
@@ -380,7 +445,7 @@ export default function Home() {
                 image:
                   "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Buhos%20card%201-AlvLbTq6Jf6SEv6SixDhatJuLhMXpR.webp",
                 alt: "House under construction with concrete walls",
-                title: "SOLID CONCRETE (BUHOS)",
+                title: "Solid Concrete (BUHOS)",
                 description:
                   "poured directly into molds, creating seamless, durable, and strong structures ideal for foundations and walls.",
               },
@@ -661,6 +726,61 @@ export default function Home() {
               />
             </div>
           </motion.div>
+        </div>
+      </section>
+
+      {/* Social Proof Section - Animated Carousel */}
+      <section className="py-20 bg-white">
+        <div className="container mx-auto px-4">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            viewport={{ once: true }}
+            className="text-center mb-16"
+          >
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">What Our Community Says</h2>
+            <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
+              See what our satisfied clients and community members are sharing on Facebook
+            </p>
+          </motion.div>
+
+          {/* Carousel Container */}
+          <div
+            className="relative overflow-hidden"
+            onMouseEnter={handleSocialProofCarouselMouseEnter}
+            onMouseLeave={handleSocialProofCarouselMouseLeave}
+          >
+            <motion.div
+              ref={socialProofCarouselTrackRef}
+              className="flex w-max" // w-max allows content to define width
+              animate={socialProofCarouselControls}
+            >
+              {/* Duplicate posts for infinite loop illusion */}
+              {[...facebookPosts, ...facebookPosts].map((postUrl, index) => (
+                <div
+                  key={index}
+                  className="flex-shrink-0 w-full md:w-[calc(50%-1rem)] lg:w-[calc(33.333%-1rem)] xl:w-[calc(25%-1rem)] mx-2 bg-gray-50 rounded-2xl shadow-md overflow-hidden flex items-center justify-center"
+                  style={{ height: "650px" }} // Adjusted height to emphasize image
+                >
+                  <iframe
+                    src={`https://www.facebook.com/plugins/post.php?href=${encodeURIComponent(
+                      postUrl,
+                    )}&width=500&show_text=true&height=650&appId=`} // Updated height to 650
+                    width="100%"
+                    height="650" // Updated height to 650
+                    style={{ border: "none", overflow: "hidden" }}
+                    scrolling="no"
+                    frameBorder="0"
+                    allowFullScreen={true}
+                    allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"
+                    title={`Facebook Post ${index + 1}`}
+                    className="w-full h-full"
+                  ></iframe>
+                </div>
+              ))}
+            </motion.div>
+          </div>
         </div>
       </section>
     </div>
