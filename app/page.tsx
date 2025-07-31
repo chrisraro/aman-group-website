@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
 import { ArrowRight, ChevronRight, Building2, Users, Award, Leaf, Trophy, Star, CheckCircle } from "lucide-react"
-import { motion, AnimatePresence, useAnimation } from "framer-motion"
+import { motion, useAnimation } from "framer-motion"
 
 import { Button } from "@/components/ui/button"
 import { getBrokerageFromParams } from "@/lib/brokerage-links"
@@ -290,41 +290,43 @@ export default function Home() {
       <section className="relative h-screen flex items-center justify-center overflow-hidden">
         {/* Animated Background Images */}
         <div className="absolute inset-0 z-0">
-          <AnimatePresence mode="wait">
+          {heroImages.map((image, index) => (
             <motion.div
-              key={currentImageIndex}
-              initial={{ x: "100%" }} // Start off-screen to the right
-              animate={{ x: "0%" }} // Slide to center
-              exit={{ x: "-100%" }} // Slide off-screen to the left
+              key={index}
+              initial={{ opacity: 0 }}
+              animate={{
+                opacity: currentImageIndex === index ? 1 : 0,
+              }}
               transition={{ duration: 1.5, ease: "easeInOut" }}
               className="absolute inset-0"
             >
               <Image
-                src={heroImages[currentImageIndex].url || "/placeholder.svg"}
-                alt={heroImages[currentImageIndex].alt}
+                src={image.url || "/placeholder.svg"}
+                alt={image.alt}
                 fill
                 className="object-cover"
-                priority
+                priority={index === 0}
               />
-              {/* Removed the overlay div */}
             </motion.div>
-          </AnimatePresence>
+          ))}
+          {/* Dark overlay for better text visibility */}
+          <div className="absolute inset-0 bg-black/40 z-10" />
         </div>
 
         {/* Hero Content */}
-        <div className="relative z-10 container mx-auto px-4 text-center text-white">
+        <div className="relative z-20 container mx-auto px-4 text-center text-white">
           <motion.div
             initial={{ opacity: 0, y: 50 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 1, delay: 0.5 }}
             className="max-w-4xl mx-auto"
           >
-            <h1 className="text-5xl md:text-7xl font-bold mb-6 leading-tight">
+            <h1 className="text-5xl md:text-7xl font-bold mb-6 leading-tight text-shadow-lg">
               Building Dreams,
               <br />
-              <span className="text-primary">Creating Communities</span>
+              <span className="text-primary drop-shadow-lg">Creating Communities</span>
             </h1>
-            <p className="text-xl md:text-2xl mb-8 text-gray-200 max-w-3xl mx-auto leading-relaxed">
+            <p className="text-xl md:text-2xl mb-8 text-gray-100 max-w-3xl mx-auto leading-relaxed drop-shadow-md">
               Quality homes and sustainable communities for Bicolano families since 1989
             </p>
 
@@ -340,7 +342,7 @@ export default function Home() {
                   <Link href={`/${developer.slug}`}>
                     <Button
                       size="lg"
-                      className="text-lg px-8 py-4 rounded-full font-semibold transition-all duration-300 hover:scale-105"
+                      className="text-lg px-8 py-4 rounded-full font-semibold transition-all duration-300 hover:scale-105 shadow-lg hover:shadow-xl"
                       style={{
                         backgroundColor: developer.primary_color,
                         borderColor: developer.primary_color,
@@ -361,15 +363,15 @@ export default function Home() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 1, delay: 1.5 }}
-          className="absolute bottom-8 left-1/2 transform -translate-x-1/2 text-white"
+          className="absolute bottom-8 left-1/2 transform -translate-x-1/2 text-white z-20"
         >
           <motion.div
             animate={{ y: [0, 10, 0] }}
             transition={{ duration: 2, repeat: Number.POSITIVE_INFINITY }}
             className="flex flex-col items-center"
           >
-            <span className="text-sm mb-2">Scroll to explore</span>
-            <ChevronRight className="h-6 w-6 rotate-90" />
+            <span className="text-sm mb-2 drop-shadow-md">Scroll to explore</span>
+            <ChevronRight className="h-6 w-6 rotate-90 drop-shadow-md" />
           </motion.div>
         </motion.div>
       </section>
