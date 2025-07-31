@@ -94,7 +94,7 @@ export function MainNav() {
               >
                 A
               </motion.div>
-              <span className="ml-2 font-semibold text-lg">Aman Group</span>
+              <span className="ml-2 font-semibold text-lg">Aman Group of Companies</span>
             </Link>
           </motion.div>
 
