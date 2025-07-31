@@ -106,8 +106,7 @@ const socialProofItems = [
   {
     image_url: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/image.png-EPFlOuR99Ij5myVPhMmSY9VT0vfmVC.jpeg",
     alt_text: "Family receiving keys to their new green townhouse unit.",
-    link_url:
-      "https://www.facebook.com/enjoyrealty/posts/pfbid047ungR92akbSLejs6A7FLeg9RcRPdnycT6BzgzsGrbcBravAUj7ZWJdqNA6rGc49l",
+    link_url: "https://www.facebook.com/enjoyrealty/posts/pfbid047ungR92akbBravAUj7ZWJdqNA6rGc49l",
   },
   {
     image_url: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/image.png-E4m8AjzzamSIcJ7eieI4VMLItCpYye.jpeg",
@@ -129,6 +128,30 @@ const socialProofItems = [
   },
 ]
 
+// Top Brokers' Success Data - Updated to use full card images
+const topBrokersSuccessItems = [
+  {
+    image_url: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/image-BSY6sJdFKDRaByfbqzPokE21aKY8U1.png",
+    alt_text: "Congratulations card for Margie Hernandez, Chelsea 86 Deluxe",
+    link_url: "https://www.facebook.com/photo/?fbid=924073309523614&set=pcb.924071099523835",
+  },
+  {
+    image_url: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/image-DpdVvPsKohViSrTc46M9T1zr6EbXjT.png",
+    alt_text: "Congratulations card for Jesse Belleza, Chloe 72 Basic",
+    link_url: "https://www.facebook.com/photo/?fbid=924070669523878&set=pcb.924071099523835",
+  },
+  {
+    image_url: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/image-L99h068CAIHQCLDiGB7M3rKYoIlOBF.png",
+    alt_text: "Congratulations card for Reggie Guevarra, Thalia 80 Basic",
+    link_url: "https://www.facebook.com/photo/?fbid=924070722857206&set=pcb.924071099523835",
+  },
+  {
+    image_url: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/image-w5RNLBT9i0rwTV4AK1pIRXl2f346rO.png",
+    alt_text: "Congratulations card for Marissa Reyes, Queenie 72 Basic with Loft",
+    link_url: "https://www.facebook.com/photo?fbid=924070746190537&set=pcb.924071099523835",
+  },
+]
+
 export default function Home() {
   const searchParams = useSearchParams()
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
@@ -137,6 +160,11 @@ export default function Home() {
   const socialProofCarouselControls = useAnimation()
   const socialProofCarouselTrackRef = useRef<HTMLDivElement>(null)
   const [socialProofTrackWidth, setSocialProofTrackWidth] = useState(0)
+
+  // Carousel animation controls for top brokers
+  const topBrokersCarouselControls = useAnimation()
+  const topBrokersCarouselTrackRef = useRef<HTMLDivElement>(null)
+  const [topBrokersTrackWidth, setTopBrokersTrackWidth] = useState(0)
 
   // Auto-slide hero images
   useEffect(() => {
@@ -200,6 +228,56 @@ export default function Home() {
           repeat: Number.POSITIVE_INFINITY,
           repeatType: "loop",
           duration: socialProofItems.length * 5,
+          ease: "linear",
+        },
+      },
+    })
+  }
+
+  // Calculate track width dynamically for infinite top brokers carousel
+  useEffect(() => {
+    if (topBrokersCarouselTrackRef.current && topBrokersSuccessItems.length > 0) {
+      const firstCard = topBrokersCarouselTrackRef.current.children[0] as HTMLElement
+      if (firstCard) {
+        const cardComputedStyle = window.getComputedStyle(firstCard)
+        const cardWidth = firstCard.offsetWidth
+        const marginLeft = Number.parseFloat(cardComputedStyle.marginLeft)
+        const marginRight = Number.parseFloat(cardComputedStyle.marginRight)
+        const totalCardWidth = cardWidth + marginLeft + marginRight
+        setTopBrokersTrackWidth(totalCardWidth * topBrokersSuccessItems.length)
+      }
+    }
+  }, [topBrokersSuccessItems.length])
+
+  // Start top brokers carousel animation when trackWidth is known
+  useEffect(() => {
+    if (topBrokersTrackWidth > 0) {
+      topBrokersCarouselControls.start({
+        x: [0, -topBrokersTrackWidth],
+        transition: {
+          x: {
+            repeat: Number.POSITIVE_INFINITY,
+            repeatType: "loop",
+            duration: topBrokersSuccessItems.length * 5,
+            ease: "linear",
+          },
+        },
+      })
+    }
+  }, [topBrokersTrackWidth, topBrokersCarouselControls, topBrokersSuccessItems.length])
+
+  const handleTopBrokersCarouselMouseEnter = () => {
+    topBrokersCarouselControls.stop()
+  }
+
+  const handleTopBrokersCarouselMouseLeave = () => {
+    topBrokersCarouselControls.start({
+      x: [0, -topBrokersTrackWidth],
+      transition: {
+        x: {
+          repeat: Number.POSITIVE_INFINITY,
+          repeatType: "loop",
+          duration: topBrokersSuccessItems.length * 5,
           ease: "linear",
         },
       },
@@ -341,117 +419,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Mission & Vision Section */}
-      <section className="py-20 bg-white">
-        <div className="container mx-auto px-4">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            viewport={{ once: true }}
-            className="text-center mb-16"
-          >
-            <p className="text-primary font-semibold mb-4">Our Vision & Mission</p>
-            <h2 className="text-4xl md:text-5xl font-bold mb-8 max-w-4xl mx-auto leading-tight">
-              Leading the Way in Premium Real Estate Development and Sustainable Living
-            </h2>
-          </motion.div>
-
-          <div className="grid lg:grid-cols-2 gap-12 items-center max-w-7xl mx-auto">
-            <motion.div
-              initial={{ opacity: 0, x: -50 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.8 }}
-              viewport={{ once: true }}
-              className="space-y-6"
-            >
-              <p className="text-lg leading-relaxed text-gray-700">
-                At Enjoy Realty & Development Corporation (ERDC), we are committed to leading the real estate industry
-                in the Bicol Region through innovative house construction technology and the creation of vibrant,
-                sustainable communities.
-              </p>
-              <p className="text-lg leading-relaxed text-gray-700">
-                Our team of dedicated professionals works tirelessly to deliver exceptional service and value to our
-                clients. We offer thoughtfully designed house-and-lot packages, townhouses, and themed residential
-                estates that promote a premium and healthy lifestyle.
-              </p>
-              <p className="text-lg leading-relaxed text-gray-700">
-                With a strong emphasis on environmental protection, we strive to build eco-friendly communities where
-                residents can thrive.
-              </p>
-
-              <div className="flex flex-wrap gap-4 pt-4">
-                <div className="flex items-center gap-2 text-primary">
-                  <Building2 className="h-5 w-5" />
-                  <span className="font-semibold">Premium Construction</span>
-                </div>
-                <div className="flex items-center gap-2 text-primary">
-                  <Leaf className="h-5 w-5" />
-                  <span className="font-semibold">Sustainable Living</span>
-                </div>
-                <div className="flex items-center gap-2 text-primary">
-                  <Users className="h-5 w-5" />
-                  <span className="font-semibold">Community Focus</span>
-                </div>
-              </div>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, x: 50 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.8 }}
-              viewport={{ once: true }}
-              className="relative"
-            >
-              <div className="relative rounded-2xl overflow-hidden shadow-2xl bg-white p-6">
-                <Image
-                  src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/achievements.jpg-R8nzEbAGFa4sejCMOBMdvQOctX465L.jpeg"
-                  alt="Awards and recognitions from Housing and Land Use Regulatory Board"
-                  width={600}
-                  height={400}
-                  className="object-cover w-full h-[400px] rounded-lg"
-                />
-
-                {/* Recognition Text Below Image */}
-                <div className="mt-6 space-y-4">
-                  <div className="text-center">
-                    <div className="flex items-center justify-center gap-2 mb-3">
-                      <Trophy className="h-6 w-6 text-yellow-600" />
-                      <h3 className="text-xl font-bold text-gray-900">Our Achievements</h3>
-                      <Trophy className="h-6 w-6 text-yellow-600" />
-                    </div>
-
-                    <div className="space-y-3">
-                      <div className="bg-gradient-to-r from-yellow-50 to-orange-50 p-4 rounded-lg border-l-4 border-yellow-500">
-                        <div className="flex items-center justify-center gap-2 mb-2">
-                          <Star className="h-5 w-5 text-yellow-600" />
-                          <span className="font-bold text-lg text-gray-900">BEST DEVELOPMENT DESIGN</span>
-                          <Star className="h-5 w-5 text-yellow-600" />
-                        </div>
-                        <p className="text-sm text-gray-600 font-medium">Housing and Land Use Regulatory Board</p>
-                      </div>
-
-                      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-lg border-l-4 border-blue-500">
-                        <div className="flex items-center justify-center gap-2 mb-2">
-                          <Award className="h-5 w-5 text-blue-600" />
-                          <span className="font-bold text-lg text-gray-900">
-                            LEADING DEVELOPER FOR ECONOMIC HOUSING REGION 5
-                          </span>
-                          <Award className="h-5 w-5 text-blue-600" />
-                        </div>
-                        <p className="text-sm text-gray-600 font-medium">
-                          Land Development Category • Housing and Land Use Regulatory Board
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          </div>
-        </div>
-      </section>
-
       {/* Merged Construction Innovation & ARISE Technology Section */}
       <section className="py-20 bg-gray-50">
         <div className="container mx-auto px-4">
@@ -579,6 +546,117 @@ export default function Home() {
               </ul>
             </div>
           </motion.div>
+        </div>
+      </section>
+
+      {/* Mission & Vision Section */}
+      <section className="py-20 bg-white">
+        <div className="container mx-auto px-4">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            viewport={{ once: true }}
+            className="text-center mb-16"
+          >
+            <p className="text-primary font-semibold mb-4">Our Vision & Mission</p>
+            <h2 className="text-4xl md:text-5xl font-bold mb-8 max-w-4xl mx-auto leading-tight">
+              Leading the Way in Premium Real Estate Development and Sustainable Living
+            </h2>
+          </motion.div>
+
+          <div className="grid lg:grid-cols-2 gap-12 items-center max-w-7xl mx-auto">
+            <motion.div
+              initial={{ opacity: 0, x: -50 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.8 }}
+              viewport={{ once: true }}
+              className="space-y-6"
+            >
+              <p className="text-lg leading-relaxed text-gray-700">
+                At Enjoy Realty & Development Corporation (ERDC), we are committed to leading the real estate industry
+                in the Bicol Region through innovative house construction technology and the creation of vibrant,
+                sustainable communities.
+              </p>
+              <p className="text-lg leading-relaxed text-gray-700">
+                Our team of dedicated professionals works tirelessly to deliver exceptional service and value to our
+                clients. We offer thoughtfully designed house-and-lot packages, townhouses, and themed residential
+                estates that promote a premium and healthy lifestyle.
+              </p>
+              <p className="text-lg leading-relaxed text-gray-700">
+                With a strong emphasis on environmental protection, we strive to build eco-friendly communities where
+                residents can thrive.
+              </p>
+
+              <div className="flex flex-wrap gap-4 pt-4">
+                <div className="flex items-center gap-2 text-primary">
+                  <Building2 className="h-5 w-5" />
+                  <span className="font-semibold">Premium Construction</span>
+                </div>
+                <div className="flex items-center gap-2 text-primary">
+                  <Leaf className="h-5 w-5" />
+                  <span className="font-semibold">Sustainable Living</span>
+                </div>
+                <div className="flex items-center gap-2 text-primary">
+                  <Users className="h-5 w-5" />
+                  <span className="font-semibold">Community Focus</span>
+                </div>
+              </div>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, x: 50 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.8 }}
+              viewport={{ once: true }}
+              className="relative"
+            >
+              <div className="relative rounded-2xl overflow-hidden shadow-2xl bg-white p-6">
+                <Image
+                  src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/achievements.jpg-R8nzEbAGFa4sejCMOBMdvQOctX465L.jpeg"
+                  alt="Awards and recognitions from Housing and Land Use Regulatory Board"
+                  width={600}
+                  height={400}
+                  className="object-cover w-full h-[400px] rounded-lg"
+                />
+
+                {/* Recognition Text Below Image */}
+                <div className="mt-6 space-y-4">
+                  <div className="text-center">
+                    <div className="flex items-center justify-center gap-2 mb-3">
+                      <Trophy className="h-6 w-6 text-yellow-600" />
+                      <h3 className="text-xl font-bold text-gray-900">Our Achievements</h3>
+                      <Trophy className="h-6 w-6 text-yellow-600" />
+                    </div>
+
+                    <div className="space-y-3">
+                      <div className="bg-gradient-to-r from-yellow-50 to-orange-50 p-4 rounded-lg border-l-4 border-yellow-500">
+                        <div className="flex items-center justify-center gap-2 mb-2">
+                          <Star className="h-5 w-5 text-yellow-600" />
+                          <span className="font-bold text-lg text-gray-900">BEST DEVELOPMENT DESIGN</span>
+                          <Star className="h-5 w-5 text-yellow-600" />
+                        </div>
+                        <p className="text-sm text-gray-600 font-medium">Housing and Land Use Regulatory Board</p>
+                      </div>
+
+                      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-lg border-l-4 border-blue-500">
+                        <div className="flex items-center justify-center gap-2 mb-2">
+                          <Award className="h-5 w-5 text-blue-600" />
+                          <span className="font-bold text-lg text-gray-900">
+                            LEADING DEVELOPER FOR ECONOMIC HOUSING REGION 5
+                          </span>
+                          <Award className="h-5 w-5 text-blue-600" />
+                        </div>
+                        <p className="text-sm text-gray-600 font-medium">
+                          Land Development Category • Housing and Land Use Regulatory Board
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </div>
         </div>
       </section>
 
@@ -804,10 +882,60 @@ export default function Home() {
                         <span className="text-white text-lg font-semibold">View Post</span>
                       </div>
                     </CardContent>
-                    {/* You can add a CardFooter here if you want to display text below the image */}
-                    {/* <CardFooter className="p-4 text-center">
-                      <p className="text-sm text-muted-foreground">{item.alt_text}</p>
-                    </CardFooter> */}
+                  </Card>
+                </Link>
+              ))}
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
+      {/* Top Brokers' Success Section - Animated Carousel */}
+      <section className="py-20 bg-gray-50">
+        <div className="container mx-auto px-4">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            viewport={{ once: true }}
+            className="text-center mb-16"
+          >
+            <p className="text-primary font-semibold mb-4">Meet the Experts Behind Our Recent Sales Triumphs</p>
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">Celebrating Our Top Brokers' Success</h2>
+          </motion.div>
+
+          {/* Carousel Container */}
+          <div
+            className="relative overflow-hidden"
+            onMouseEnter={handleTopBrokersCarouselMouseEnter}
+            onMouseLeave={handleTopBrokersCarouselMouseLeave}
+          >
+            <motion.div
+              ref={topBrokersCarouselTrackRef}
+              className="flex w-max" // w-max allows content to define width
+              animate={topBrokersCarouselControls}
+            >
+              {/* Duplicate items for infinite loop illusion */}
+              {[...topBrokersSuccessItems, ...topBrokersSuccessItems].map((item, index) => (
+                <Link
+                  key={index}
+                  href={item.link_url}
+                  target="_blank" // Open link in new tab
+                  rel="noopener noreferrer" // Security best practice for target="_blank"
+                  className="flex-shrink-0 w-full md:w-[calc(50%-1rem)] lg:w-[calc(33.333%-1rem)] xl:w-[calc(25%-1rem)] mx-2 group"
+                >
+                  <Card className="w-full rounded-2xl shadow-md overflow-hidden hover:shadow-lg transition-all duration-300">
+                    <CardContent className="p-0 relative w-full aspect-square">
+                      <Image
+                        src={item.image_url || "/placeholder.svg"}
+                        alt={item.alt_text}
+                        fill
+                        className="object-cover rounded-2xl"
+                      />
+                      <div className="absolute inset-0 bg-black bg-opacity-20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                        <span className="text-white text-lg font-semibold">View Post</span>
+                      </div>
+                    </CardContent>
                   </Card>
                 </Link>
               ))}
