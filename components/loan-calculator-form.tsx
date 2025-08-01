@@ -17,7 +17,7 @@ import { calculateLoan, formatCurrency, generateLoanAmortizationSchedule } from 
 import { useLoanCalculatorSettings } from "@/lib/hooks/useLoanCalculatorSettings"
 import { usePropertyData } from "@/lib/hooks/usePropertyData"
 import { LoanCalculatorNote } from "./loan-calculator-note"
-import { exportToPDF as exportToPDFUtil } from "@/components/pdf-export-utils" // Import the utility function
+import { exportToPDF as exportToPDFUtil } from "@/components/pdf-export-utils"
 
 interface Property {
   id: string
@@ -26,7 +26,7 @@ interface Property {
   price: number
   type: "model-house" | "lot-only"
   lotPrice?: number
-  houseConstructionPrice?: number // Corrected property name
+  houseConstructionPrice?: number
 }
 
 interface LoanCalculatorFormProps {
@@ -43,7 +43,7 @@ export function LoanCalculatorForm({ initialPropertyId, initialPropertyType }: L
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null)
   const [propertySearchOpen, setPropertySearchOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
-  const [downPaymentTerm, setDownPaymentTerm] = useState("24") // New state for down payment term (in months)
+  const [downPaymentTerm, setDownPaymentTerm] = useState("24")
 
   // Data hooks
   const {
@@ -54,13 +54,43 @@ export function LoanCalculatorForm({ initialPropertyId, initialPropertyType }: L
   } = usePropertyData()
   const { settings, loading: settingsLoading } = useLoanCalculatorSettings()
 
+  // Handle URL parameters
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const urlParams = new URLSearchParams(window.location.search)
+      const propertyPriceParam = urlParams.get("propertyPrice")
+      const propertyTypeParam = urlParams.get("propertyType")
+      const lotPriceParam = urlParams.get("lotPrice")
+      const houseConstructionCostParam = urlParams.get("houseConstructionCost")
+      const propertyNameParam = urlParams.get("propertyName")
+      const propertyIdParam = urlParams.get("propertyId")
+
+      if (propertyPriceParam) {
+        setPropertyPrice(propertyPriceParam)
+      }
+
+      if (propertyTypeParam && lotPriceParam && houseConstructionCostParam && propertyNameParam) {
+        const mockProperty = {
+          id: propertyIdParam || "url-param",
+          name: propertyNameParam,
+          location: "Model House",
+          price: Number.parseFloat(propertyPriceParam || "0"),
+          type: propertyTypeParam as "model-house" | "lot-only",
+          lotPrice: Number.parseFloat(lotPriceParam || "0"),
+          houseConstructionPrice: Number.parseFloat(houseConstructionCostParam || "0"),
+        }
+        setSelectedProperty(mockProperty)
+      }
+    }
+  }, [])
+
   // Memoized calculations
   const calculation = useMemo(() => {
     const price = Number.parseFloat(propertyPrice) || 0
     const downPayment = Number.parseFloat(downPaymentPercentage) || 0
     const term = Number.parseInt(loanTermYears) || 0
     const rate = Number.parseFloat(interestRate) || 0
-    const dpTermMonths = Number.parseInt(downPaymentTerm) || 24 // Parse selected down payment term
+    const dpTermMonths = Number.parseInt(downPaymentTerm) || 24
 
     if (price <= 0 || downPayment < 0 || term <= 0 || rate < 0) {
       return null
@@ -73,10 +103,9 @@ export function LoanCalculatorForm({ initialPropertyId, initialPropertyType }: L
       interestRate: rate,
       propertyType: selectedProperty?.type || "lot-only",
       lotPrice: selectedProperty?.lotPrice || 0,
-      constructionCost: selectedProperty?.houseConstructionPrice || 0, // Pass houseConstructionPrice
-      downPaymentTermMonths: dpTermMonths, // Pass the selected down payment term
+      constructionCost: selectedProperty?.houseConstructionPrice || 0,
+      downPaymentTermMonths: dpTermMonths,
       settings: settings || {
-        // Pass the actual settings object
         baseInterestRate: 8.5,
         specialRuleInterestRate: 8.5,
         processingFeePercentage: 1,
@@ -99,7 +128,7 @@ export function LoanCalculatorForm({ initialPropertyId, initialPropertyType }: L
             isActive: true,
             firstYearInterestRate: 0,
             subsequentYearInterestRate: 8.5,
-            downPaymentTermMonths: 24, // Default fallback
+            downPaymentTermMonths: 24,
           },
         },
         defaultSettings: {
@@ -163,16 +192,76 @@ export function LoanCalculatorForm({ initialPropertyId, initialPropertyType }: L
       loanAmount: calculation.loanAmount,
       interestRate: calculation.interestRate,
       monthlyPayment: calculation.monthlyPayment,
-      totalPayment: calculation.totalAmount, // Use totalAmount from calculation
+      totalPayment: calculation.totalAmount,
       term: calculation.loanTermYears,
     }
 
-    exportToPDFUtil(
-      monthlyLoanSchedule,
-      "monthly", // Assuming we want to show monthly schedule for the loan
-      loanDetailsForPdf,
-      selectedProperty?.name,
-    )
+    exportToPDFUtil(monthlyLoanSchedule, "monthly", loanDetailsForPdf, selectedProperty?.name)
+  }, [calculation, selectedProperty])
+
+  // Export Standing Offer Agreement
+  const handleExportSOA = useCallback(() => {
+    if (!calculation || !selectedProperty) return
+
+    const soaContent = `DHSUD LTS NO. 048
+QUOTATION FOR PURCHASE OF LOT
+(Effective ${new Date().toLocaleDateString()})
+
+${selectedProperty.name}
+${new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toLocaleDateString()}
+
+Lot Information
+DESCRIPTION                    LOT
+LOT AREA: ${selectedProperty.lotPrice ? "120" : "N/A"} sq.m.
+Unit Price / sq.m.: ${selectedProperty.lotPrice ? formatCurrency(selectedProperty.lotPrice / 120) : "N/A"}
+LOT Price: ${formatCurrency(selectedProperty.lotPrice || 0)}
+
+House Information
+DESCRIPTION                    HOUSE
+BUILDING Price: ${formatCurrency(selectedProperty.houseConstructionPrice || 0)}
+
+TOTAL SELLING PRICE: ${formatCurrency(calculation.propertyPrice)}
+Less: Discount: ${formatCurrency(0)}
+Add: Government Fees and Taxes: ${formatCurrency(calculation.governmentFees)}
+FINAL CONTRACT PRICE (ALL-IN): ${formatCurrency(calculation.totalAmount)}
+
+TERMS OF PAYMENT:
+Spot DOWN PAYMENT (SDP) / RESERVATION FEE: ${formatCurrency(calculation.reservationFee)}
+DOWNPAYMENT (DP) 20%: ${formatCurrency(calculation.downPayment)}
+BALANCE DOWNPAYMENT (BDP): ${formatCurrency(calculation.downPayment - calculation.reservationFee)}
+
+DP Payable in 2 years - 24 months
+Year 1 (No Interest): ${formatCurrency(calculation.downPaymentSchedule[0]?.payment * 12 || 0)} / ${formatCurrency(calculation.downPaymentSchedule[0]?.payment || 0)}
+Year 2 (with 8.5% p.a.): ${formatCurrency((calculation.downPaymentSchedule[12]?.payment || 0) * 12)} / ${formatCurrency(calculation.downPaymentSchedule[12]?.payment || 0)}
+
+AMORTIZATION (Terms and Interest Rate) - 80%: ${formatCurrency(calculation.loanAmount)}
+Terms: ${calculation.loanTermYears} years
+Rate: ${calculation.interestRate}% p.a.
+Monthly: ${formatCurrency(calculation.monthlyPayment)}
+
+TOTAL DOWNPAYMENT and AMORTIZATION: ${formatCurrency(calculation.totalAmount)}
+
+NOTES:
+1. RESERVATION FEE is part of the Downpayment, NON-REFUNDABLE and NON-TRANSFERABLE.
+2. Above Pricing is INCLUSIVE of (O.C.) applicable government transfer fees, taxes & 12% EVAT
+3. Above LOT PRICING is inclusive of advantage cost in case of SPECIAL LOTS (ie. corner, east, etc.)
+4. Lot purchase shall be covered with Contract to Sell with AMAN ENGINEERING ENTERPRISES (AEE).
+5. Building contract quotation shall be covered by Construction Agreement with accredited In-house contractor
+6. Prices, discounts & interest rates are subject to change without prior notice.
+7. Any excess payment in government fee and taxes will be refunded.
+
+Generated on: ${new Date().toLocaleDateString()}
+Property: ${selectedProperty.name}`
+
+    const blob = new Blob([soaContent], { type: "text/plain" })
+    const url = window.URL.createObjectURL(blob)
+    const a = document.createElement("a")
+    a.href = url
+    a.download = `SOA_${selectedProperty.name.replace(/\s+/g, "_")}_${new Date().toISOString().split("T")[0]}.txt`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    window.URL.revokeObjectURL(url)
   }, [calculation, selectedProperty])
 
   if (settingsLoading) {
@@ -207,7 +296,7 @@ export function LoanCalculatorForm({ initialPropertyId, initialPropertyType }: L
                 variant="outline"
                 role="combobox"
                 aria-expanded={propertySearchOpen}
-                className="w-full justify-between bg-transparent"
+                className="w-full justify-between bg-white hover:bg-gray-50 border-gray-300"
                 disabled={propertiesLoading}
               >
                 {propertiesLoading ? (
@@ -375,7 +464,6 @@ export function LoanCalculatorForm({ initialPropertyId, initialPropertyType }: L
             />
           </div>
 
-          {/* New: Down Payment Term dropdown */}
           <div className="space-y-2">
             <Label htmlFor="down-payment-term">Down Payment Term</Label>
             <Select value={downPaymentTerm} onValueChange={setDownPaymentTerm}>
@@ -396,9 +484,8 @@ export function LoanCalculatorForm({ initialPropertyId, initialPropertyType }: L
             <Separator />
 
             <Tabs defaultValue="summary" className="w-full">
-              <TabsList className="grid w-full grid-cols-3">
+              <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="summary">Summary</TabsTrigger>
-                <TabsTrigger value="breakdown">Fees Breakdown</TabsTrigger>
                 <TabsTrigger value="down-payment-schedule">Down Payment Schedule</TabsTrigger>
               </TabsList>
 
@@ -420,7 +507,6 @@ export function LoanCalculatorForm({ initialPropertyId, initialPropertyType }: L
                       <p className="text-sm text-muted-foreground">Monthly Downpayment (1st Year)</p>
                     </CardContent>
                   </Card>
-                  {/* House Construction Cost Card */}
                   <Card>
                     <CardContent className="pt-6">
                       <div className="text-2xl font-bold">
@@ -429,7 +515,6 @@ export function LoanCalculatorForm({ initialPropertyId, initialPropertyType }: L
                       <p className="text-sm text-muted-foreground">House Construction Cost</p>
                     </CardContent>
                   </Card>
-                  {/* Lot Cost Card */}
                   <Card>
                     <CardContent className="pt-6">
                       <div className="text-2xl font-bold">{formatCurrency(selectedProperty?.lotPrice || 0)}</div>
@@ -487,42 +572,6 @@ export function LoanCalculatorForm({ initialPropertyId, initialPropertyType }: L
                 </div>
               </TabsContent>
 
-              <TabsContent value="breakdown" className="space-y-4">
-                <div className="space-y-3">
-                  <h4 className="font-semibold">Additional Fees & Charges</h4>
-
-                  {calculation.reservationFee > 0 && (
-                    <div className="flex justify-between items-center py-2 border-b">
-                      <span>Reservation Fee:</span>
-                      <span className="font-medium">{formatCurrency(calculation.reservationFee)}</span>
-                    </div>
-                  )}
-
-                  {calculation.governmentFees > 0 && (
-                    <div className="flex justify-between items-center py-2 border-b">
-                      <span>Government Fees:</span>
-                      <span className="font-medium">{formatCurrency(calculation.governmentFees)}</span>
-                    </div>
-                  )}
-
-                  {calculation.constructionFees > 0 && (
-                    <div className="flex justify-between items-center py-2 border-b">
-                      <span>Construction Fees:</span>
-                      <span className="font-medium">{formatCurrency(calculation.constructionFees)}</span>
-                    </div>
-                  )}
-
-                  {calculation.reservationFee === 0 &&
-                    calculation.governmentFees === 0 &&
-                    calculation.constructionFees === 0 && (
-                      <p className="text-muted-foreground text-center py-4">
-                        No additional fees apply to this calculation.
-                      </p>
-                    )}
-                </div>
-              </TabsContent>
-
-              {/* New Tab Content for Down Payment Schedule */}
               <TabsContent value="down-payment-schedule" className="space-y-4">
                 <h4 className="font-semibold">Down Payment Installment Schedule</h4>
                 {calculation.downPaymentSchedule && calculation.downPaymentSchedule.length > 0 ? (
@@ -574,6 +623,10 @@ export function LoanCalculatorForm({ initialPropertyId, initialPropertyType }: L
               <Button onClick={handleExportToPDF} variant="outline" className="flex items-center gap-2 bg-transparent">
                 <Download className="h-4 w-4" />
                 Export PDF
+              </Button>
+              <Button onClick={handleExportSOA} variant="outline" className="flex items-center gap-2 bg-transparent">
+                <Download className="h-4 w-4" />
+                Export SOA
               </Button>
             </div>
           </div>
