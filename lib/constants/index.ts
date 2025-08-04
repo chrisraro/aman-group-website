@@ -3,13 +3,7 @@
  */
 
 // Project locations
-export const PROJECT_LOCATIONS = [
-  "Palm Village",
-  "Parkview Naga Urban Residences",
-  "Parkview Village",
-  "Haciendas de Naga",
-  "Parkview Executive Village",
-] as const
+export const PROJECT_LOCATIONS = ["Palm Village", "Parkview Naga Urban Residence"] as const
 
 export type ProjectLocation = (typeof PROJECT_LOCATIONS)[number]
 
@@ -24,8 +18,7 @@ export const DEVELOPER_COLORS = {
     primary: "#65932D",
     secondary: "#FFE400",
   },
-  "Aman Engineering Enterprises": {
-    // Changed from "Aman Engineering"
+  "Aman Engineering": {
     primary: "#04009D",
     secondary: "#FE0000",
   },
@@ -83,9 +76,3 @@ export const BROKERAGE = {
   storageKey: "aman-group-brokerage-info",
   referralValidityDays: 15,
 }
-
-export const AmanEngineeringEnterprises = "Aman Engineering Enterprises"
-export const ParkviewNagaUrbanResidences = "Parkview Naga Urban Residences"
-export const ParkviewVillage = "Parkview Village"
-export const HaciendasDeNaga = "Haciendas de Naga"
-export const ParkviewExecutiveVillage = "Parkview Executive Village"

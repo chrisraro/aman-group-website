@@ -69,14 +69,3 @@ export function formatNumberWithCommas(value: number | undefined): string {
   if (value === undefined || isNaN(value)) return "0"
   return value.toLocaleString("en-US", { maximumFractionDigits: 0 })
 }
-
-/**
- * Format a number as a percentage
- */
-export function formatPercentage(value: number): string {
-  return new Intl.NumberFormat("en-US", {
-    style: "percent",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
-  }).format(value / 100) // Assuming value is like 5 for 5%
-}

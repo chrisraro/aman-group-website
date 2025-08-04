@@ -1,66 +1,51 @@
 import Link from "next/link"
 import Image from "next/image"
-import { ArrowRight } from "lucide-react"
+import { ArrowRight, Home } from "lucide-react"
+
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { getModelHousesByProject, getAllRFOUnits } from "@/data/model-houses"
-import { Section } from "@/components/ui/section"
-import { Container } from "@/components/ui/container"
-import { Grid } from "@/components/ui/grid"
-import { getProjectsByDeveloper } from "@/lib/api/developers"
-import { AmanEngineeringEnterprises } from "@/lib/constants"
+import { projects } from "@/data/projects"
 
-export const metadata = {
-  title: "Aman Engineering Enterprises Projects",
-  description: "Explore the latest projects from Aman Engineering Enterprises.",
-}
-
-export default async function AmanEngineeringProjectsPage() {
-  const amanProjects = await getProjectsByDeveloper(AmanEngineeringEnterprises)
+export default function AmanEngineeringPage() {
+  // Filter projects for Aman Engineering
+  const amanProjects = projects.filter((project) => project.developer === "Aman Engineering")
 
   return (
-    <main className="flex-1">
-      <Section className="py-12 md:py-24 lg:py-32">
-        <Container>
-          <div className="flex flex-col items-center justify-center space-y-4 text-center">
-            <div className="space-y-2">
-              <h1 className="text-3xl font-bold tracking-tighter sm:text-5xl">
-                Projects by {AmanEngineeringEnterprises}
-              </h1>
-              <p className="max-w-[900px] text-gray-500 md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed dark:text-gray-400">
-                Discover the quality and innovation in every development.
-              </p>
-            </div>
+    <div className="container mx-auto px-4 py-12">
+      {/* Breadcrumb */}
+      <div className="flex items-center text-sm mb-8">
+        <Link href="/" className="text-muted-foreground hover:text-primary">
+          <Home className="h-4 w-4 inline mr-1" />
+          Home
+        </Link>
+        <span className="mx-2 text-muted-foreground">/</span>
+        <span className="font-medium">Aman Engineering Enterprise</span>
+      </div>
+
+      {/* Hero Section */}
+      <div className="relative h-[300px] md:h-[400px] rounded-lg overflow-hidden mb-12">
+        <div className="relative h-full w-full">
+          <Image
+            src="https://8ybl2ah7tkcii6tt.public.blob.vercel-storage.com/logo_images/aman_engineering_logo-uZFrkvP8LjG5wN6CEoGfixc9Zgsu91.png"
+            alt="Aman Engineering Enterprise"
+            fill
+            className="object-contain p-12 opacity-20"
+          />
+        </div>
+        <div className="absolute inset-0 bg-gradient-to-r from-[#04009D]/80 to-transparent flex items-center">
+          <div className="px-4 md:px-12 max-w-2xl">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-3 md:mb-4">
+              Aman Engineering Enterprise
+            </h1>
+            <p className="text-white/90 text-base md:text-lg mb-4 md:mb-6">Parkview Naga Urban Residence</p>
+            <Link href="/contact">
+              <Button className="bg-[#FE0000] hover:bg-[#FE0000]/90 text-white">Contact Us</Button>
+            </Link>
           </div>
-          <Grid className="mt-8 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {amanProjects.map((project) => (
-              <Card key={project.id} className="flex flex-col">
-                <CardHeader>
-                  <div className="relative h-48 w-full overflow-hidden rounded-md">
-                    <Image
-                      alt={project.name}
-                      className="object-cover"
-                      fill
-                      src={project.image || "/placeholder.svg?height=200&width=300&query=project-image"}
-                    />
-                  </div>
-                </CardHeader>
-                <CardContent className="flex-1">
-                  <CardTitle className="text-xl font-semibold">{project.name}</CardTitle>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">{project.location}</p>
-                  <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">{project.description}</p>
-                </CardContent>
-                <CardFooter>
-                  <Link href={`/aman-engineering/${project.id}`} passHref>
-                    <Button className="w-full">View Details</Button>
-                  </Link>
-                </CardFooter>
-              </Card>
-            ))}
-          </Grid>
-        </Container>
-      </Section>
+        </div>
+      </div>
 
       {/* Project Section */}
       <section className="mb-16">
@@ -133,9 +118,9 @@ export default async function AmanEngineeringProjectsPage() {
       <section className="mb-16">
         <h2 className="text-3xl font-bold mb-8 text-[#04009D]">Our Model Houses</h2>
 
-        {getModelHousesByProject("Parkview Naga Urban Residences").length > 0 ? (
+        {getModelHousesByProject("Parkview Naga Urban Residence").length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-            {getModelHousesByProject("Parkview Naga Urban Residences").map((series) => (
+            {getModelHousesByProject("Parkview Naga Urban Residence").map((series) => (
               <Card key={series.id} className="overflow-hidden hover:shadow-md transition-shadow">
                 <div className="relative h-48">
                   <Image
@@ -151,7 +136,7 @@ export default async function AmanEngineeringProjectsPage() {
                   <Link href={`/model-houses/${series.id}`}>
                     <Button
                       variant="outline"
-                      className="w-full border-[#04009D] text-[#04009D] hover:bg-[#04009D] hover:text-white bg-transparent"
+                      className="w-full border-[#04009D] text-[#04009D] hover:bg-[#04009D] hover:text-white"
                     >
                       View Details
                     </Button>
@@ -178,12 +163,10 @@ export default async function AmanEngineeringProjectsPage() {
       <section>
         <h2 className="text-3xl font-bold mb-8 text-[#04009D]">Ready for Occupancy Units</h2>
 
-        {getAllRFOUnits().filter((unit) => unit.developer === "Aman Engineering Enterprises").length > 0 ? (
+        {getAllRFOUnits().filter((unit) => unit.developer === "Aman Engineering").length > 0 ? (
           <div className="grid md:grid-cols-2 gap-8">
             {getAllRFOUnits()
-              .filter(
-                (unit) => unit.developer === "Aman Engineering Enterprises" && unit.status === "Fully Constructed",
-              )
+              .filter((unit) => unit.developer === "Aman Engineering" && unit.status === "Fully Constructed")
               .slice(0, 1)
               .map((unit) => (
                 <div
@@ -217,7 +200,7 @@ export default async function AmanEngineeringProjectsPage() {
 
             <div className="grid gap-6">
               {getAllRFOUnits()
-                .filter((unit) => unit.developer === "Aman Engineering Enterprises" && unit.status === "On Going")
+                .filter((unit) => unit.developer === "Aman Engineering" && unit.status === "On Going")
                 .slice(0, 2)
                 .map((unit) => (
                   <Card key={unit.id} className="overflow-hidden hover:shadow-md transition-shadow">
@@ -247,7 +230,7 @@ export default async function AmanEngineeringProjectsPage() {
                           <Button
                             size="sm"
                             variant="outline"
-                            className="border-[#04009D] text-[#04009D] hover:bg-[#04009D] hover:text-white bg-transparent"
+                            className="border-[#04009D] text-[#04009D] hover:bg-[#04009D] hover:text-white"
                           >
                             View Details
                           </Button>
@@ -271,6 +254,6 @@ export default async function AmanEngineeringProjectsPage() {
           </div>
         )}
       </section>
-    </main>
+    </div>
   )
 }

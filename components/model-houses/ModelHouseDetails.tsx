@@ -1,328 +1,245 @@
 "use client"
 
-import { useState } from "react"
-import Image from "next/image"
-import Link from "next/link"
+import type React from "react"
+import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Home, Ruler, Bed, Bath, Car, MapPin, Calculator, Download, Eye, Calendar } from "lucide-react"
+import { Calculator, Calendar, Check, MapPin } from "lucide-react"
+import { formatNumberWithCommas } from "@/lib/utils/format-utils"
 import { ScheduleViewingButton } from "@/components/shared/ScheduleViewingButton"
-import { ContactButton } from "@/components/contact-button"
-import { DownloadButton } from "@/components/download-button"
-import { PdfViewer } from "@/components/pdf-viewer"
-import type { ModelHouse, ModelHouseUnit } from "@/data/model-houses"
+import Link from "next/link"
 
 interface ModelHouseDetailsProps {
-  modelHouse: ModelHouse
-  unit: ModelHouseUnit
+  modelHouse: {
+    id: string
+    name: string
+    description: string
+    location: string
+    developer: string
+    developerColor: string
+    features: string[]
+    imageUrl?: string
+  }
+  unit: {
+    id: string
+    name: string
+    price: number
+    lotPrice: number
+    houseConstructionCost: number
+    lotArea: string
+    floorArea: string
+    bedrooms: number
+    bathrooms: number
+    carport: number
+    status: string
+    features?: string[]
+  }
 }
 
-export function ModelHouseDetails({ modelHouse, unit }: ModelHouseDetailsProps) {
-  const [selectedImageIndex, setSelectedImageIndex] = useState(0)
-  const [showPdfViewer, setShowPdfViewer] = useState(false)
+const ModelHouseDetails: React.FC<ModelHouseDetailsProps> = ({ modelHouse, unit }) => {
+  // Calculate total price for loan calculator
+  const totalPrice = unit.price
+  const modelName = `${modelHouse.name} - ${unit.name}`
 
-  const images = unit.images || modelHouse.images || []
-  const selectedImage = images[selectedImageIndex]
-
-  // Calculate total property price
-  const totalPropertyPrice = (unit.lotPrice || 0) + (unit.houseConstructionCost || 0)
-
-  // Generate loan calculator URL with parameters
-  const getLoanCalculatorUrl = () => {
-    const params = new URLSearchParams({
-      propertyId: unit.id,
-      propertyType: "model-house",
-      propertyName: `${modelHouse.name} - ${unit.name}`,
-      propertyPrice: totalPropertyPrice.toString(),
-      lotPrice: (unit.lotPrice || 0).toString(),
-      houseConstructionCost: (unit.houseConstructionCost || 0).toString(),
-      lotArea: (unit.lotArea || 0).toString(),
-      floorArea: (unit.floorArea || 0).toString(),
-    })
-    return `/loan-calculator?${params.toString()}`
-  }
+  // Create URL parameters for loan calculator
+  const loanCalculatorParams = new URLSearchParams({
+    propertyId: `${modelHouse.id}-${unit.id}`,
+    propertyType: "model-house",
+    propertyName: modelName,
+    propertyPrice: totalPrice.toString(),
+    lotPrice: unit.lotPrice.toString(),
+    houseConstructionCost: unit.houseConstructionCost.toString(),
+  })
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      {/* Breadcrumb */}
-      <div className="flex items-center text-sm mb-6">
-        <Link href="/" className="text-muted-foreground hover:text-primary">
-          <Home className="h-4 w-4 inline mr-1" />
-          Home
-        </Link>
-        <span className="mx-2 text-muted-foreground">/</span>
-        <Link href="/model-houses" className="text-muted-foreground hover:text-primary">
-          Model Houses
-        </Link>
-        <span className="mx-2 text-muted-foreground">/</span>
-        <Link href={`/model-houses/${modelHouse.id}`} className="text-muted-foreground hover:text-primary">
-          {modelHouse.name}
-        </Link>
-        <span className="mx-2 text-muted-foreground">/</span>
-        <span className="font-medium">{unit.name}</span>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Left Column - Images and Details */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Main Image */}
-          <div className="relative aspect-video rounded-lg overflow-hidden bg-gray-100">
-            {selectedImage ? (
-              <Image
-                src={selectedImage || "/placeholder.svg"}
-                alt={`${modelHouse.name} - ${unit.name}`}
-                fill
-                className="object-cover"
-                priority
-              />
-            ) : (
-              <div className="flex items-center justify-center h-full">
-                <Home className="h-16 w-16 text-gray-400" />
+    <main className="container mx-auto px-4 py-12">
+      <div className="max-w-6xl mx-auto">
+        {/* Header Section */}
+        <div className="mb-8">
+          <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
+            <div className="flex-1">
+              <h1 className="text-3xl md:text-4xl font-bold mb-2">{modelName}</h1>
+              <div className="flex items-center mb-3 text-muted-foreground">
+                <MapPin className="h-4 w-4 mr-1 flex-shrink-0" />
+                <span>{modelHouse.location}</span>
               </div>
-            )}
-          </div>
-
-          {/* Image Thumbnails */}
-          {images.length > 1 && (
-            <div className="grid grid-cols-4 gap-2">
-              {images.map((image, index) => (
-                <button
-                  key={index}
-                  onClick={() => setSelectedImageIndex(index)}
-                  className={`relative aspect-video rounded-md overflow-hidden border-2 transition-colors ${
-                    selectedImageIndex === index ? "border-primary" : "border-gray-200 hover:border-gray-300"
-                  }`}
+              <div className="flex flex-wrap gap-2 mb-4">
+                <Badge
+                  className="text-sm"
+                  style={{
+                    backgroundColor: unit.status === "Available" ? "rgb(22, 163, 74)" : "rgb(234, 88, 12)",
+                    color: "white",
+                  }}
                 >
-                  <Image
-                    src={image || "/placeholder.svg"}
-                    alt={`${modelHouse.name} thumbnail ${index + 1}`}
-                    fill
-                    className="object-cover"
-                  />
-                </button>
-              ))}
+                  {unit.status}
+                </Badge>
+                <Badge
+                  variant="outline"
+                  className="text-sm"
+                  style={{
+                    backgroundColor: `${modelHouse.developerColor}20`,
+                    borderColor: modelHouse.developerColor,
+                    color: modelHouse.developerColor,
+                  }}
+                >
+                  {modelHouse.developer}
+                </Badge>
+              </div>
             </div>
-          )}
 
-          {/* Property Details Tabs */}
-          <Tabs defaultValue="details" className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="details">Details</TabsTrigger>
-              <TabsTrigger value="features">Features</TabsTrigger>
-              <TabsTrigger value="location">Location</TabsTrigger>
-            </TabsList>
+            {/* Action Buttons */}
+            <div className="flex flex-col sm:flex-row gap-3 lg:min-w-[320px]">
+              <ScheduleViewingButton
+                propertyName={modelName}
+                propertyType="Model House"
+                className="h-12 bg-primary hover:bg-primary/90 text-white flex items-center justify-center gap-2 flex-1"
+              >
+                <Calendar className="h-4 w-4" />
+                <span>Schedule Viewing</span>
+              </ScheduleViewingButton>
 
-            <TabsContent value="details" className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Home className="h-5 w-5" />
-                    Property Specifications
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <Ruler className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm">Lot Area: {unit.lotArea} sqm</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Home className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm">Floor Area: {unit.floorArea} sqm</span>
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <Bed className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm">{unit.bedrooms} Bedrooms</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Bath className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm">{unit.bathrooms} Bathrooms</span>
-                    </div>
-                    {unit.carport && (
-                      <div className="flex items-center gap-2">
-                        <Car className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm">Carport</span>
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-
-              {unit.description && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Description</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-muted-foreground leading-relaxed">{unit.description}</p>
-                  </CardContent>
-                </Card>
-              )}
-            </TabsContent>
-
-            <TabsContent value="features" className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Features & Amenities</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {unit.features && unit.features.length > 0 ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                      {unit.features.map((feature, index) => (
-                        <div key={index} className="flex items-center gap-2">
-                          <div className="w-2 h-2 bg-primary rounded-full" />
-                          <span className="text-sm">{feature}</span>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-muted-foreground">No specific features listed.</p>
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="location" className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <MapPin className="h-5 w-5" />
-                    Location
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-muted-foreground">
-                    {modelHouse.location || "Location details will be provided upon inquiry."}
-                  </p>
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
+              <Button
+                asChild
+                className="h-12 border-gray-300 hover:bg-gray-50 hover:border-gray-400 flex items-center justify-center gap-2 flex-1 bg-transparent"
+                variant="outline"
+              >
+                <Link href={`/loan-calculator?${loanCalculatorParams.toString()}`}>
+                  <Calculator className="h-4 w-4" />
+                  <span>Calculate Loan</span>
+                </Link>
+              </Button>
+            </div>
+          </div>
         </div>
 
-        {/* Right Column - Pricing and Actions */}
-        <div className="lg:col-span-1">
-          <div className="sticky top-6 space-y-6">
-            {/* Property Info Card */}
-            <Card>
+        {/* Main Content Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Left Column - Images and Description */}
+          <div className="lg:col-span-2 space-y-8">
+            {/* Image Gallery */}
+            <div className="aspect-video bg-muted rounded-lg overflow-hidden">
+              {unit.imageUrl || modelHouse.imageUrl ? (
+                <img
+                  src={unit.imageUrl || modelHouse.imageUrl || "/placeholder.svg"}
+                  alt={modelName}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center">
+                  <span className="text-muted-foreground">No image available</span>
+                </div>
+              )}
+            </div>
+
+            {/* Description */}
+            <div>
+              <h2 className="text-2xl font-semibold mb-4">Property Description</h2>
+              <p className="text-muted-foreground leading-relaxed whitespace-pre-line">{modelHouse.description}</p>
+            </div>
+
+            {/* Features */}
+            <div>
+              <h2 className="text-2xl font-semibold mb-4">Features & Amenities</h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {modelHouse.features.map((feature, index) => (
+                  <div key={index} className="flex items-start gap-2">
+                    <Check className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                    <span className="text-sm">{feature}</span>
+                  </div>
+                ))}
+                {unit.features?.map((feature, index) => (
+                  <div key={`unit-${index}`} className="flex items-start gap-2">
+                    <Check className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                    <span className="text-sm">{feature}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Right Column - Property Details */}
+          <div className="lg:col-span-1">
+            <Card className="sticky top-4">
               <CardHeader>
-                <CardTitle className="text-xl">{modelHouse.name}</CardTitle>
-                <div className="flex items-center gap-2">
-                  <Badge variant="secondary">{unit.name}</Badge>
-                  {unit.status && (
-                    <Badge variant={unit.status === "available" ? "default" : "secondary"}>{unit.status}</Badge>
-                  )}
-                </div>
+                <CardTitle className="text-xl">Property Details</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                {/* Pricing Breakdown */}
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">Lot Price:</span>
-                    <span className="font-medium">₱{(unit.lotPrice || 0).toLocaleString()}</span>
+              <CardContent className="space-y-6">
+                {/* Pricing Information */}
+                <div className="space-y-4">
+                  <div className="text-center p-4 bg-primary/5 rounded-lg border">
+                    <div className="text-2xl font-bold text-primary mb-1">₱{formatNumberWithCommas(totalPrice)}</div>
+                    <div className="text-sm text-muted-foreground">Total Package Price</div>
                   </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">House Construction:</span>
-                    <span className="font-medium">₱{(unit.houseConstructionCost || 0).toLocaleString()}</span>
-                  </div>
-                  <hr />
-                  <div className="flex justify-between items-center">
-                    <span className="font-semibold">Total Property Price:</span>
-                    <span className="text-xl font-bold text-primary">₱{totalPropertyPrice.toLocaleString()}</span>
-                  </div>
-                </div>
 
-                {/* Action Buttons */}
-                <div className="space-y-3">
-                  <Link href={getLoanCalculatorUrl()} className="w-full">
-                    <Button className="w-full" size="lg">
-                      <Calculator className="h-4 w-4 mr-2" />
-                      Calculate Loan
-                    </Button>
-                  </Link>
-
-                  <ScheduleViewingButton
-                    propertyType="Model House"
-                    propertyName={`${modelHouse.name} - ${unit.name}`}
-                    className="w-full"
-                    variant="outline"
-                  >
-                    <Calendar className="h-4 w-4 mr-2" />
-                    Schedule Viewing
-                  </ScheduleViewingButton>
-
-                  <ContactButton
-                    subject={`Inquiry about ${modelHouse.name} - ${unit.name}`}
-                    className="w-full"
-                    variant="outline"
-                  >
-                    Contact Us
-                  </ContactButton>
-                </div>
-
-                {/* Downloads */}
-                {(unit.floorPlanPdf || unit.brochurePdf) && (
-                  <div className="space-y-2">
-                    <h4 className="font-medium text-sm">Downloads:</h4>
-                    <div className="space-y-2">
-                      {unit.floorPlanPdf && (
-                        <div className="flex gap-2">
-                          <Button variant="outline" size="sm" onClick={() => setShowPdfViewer(true)} className="flex-1">
-                            <Eye className="h-4 w-4 mr-2" />
-                            View Floor Plan
-                          </Button>
-                          <DownloadButton
-                            fileUrl={unit.floorPlanPdf}
-                            fileName={`${modelHouse.name}-${unit.name}-floor-plan.pdf`}
-                            variant="outline"
-                            size="sm"
-                          >
-                            <Download className="h-4 w-4" />
-                          </DownloadButton>
-                        </div>
-                      )}
-                      {unit.brochurePdf && (
-                        <div className="flex gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => window.open(unit.brochurePdf, "_blank")}
-                            className="flex-1"
-                          >
-                            <Eye className="h-4 w-4 mr-2" />
-                            View Brochure
-                          </Button>
-                          <DownloadButton
-                            fileUrl={unit.brochurePdf}
-                            fileName={`${modelHouse.name}-${unit.name}-brochure.pdf`}
-                            variant="outline"
-                            size="sm"
-                          >
-                            <Download className="h-4 w-4" />
-                          </DownloadButton>
-                        </div>
-                      )}
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div className="text-center p-3 bg-gray-50 rounded-lg">
+                      <div className="font-semibold text-lg">₱{formatNumberWithCommas(unit.lotPrice)}</div>
+                      <div className="text-muted-foreground">Lot Price</div>
+                    </div>
+                    <div className="text-center p-3 bg-gray-50 rounded-lg">
+                      <div className="font-semibold text-lg">₱{formatNumberWithCommas(unit.houseConstructionCost)}</div>
+                      <div className="text-muted-foreground">House Cost</div>
                     </div>
                   </div>
-                )}
+                </div>
+
+                {/* Property Specifications */}
+                <div className="space-y-3">
+                  <h3 className="font-semibold text-lg">Specifications</h3>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                      <span className="text-muted-foreground">Lot Area:</span>
+                      <span className="font-medium">{unit.lotArea}</span>
+                    </div>
+                    <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                      <span className="text-muted-foreground">Floor Area:</span>
+                      <span className="font-medium">{unit.floorArea}</span>
+                    </div>
+                    <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                      <span className="text-muted-foreground">Bedrooms:</span>
+                      <span className="font-medium">{unit.bedrooms}</span>
+                    </div>
+                    <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                      <span className="text-muted-foreground">Bathrooms:</span>
+                      <span className="font-medium">{unit.bathrooms}</span>
+                    </div>
+                    <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                      <span className="text-muted-foreground">Carport:</span>
+                      <span className="font-medium">{unit.carport}</span>
+                    </div>
+                    <div className="flex justify-between items-center py-2">
+                      <span className="text-muted-foreground">Status:</span>
+                      <Badge
+                        style={{
+                          backgroundColor: unit.status === "Available" ? "rgb(22, 163, 74)" : "rgb(234, 88, 12)",
+                          color: "white",
+                        }}
+                      >
+                        {unit.status}
+                      </Badge>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Call to Action */}
+                <div className="pt-4 border-t border-gray-200">
+                  <Button asChild className="w-full h-12 bg-primary hover:bg-primary/90 text-white mb-3">
+                    <Link href={`/loan-calculator?${loanCalculatorParams.toString()}`}>
+                      <Calculator className="h-4 w-4 mr-2" />
+                      Get Loan Quotation
+                    </Link>
+                  </Button>
+                  <p className="text-xs text-muted-foreground text-center">
+                    Calculate your monthly payments and get a detailed quotation
+                  </p>
+                </div>
               </CardContent>
             </Card>
           </div>
         </div>
       </div>
-
-      {/* PDF Viewer Modal */}
-      {showPdfViewer && unit.floorPlanPdf && (
-        <PdfViewer
-          pdfUrl={unit.floorPlanPdf}
-          title={`${modelHouse.name} - ${unit.name} Floor Plan`}
-          onClose={() => setShowPdfViewer(false)}
-        />
-      )}
-    </div>
+    </main>
   )
 }
+
+export default ModelHouseDetails
