@@ -4,14 +4,16 @@ import { useState } from "react"
 import { Download, ExternalLink, Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
-interface PDFViewerProps {
+interface PdfViewerProps {
+  // Changed from PDFViewerProps to PdfViewerProps
   googleDriveId: string
   fileName: string
   primaryColor: string
   height?: string
 }
 
-export function PDFViewer({ googleDriveId, fileName, primaryColor, height }: PDFViewerProps) {
+export function PdfViewer({ googleDriveId, fileName, primaryColor, height }: PdfViewerProps) {
+  // Changed from PDFViewer to PdfViewer
   const [isLoading, setIsLoading] = useState(true)
 
   // Google Drive embed URL format
