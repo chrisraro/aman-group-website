@@ -181,7 +181,7 @@ export const exportToPDF = (
     </div>
     
     <div class="header-section">
-      <img src="/icons/icon-192x192.png" alt="Aman Group Logo" class="logo" />
+      <img src="/images/projects/parkview-nur-logo.png" alt="Parkview Naga Urban Residences Logo" class="logo" />
       <h1>${modelName ? `Loan Amortization Schedule - ${modelName}` : "Loan Amortization Schedule"}</h1>
     </div>
 

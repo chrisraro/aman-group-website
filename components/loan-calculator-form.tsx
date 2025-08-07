@@ -262,7 +262,7 @@ export function LoanCalculatorForm({ initialPropertyId, initialPropertyType }: L
       </div>
 
       <div class="header-section">
-        <img src="/icons/icon-192x192.png" alt="Aman Group Logo" class="logo" />
+        <img src="/images/projects/parkview-nur-logo.png" alt="Parkview Naga Urban Residences Logo" class="logo" />
         <div style="flex-grow: 1; text-align: center;">
           <h1>DHSUD LTS NO. 048</h1>
           <h2>QUOTATION FOR PURCHASE OF LOT</h2>
@@ -432,14 +432,14 @@ export function LoanCalculatorForm({ initialPropertyId, initialPropertyType }: L
       <div class="signature-section">
         <table class="signature-table">
           <tr>
-            <td><strong>SWEETVILLE REALTY</strong></td>
+            <td><strong></strong></td>
             <td><strong>CUSTOMER</strong></td>
           </tr>
           <tr>
             <td>
               <div style="margin-bottom: 40px;"></div>
-              <div>ALLAN REMOQUILLO</div>
-              <div>Licensed Real Estate Broker</div>
+              <div></div>
+              <div></div>
             </td>
             <td>
               <div style="margin-bottom: 40px;"></div>
