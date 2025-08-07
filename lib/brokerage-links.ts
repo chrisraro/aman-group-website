@@ -47,23 +47,26 @@ export const accreditedBrokerages = [
 const SECRET_KEY = process.env.BROKERAGE_SECRET_KEY || "aman-group-brokerage-links-secret"
 
 /**
- * Generate a secure hash for a brokerage link
+ * Generate a secure hash for a brokerage link using Web Crypto API.
  */
-export function generateBrokerageHash(brokerageId: string, agentId?: string): string {
-  return createHash("sha256")
-    .update(`${brokerageId}-${agentId || ""}-${SECRET_KEY}`)
-    .digest("hex")
-    .substring(0, 16)
+export async function generateBrokerageHash(brokerageId: string, agentId?: string): Promise<string> {
+  const text = `${brokerageId}-${agentId || ""}-${SECRET_KEY}`;
+  const encoder = new TextEncoder();
+  const data = encoder.encode(text);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  const hexHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  return hexHash.substring(0, 16);
 }
 
 /**
  * Generate a shareable link for a brokerage
  */
-export function generateBrokerageLink(brokerageId: string, baseUrl: string, agentId?: string): string {
+export async function generateBrokerageLink(brokerageId: string, baseUrl: string, agentId?: string): Promise<string> {
   const brokerage = accreditedBrokerages.find((b) => b.id === brokerageId)
   if (!brokerage) return ""
 
-  const hash = generateBrokerageHash(brokerageId, agentId)
+  const hash = await generateBrokerageHash(brokerageId, agentId) // Await the async hash generation
   const params = new URLSearchParams({
     bid: brokerageId,
     agency: encodeURIComponent(brokerage.agency),
@@ -81,15 +84,15 @@ export function generateBrokerageLink(brokerageId: string, baseUrl: string, agen
 /**
  * Validate a brokerage link hash
  */
-export function validateBrokerageLink(brokerageId: string, hash: string, agentId?: string): boolean {
-  const expectedHash = generateBrokerageHash(brokerageId, agentId)
+export async function validateBrokerageLink(brokerageId: string, hash: string, agentId?: string): Promise<boolean> {
+  const expectedHash = await generateBrokerageHash(brokerageId, agentId) // Await the async hash generation
   return hash === expectedHash
 }
 
 /**
  * Get brokerage information from URL parameters
  */
-export function getBrokerageFromParams(params: URLSearchParams): BrokerageLink | null {
+export async function getBrokerageFromParams(params: URLSearchParams): Promise<BrokerageLink | null> {
   const brokerageId = params.get("bid")
   const agency = params.get("agency")
   const hash = params.get("h")
@@ -98,7 +101,7 @@ export function getBrokerageFromParams(params: URLSearchParams): BrokerageLink |
   if (!brokerageId || !agency || !hash) return null
 
   // Validate the hash
-  if (!validateBrokerageLink(brokerageId, hash, agentId || undefined)) return null
+  if (!(await validateBrokerageLink(brokerageId, hash, agentId || undefined))) return null
 
   // Find the brokerage in our list
   const brokerage = accreditedBrokerages.find((b) => b.id === brokerageId)
@@ -115,19 +118,17 @@ export function getBrokerageFromParams(params: URLSearchParams): BrokerageLink |
 
   // If agent ID is provided, add agent information
   if (agentId) {
-    // Import the agent data dynamically to avoid circular dependencies
-    import("@/lib/data/agents")
-      .then(({ getAgentById }) => {
-        const agent = getAgentById(agentId)
-        if (agent) {
-          brokerageLink.agentId = agent.id
-          brokerageLink.agentName = agent.name
-          brokerageLink.agentClassification = agent.classification
-        }
-      })
-      .catch((error) => {
-        console.error("Error importing agent data:", error)
-      })
+    try {
+      const { getAgentById } = await import("@/lib/data/agents")
+      const agent = getAgentById(agentId)
+      if (agent) {
+        brokerageLink.agentId = agent.id
+        brokerageLink.agentName = agent.name
+        brokerageLink.agentClassification = agent.classification
+      }
+    } catch (error) {
+      console.error("Error importing agent data:", error)
+    }
   }
 
   return brokerageLink

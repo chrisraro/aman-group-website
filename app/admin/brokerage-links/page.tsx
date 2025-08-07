@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { accreditedBrokerages, generateBrokerageLink } from "@/lib/brokerage-links"
-import { Copy, Check, ExternalLink, Download, QrCode } from "lucide-react"
+import { Copy, Check, ExternalLink, Download, QrCode } from 'lucide-react'
 import QRCode from "react-qr-code"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
@@ -21,12 +21,12 @@ export default function BrokerageLinksPage() {
   const tabsRef = useRef<HTMLDivElement>(null)
   const [activeTab, setActiveTab] = useState<"link" | "qrcode">("link")
 
-  const generateLink = () => {
+  const generateLink = async () => { // Made async
     if (!selectedBrokerage) return
 
     // Use the current origin for the base URL
     const baseUrl = window.location.origin
-    const link = generateBrokerageLink(selectedBrokerage, baseUrl)
+    const link = await generateBrokerageLink(selectedBrokerage, baseUrl) // Await the function call
     setGeneratedLink(link)
   }
 

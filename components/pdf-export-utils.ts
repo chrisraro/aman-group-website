@@ -1,5 +1,11 @@
 import type { MonthlyScheduleItem, YearlyScheduleItem } from "@/types/loan-calculator"
 
+interface ClientDetails {
+  name: string
+  email: string
+  phone: string
+}
+
 // Simple PDF export function that works directly in the browser without external libraries
 export const exportToPDF = (
   schedule: MonthlyScheduleItem[] | YearlyScheduleItem[],
@@ -13,6 +19,7 @@ export const exportToPDF = (
     totalPayment: number
     term: number
   },
+  clientDetails: ClientDetails, // Added clientDetails parameter
   modelName?: string, // Add modelName parameter
 ) => {
   // Fix the currency formatting to ensure proper encoding of the peso symbol
@@ -28,9 +35,9 @@ export const exportToPDF = (
     <meta charset="UTF-8">
     <title>${modelName ? `Amortization Schedule - ${modelName}` : "Amortization Schedule"}</title>
     <style>
-      /* Set A4 page size */
+      /* Set Legal (long bond) page size */
       @page {
-        size: A4;
+        size: legal; /* 8.5in x 14in or 21.6cm x 35.6cm */
         margin: 1cm;
       }
       body {
@@ -38,12 +45,36 @@ export const exportToPDF = (
         margin: 0;
         padding: 20px;
         color: #333;
-        width: 21cm; /* A4 width */
-        min-height: 29.7cm; /* A4 height */
+        width: 21.6cm; /* Legal width */
+        min-height: 35.6cm; /* Legal height */
         box-sizing: border-box;
       }
       h1, h2, h3 {
         color: #444;
+      }
+      .header-section {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        margin-bottom: 20px;
+      }
+      .logo {
+        height: 60px; /* Adjust size as needed */
+        width: auto;
+      }
+      .client-info {
+        margin-bottom: 20px;
+        padding: 15px;
+        background-color: #f9f9f9;
+        border-radius: 5px;
+      }
+      .client-info-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+      }
+      .client-info-item {
+        margin-bottom: 5px;
       }
       .summary {
         margin-bottom: 20px;
@@ -149,7 +180,28 @@ export const exportToPDF = (
       <button class="button secondary" onclick="window.close()">Close</button>
     </div>
     
-    <h1>${modelName ? `Loan Amortization Schedule - ${modelName}` : "Loan Amortization Schedule"}</h1>
+    <div class="header-section">
+      <img src="/icons/icon-192x192.png" alt="Aman Group Logo" class="logo" />
+      <h1>${modelName ? `Loan Amortization Schedule - ${modelName}` : "Loan Amortization Schedule"}</h1>
+    </div>
+
+    <div class="client-info">
+      <h2>Client Details</h2>
+      <div class="client-info-grid">
+        <div class="client-info-item">
+          <span class="label">Name:</span>
+          <span>${clientDetails.name || "N/A"}</span>
+        </div>
+        <div class="client-info-item">
+          <span class="label">Email:</span>
+          <span>${clientDetails.email || "N/A"}</span>
+        </div>
+        <div class="client-info-item">
+          <span class="label">Phone:</span>
+          <span>${clientDetails.phone || "N/A"}</span>
+        </div>
+      </div>
+    </div>
     
     <div class="summary">
       <h2>Loan Summary</h2>
@@ -236,16 +288,10 @@ export const exportToPDF = (
   </html>
 `
 
-  // Create a direct download PDF option using jsPDF if available
   try {
     // Create a blob from the HTML content with proper encoding
     const blob = new Blob([html], { type: "text/html;charset=UTF-8" })
     const blobUrl = URL.createObjectURL(blob)
-
-    // Create a filename for the PDF
-    const filename = modelName
-      ? `amortization_schedule_${modelName.replace(/\s+/g, "_")}_${scheduleView}.pdf`
-      : `amortization_schedule_${scheduleView}.pdf`
 
     // Open the HTML in a new window for printing
     const printWindow = window.open(blobUrl, "_blank")

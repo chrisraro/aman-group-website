@@ -12,7 +12,7 @@ import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Check, ChevronsUpDown, Calculator, Download, Search, Loader2, AlertCircle, RefreshCw } from "lucide-react"
+import { Check, ChevronsUpDown, Calculator, Download, Search, Loader2, AlertCircle, RefreshCw } from 'lucide-react'
 import { cn } from "@/lib/utils"
 import { calculateLoan, formatCurrency, generateLoanAmortizationSchedule } from "@/lib/loan-calculations"
 import { useLoanCalculatorSettings } from "@/lib/hooks/useLoanCalculatorSettings"
@@ -47,6 +47,11 @@ export function LoanCalculatorForm({ initialPropertyId, initialPropertyType }: L
   const [propertySearchOpen, setPropertySearchOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
   const [downPaymentTerm, setDownPaymentTerm] = useState("24")
+
+  // Client details state
+  const [clientName, setClientName] = useState("")
+  const [clientEmail, setClientEmail] = useState("")
+  const [clientPhone, setClientPhone] = useState("")
 
   // Data hooks
   const {
@@ -190,8 +195,14 @@ export function LoanCalculatorForm({ initialPropertyId, initialPropertyType }: L
       term: calculation.loanTermYears,
     }
 
-    exportToPDFUtil(monthlyLoanSchedule, "monthly", loanDetailsForPdf, selectedProperty?.name)
-  }, [calculation, selectedProperty])
+    const clientDetails = {
+      name: clientName,
+      email: clientEmail,
+      phone: clientPhone,
+    }
+
+    exportToPDFUtil(monthlyLoanSchedule, "monthly", loanDetailsForPdf, clientDetails, selectedProperty?.name)
+  }, [calculation, selectedProperty, clientName, clientEmail, clientPhone])
 
   // Export Quotation PDF
   const handleExportQuotationPDF = useCallback(() => {
@@ -211,8 +222,18 @@ export function LoanCalculatorForm({ initialPropertyId, initialPropertyType }: L
       <meta charset="UTF-8">
       <title>Quotation for Purchase - ${selectedProperty.name}</title>
       <style>
-        @page { size: A4; margin: 1cm; }
+        @page { size: legal; margin: 1cm; } /* Set to legal size */
         body { font-family: Arial, sans-serif; margin: 0; padding: 20px; color: #333; font-size: 12px; }
+        .header-section {
+          display: flex;
+          align-items: center;
+          gap: 15px;
+          margin-bottom: 20px;
+        }
+        .logo {
+          height: 60px; /* Adjust size as needed */
+          width: auto;
+        }
         .header { text-align: center; margin-bottom: 20px; }
         .header h1 { font-size: 16px; margin: 5px 0; }
         .header h2 { font-size: 14px; margin: 5px 0; }
@@ -240,20 +261,23 @@ export function LoanCalculatorForm({ initialPropertyId, initialPropertyType }: L
         <button onclick="window.close()" style="padding: 10px 20px; background-color: #f0f0f0; color: #333; border: none; border-radius: 4px; cursor: pointer;">Close</button>
       </div>
 
-      <div class="header">
-        <h1>DHSUD LTS NO. 048</h1>
-        <h2>QUOTATION FOR PURCHASE OF LOT</h2>
-        <p>(Effective Jan. 23, 2024)</p>
+      <div class="header-section">
+        <img src="/icons/icon-192x192.png" alt="Aman Group Logo" class="logo" />
+        <div style="flex-grow: 1; text-align: center;">
+          <h1>DHSUD LTS NO. 048</h1>
+          <h2>QUOTATION FOR PURCHASE OF LOT</h2>
+          <p>(Effective Jan. 23, 2024)</p>
+        </div>
       </div>
 
       <div class="client-info">
         <table>
           <tr>
-            <td><strong>For:</strong> CUSTOMER NAME</td>
+            <td><strong>For:</strong> ${clientName || "CUSTOMER NAME"}</td>
             <td><strong>Date:</strong> ${formattedDate}</td>
           </tr>
           <tr>
-            <td colspan="2"><strong>Contact:</strong> customer@email.com | 09XX XXX XXXX</td>
+            <td colspan="2"><strong>Contact:</strong> ${clientEmail || "customer@email.com"} | ${clientPhone || "09XX XXX XXXX"}</td>
           </tr>
         </table>
       </div>
@@ -419,7 +443,7 @@ export function LoanCalculatorForm({ initialPropertyId, initialPropertyType }: L
             </td>
             <td>
               <div style="margin-bottom: 40px;"></div>
-              <div>CUSTOMER NAME</div>
+              <div>${clientName || "CUSTOMER NAME"}</div>
             </td>
           </tr>
         </table>
@@ -457,7 +481,7 @@ export function LoanCalculatorForm({ initialPropertyId, initialPropertyType }: L
     setTimeout(() => {
       URL.revokeObjectURL(blobUrl)
     }, 100)
-  }, [calculation, selectedProperty])
+  }, [calculation, selectedProperty, clientName, clientEmail, clientPhone])
 
   if (settingsLoading) {
     return (
@@ -482,6 +506,45 @@ export function LoanCalculatorForm({ initialPropertyId, initialPropertyType }: L
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
+        {/* Client Details Input Fields */}
+        <div className="space-y-4">
+          <h3 className="text-lg font-semibold">Client Details</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="client-name">Full Name</Label>
+              <Input
+                id="client-name"
+                type="text"
+                placeholder="Enter client's full name"
+                value={clientName}
+                onChange={(e) => setClientName(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="client-email">Email</Label>
+              <Input
+                id="client-email"
+                type="email"
+                placeholder="Enter client's email"
+                value={clientEmail}
+                onChange={(e) => setClientEmail(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="client-phone">Phone Number</Label>
+              <Input
+                id="client-phone"
+                type="tel"
+                placeholder="Enter client's phone number"
+                value={clientPhone}
+                onChange={(e) => setClientPhone(e.target.value)}
+              />
+            </div>
+          </div>
+        </div>
+
+        <Separator />
+
         {/* Property Selection */}
         <div className="space-y-2">
           <Label htmlFor="property-search">Select Property (Optional)</Label>

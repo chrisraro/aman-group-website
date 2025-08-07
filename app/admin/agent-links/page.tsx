@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { accreditedBrokerages } from "@/lib/brokerage-links"
 import { agentsByAgency, getAllAgents } from "@/lib/data/agents"
-import { Copy, Check, ExternalLink, Download, QrCode } from "lucide-react"
+import { Copy, Check, ExternalLink, Download, QrCode } from 'lucide-react'
 import QRCode from "react-qr-code"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
@@ -32,7 +32,7 @@ export default function AgentLinksPage() {
   // Get available agents based on selected agency
   const availableAgents = selectedAgency ? agentsByAgency[selectedAgency] || [] : []
 
-  const generateLink = () => {
+  const generateLink = async () => { // Made async
     if (!selectedAgency) return
 
     // Use the current origin for the base URL
@@ -40,8 +40,8 @@ export default function AgentLinksPage() {
 
     // Import the function dynamically to avoid circular dependencies
     import("@/lib/brokerage-links")
-      .then(({ generateBrokerageLink }) => {
-        const link = generateBrokerageLink(selectedAgency, baseUrl, selectedAgent || undefined)
+      .then(async ({ generateBrokerageLink }) => { // Await the import and then the function call
+        const link = await generateBrokerageLink(selectedAgency, baseUrl, selectedAgent || undefined)
         setGeneratedLink(link)
       })
       .catch((error) => {
