@@ -1,29 +1,41 @@
-import { useState, useEffect } from "react";
-import { useSearchParams } from "next/navigation";
-import { BrokerageLink } from "@/lib/brokerage-links";
+'use client'
 
+import { useEffect, useMemo, useState } from "react"
+import { useSearchParams } from "next/navigation"
+import type { BrokerageLink } from "@/lib/brokerage-links"
+import { getBrokerageFromParams } from "@/lib/brokerage-links"
+
+/**
+ * Reads and validates brokerage info from the current URL.
+ * Note: Prefer the global ReferralCapture to persist to storage.
+ */
 export function useBrokerageInfo() {
-  const searchParams = useSearchParams();
-  const [brokerageInfo, setBrokerageInfo] = useState<BrokerageLink | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const sp = useSearchParams()
+  const queryString = sp.toString()
+  const params = useMemo(() => new URLSearchParams(queryString), [queryString])
+
+  const [brokerageInfo, setBrokerageInfo] = useState<BrokerageLink | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    const fetchBrokerageInfo = async () => { // Made async
-      setIsLoading(true);
+    let isMounted = true
+    const load = async () => {
+      setIsLoading(true)
       try {
-        const { getBrokerageFromParams } = await import("@/lib/brokerage-links");
-        const info = await getBrokerageFromParams(searchParams); // Await the call
-        setBrokerageInfo(info);
-      } catch (error) {
-        console.error("Error fetching brokerage info:", error);
-        setBrokerageInfo(null);
+        const info = await getBrokerageFromParams(params)
+        if (isMounted) setBrokerageInfo(info)
+      } catch (err) {
+        console.error("Error fetching brokerage info:", err)
+        if (isMounted) setBrokerageInfo(null)
       } finally {
-        setIsLoading(false);
+        if (isMounted) setIsLoading(false)
       }
-    };
+    }
+    load()
+    return () => {
+      isMounted = false
+    }
+  }, [params])
 
-    fetchBrokerageInfo();
-  }, [searchParams]);
-
-  return { brokerageInfo, isLoading };
+  return { brokerageInfo, isLoading }
 }

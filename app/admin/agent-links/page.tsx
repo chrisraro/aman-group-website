@@ -85,6 +85,7 @@ export default function AgentLinksPage() {
       // Convert SVG to image
       const svgData = new XMLSerializer().serializeToString(svg)
       const img = new Image()
+      img.crossOrigin = "anonymous"
 
       // Create a blob from the SVG
       const svgBlob = new Blob([svgData], { type: "image/svg+xml;charset=utf-8" })
@@ -181,7 +182,7 @@ export default function AgentLinksPage() {
                     <SelectValue placeholder="Select an agent or leave blank for agency" />
                   </SelectTrigger>
                   <SelectContent className="max-h-[300px]">
-                    <SelectItem value="none">Agency Level (No Specific Agent)</SelectItem>
+                    <SelectItem value="">Agency Level (No Specific Agent)</SelectItem>
                     {availableAgents.map((agent) => (
                       <SelectItem key={agent.id} value={agent.id}>
                         {agent.name} ({agent.classification})
