@@ -1,5 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { lotOnlyProperties } from "@/data/lot-only-properties"
+import { after } from "next/server"
+import { incrementModuleChange, recordAdminActivity, setCounts } from "@/lib/server/admin-activity"
 
 export async function GET(request: NextRequest) {
   try {
@@ -70,7 +72,21 @@ export async function POST(request: Request) {
     }
 
     // For now, just return success since we're using static data
-    return NextResponse.json({ success: true })
+    const response = NextResponse.json({ success: true })
+
+    after(async () => {
+      try {
+        await recordAdminActivity({ module: "lot-only", action: "update" })
+        if (Array.isArray(properties)) {
+          await setCounts({ "lot-only": properties.length })
+        }
+        await incrementModuleChange("lot-only", 1)
+      } catch (e) {
+        console.error("lot-only POST activity error:", e)
+      }
+    })
+
+    return response
   } catch (error) {
     console.error("Error saving lot-only properties:", error)
     return NextResponse.json(
@@ -86,7 +102,18 @@ export async function POST(request: Request) {
 export async function PUT() {
   try {
     // For now, just return success since we're using static data
-    return NextResponse.json({ success: true })
+    const response = NextResponse.json({ success: true })
+
+    after(async () => {
+      try {
+        await recordAdminActivity({ module: "lot-only", action: "reset" })
+        await incrementModuleChange("lot-only", 1)
+      } catch (e) {
+        console.error("lot-only PUT activity error:", e)
+      }
+    })
+
+    return response
   } catch (error) {
     console.error("Error resetting lot-only data:", error)
     return NextResponse.json(
