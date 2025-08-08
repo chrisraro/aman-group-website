@@ -66,7 +66,6 @@ export default function BrokerageLinksPage() {
       // Convert SVG to image
       const svgData = new XMLSerializer().serializeToString(svg)
       const img = new Image()
-      img.crossOrigin = "anonymous"
 
       // Create a blob from the SVG
       const svgBlob = new Blob([svgData], { type: "image/svg+xml;charset=utf-8" })

@@ -1,6 +1,6 @@
 import type React from "react"
 import type { Metadata } from "next"
-import { Playfair_Display, Noto_Sans } from 'next/font/google'
+import { Playfair_Display, Noto_Sans } from "next/font/google"
 import "./globals.css"
 import { MainNav } from "@/components/main-nav"
 import { Footer } from "@/components/footer"
@@ -12,7 +12,6 @@ import { NetworkStatus } from "@/components/network-status"
 import { PWARegister } from "@/components/pwa-register"
 import { SplashScreen } from "@/components/splash-screen"
 import { Providers } from "./providers"
-import ReferralCapture from "@/components/referral-capture"
 
 // Load Playfair Display for headings
 const playfair = Playfair_Display({
@@ -32,7 +31,7 @@ const notoSans = Noto_Sans({
 export const metadata: Metadata = {
   title: "Aman Group - Real Estate Development",
   description: "Aman Group is a real estate development company in Naga City, Philippines.",
-  generator: "v0.dev",
+    generator: 'v0.dev'
 }
 
 export default function RootLayout({
@@ -46,7 +45,6 @@ export default function RootLayout({
       <body className={`${playfair.variable} ${notoSans.variable} font-sans`}>
         <Providers>
           <SkipToContent />
-          <ReferralCapture />
           <SplashScreen />
           <NavigationProgress />
           <MainNav />

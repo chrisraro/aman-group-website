@@ -1,23 +1,19 @@
-'use client'
+import { createHash } from "crypto"
 
-/**
- * Brokerage referral link utilities (client-safe).
- * - Uses Web Crypto API for SHA-256 hashing
- * - Avoids Node 'crypto' in the browser
- * - Avoids manual encodeURIComponent; URLSearchParams handles encoding
- */
-
+// Interface for brokerage data
 export interface BrokerageLink {
   id: string
   name: string
   agency: string
   department: string
   hash: string
+  // Add agent information
   agentId?: string
   agentName?: string
-  agentClassification?: 'Broker' | 'Salesperson'
+  agentClassification?: "Broker" | "Salesperson"
 }
 
+// List of accredited brokerages (this could come from a database in a real app)
 export const accreditedBrokerages = [
   { id: "m10", name: "Mariben C. Pante", agency: "Aces & B Realty", department: "Marketing" },
   { id: "s1", name: "Sany De Guzman & Edna Chavez", agency: "ADEG Realty", department: "Sales" },
@@ -47,90 +43,93 @@ export const accreditedBrokerages = [
   { id: "l3", name: "Jerwin Rojo", agency: "Young Achiever Realty", department: "Loans" },
 ]
 
-// Secret used to derive hashes. On client, avoid reading server-only envs.
-const SECRET_KEY =
-  typeof process !== "undefined" && (process as any)?.env?.BROKERAGE_SECRET_KEY
-    ? (process as any).env.BROKERAGE_SECRET_KEY
-    : "aman-group-brokerage-links-secret"
-
-async function sha256Hex(input: string): Promise<string> {
-  const data = new TextEncoder().encode(input)
-  const buf = await crypto.subtle.digest("SHA-256", data)
-  const arr = Array.from(new Uint8Array(buf))
-  return arr.map((b) => b.toString(16).padStart(2, "0")).join("")
-}
+// Secret key for hash generation - in a real app, this would be in environment variables
+const SECRET_KEY = process.env.BROKERAGE_SECRET_KEY || "aman-group-brokerage-links-secret"
 
 /**
- * Generate a secure-ish short hash for a brokerage+agent pair (client-side).
+ * Generate a secure hash for a brokerage link using Web Crypto API.
  */
 export async function generateBrokerageHash(brokerageId: string, agentId?: string): Promise<string> {
-  const text = `${brokerageId}-${agentId || ""}-${SECRET_KEY}`
-  const hex = await sha256Hex(text)
-  return hex.substring(0, 16)
+  const text = `${brokerageId}-${agentId || ""}-${SECRET_KEY}`;
+  const encoder = new TextEncoder();
+  const data = encoder.encode(text);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  const hexHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  return hexHash.substring(0, 16);
 }
 
 /**
- * Build a shareable referral link. Do NOT double-encode; URLSearchParams will encode values.
+ * Generate a shareable link for a brokerage
  */
 export async function generateBrokerageLink(brokerageId: string, baseUrl: string, agentId?: string): Promise<string> {
   const brokerage = accreditedBrokerages.find((b) => b.id === brokerageId)
   if (!brokerage) return ""
 
-  const hash = await generateBrokerageHash(brokerageId, agentId)
+  const hash = await generateBrokerageHash(brokerageId, agentId) // Await the async hash generation
   const params = new URLSearchParams({
     bid: brokerageId,
-    agency: brokerage.agency,
+    agency: encodeURIComponent(brokerage.agency),
     h: hash,
   })
-  if (agentId) params.set("aid", agentId)
+
+  // Add agent ID if provided
+  if (agentId) {
+    params.append("aid", agentId)
+  }
 
   return `${baseUrl}/?${params.toString()}`
 }
 
+/**
+ * Validate a brokerage link hash
+ */
 export async function validateBrokerageLink(brokerageId: string, hash: string, agentId?: string): Promise<boolean> {
-  const expected = await generateBrokerageHash(brokerageId, agentId)
-  return hash === expected
+  const expectedHash = await generateBrokerageHash(brokerageId, agentId) // Await the async hash generation
+  return hash === expectedHash
 }
 
 /**
- * Read and validate a referral from URL parameters.
- * Accepts URLSearchParams or Next.js ReadonlyURLSearchParams.
+ * Get brokerage information from URL parameters
  */
-export async function getBrokerageFromParams(
-  params: URLSearchParams | { get: (key: string) => string | null }
-): Promise<BrokerageLink | null> {
+export async function getBrokerageFromParams(params: URLSearchParams): Promise<BrokerageLink | null> {
   const brokerageId = params.get("bid")
   const agency = params.get("agency")
   const hash = params.get("h")
-  const agentId = params.get("aid") || undefined
+  const agentId = params.get("aid")
 
   if (!brokerageId || !agency || !hash) return null
-  if (!(await validateBrokerageLink(brokerageId, hash, agentId))) return null
 
+  // Validate the hash
+  if (!(await validateBrokerageLink(brokerageId, hash, agentId || undefined))) return null
+
+  // Find the brokerage in our list
   const brokerage = accreditedBrokerages.find((b) => b.id === brokerageId)
   if (!brokerage) return null
 
-  const link: BrokerageLink = {
+  // Create the base brokerage link
+  const brokerageLink: BrokerageLink = {
     id: brokerageId,
     name: brokerage.name,
-    agency, // already decoded by URLSearchParams
+    agency: decodeURIComponent(agency),
     department: brokerage.department,
     hash,
   }
 
+  // If agent ID is provided, add agent information
   if (agentId) {
     try {
       const { getAgentById } = await import("@/lib/data/agents")
       const agent = getAgentById(agentId)
       if (agent) {
-        link.agentId = agent.id
-        link.agentName = agent.name
-        link.agentClassification = agent.classification
+        brokerageLink.agentId = agent.id
+        brokerageLink.agentName = agent.name
+        brokerageLink.agentClassification = agent.classification
       }
-    } catch (err) {
-      console.error("Error loading agent data:", err)
+    } catch (error) {
+      console.error("Error importing agent data:", error)
     }
   }
 
-  return link
+  return brokerageLink
 }
