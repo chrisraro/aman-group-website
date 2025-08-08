@@ -1,58 +1,67 @@
 'use client'
 
 import { useEffect } from "react"
-import type { BrokerageLink } from "@/lib/brokerage-links"
-import { getBrokerageFromParams } from "@/lib/brokerage-links"
-import { storeBrokerageInfo } from "@/lib/storage-utils"
 
-/**
- * Mount this globally (e.g., in app/layout.tsx) to:
- * - Parse referral params (?bid, h, agency, aid)
- * - Validate them
- * - Persist to localStorage with expiration
- * - Clean up the URL (remove referral params)
- */
+type ReferralData = {
+  bid?: string
+  aid?: string
+  agency?: string
+  h?: string
+  src?: string
+}
+
+const STORAGE_KEY = "referralInfo"
+const DEFAULT_TTL_DAYS = 30
+
 export default function ReferralCapture() {
   useEffect(() => {
-    const run = async () => {
-      try {
-        const current = new URL(window.location.href)
-        if (!current.search) return
+    try {
+      const url = new URL(window.location.href)
+      const params = url.searchParams
 
-        // Only handle our referral params
-        const hasReferralParams =
-          current.searchParams.has("bid") || current.searchParams.has("h") || current.searchParams.has("agency") || current.searchParams.has("aid")
-        if (!hasReferralParams) return
+      // Keys we care about for referral tracking
+      const keys: (keyof ReferralData)[] = ["bid", "aid", "agency", "h", "src"]
+      const found: ReferralData = {}
+      let hasAny = false
 
-        const info: BrokerageLink | null = await getBrokerageFromParams(current.searchParams)
-        if (info) {
-          // Persist with expiration (see lib/storage-utils.ts)
-          storeBrokerageInfo({
-            id: info.id,
-            name: info.name,
-            agency: info.agency,
-            department: info.department,
-            hash: info.hash,
-            agentId: info.agentId,
-            agentName: info.agentName,
-            agentClassification: info.agentClassification,
-          })
+      for (const k of keys) {
+        const v = params.get(k)
+        if (v && v.trim().length) {
+          found[k] = v.trim()
+          hasAny = true
         }
-
-        // Clean the URL ref params so they don't linger
-        current.searchParams.delete("bid")
-        current.searchParams.delete("h")
-        current.searchParams.delete("agency")
-        current.searchParams.delete("aid")
-        const cleaned = `${current.pathname}${current.search ? `?${current.searchParams.toString()}` : ""}${current.hash}`
-        window.history.replaceState({}, "", cleaned)
-      } catch (e) {
-        console.error("Referral capture error:", e)
       }
-    }
 
-    run()
+      if (!hasAny) return
+
+      // Persist to localStorage with expiration
+      const now = Date.now()
+      const expiresAt = now + DEFAULT_TTL_DAYS * 24 * 60 * 60 * 1000
+      const payload = {
+        data: found,
+        capturedAt: now,
+        expiresAt,
+        version: 1,
+      }
+
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(payload))
+      } catch {
+        // Ignore storage failures (private mode, quota, etc.)
+      }
+
+      // Clean URL by removing referral params while preserving others
+      const clean = new URL(window.location.href)
+      keys.forEach((k) => clean.searchParams.delete(k))
+
+      if (clean.search !== url.search) {
+        window.history.replaceState({}, document.title, clean.toString())
+      }
+    } catch {
+      // Silently ignore any parsing errors
+    }
   }, [])
 
+  // Nothing to render
   return null
 }
