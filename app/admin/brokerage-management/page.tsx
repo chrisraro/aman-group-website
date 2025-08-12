@@ -1,11 +1,12 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   Dialog,
   DialogContent,
@@ -15,10 +16,8 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Plus, Edit, Trash2, Users, Building, Search } from "lucide-react"
-import { accreditedBrokerages } from "@/lib/brokerage-links"
-import { getAllAgents } from "@/lib/data/agents"
+import { Trash2, Edit, Plus, Search, RefreshCw, Users, Building } from "lucide-react"
+import { toast } from "@/hooks/use-toast"
 
 interface Brokerage {
   id: string
@@ -43,29 +42,9 @@ interface Agent {
 }
 
 export default function BrokerageManagementPage() {
-  const [brokerages, setBrokerages] = useState<Brokerage[]>(
-    accreditedBrokerages.map((b) => ({
-      ...b,
-      contactEmail: `contact@${b.agency.toLowerCase().replace(/\s+/g, "")}.com`,
-      contactPhone: "+63 912 345 6789",
-      address: "Metro Manila, Philippines",
-      status: "Active" as const,
-    })),
-  )
-
-  const [agents, setAgents] = useState<Agent[]>(
-    getAllAgents().map((a) => ({
-      ...a,
-      email: `${a.name.toLowerCase().replace(/\s+/g, ".")}@${
-        accreditedBrokerages
-          .find((b) => b.id === a.agencyId)
-          ?.agency.toLowerCase()
-          .replace(/\s+/g, "") || "agency"
-      }.com`,
-      phone: "+63 912 345 6789",
-      status: "Active" as const,
-    })),
-  )
+  const [brokerages, setBrokerages] = useState<Brokerage[]>([])
+  const [agents, setAgents] = useState<Agent[]>([])
+  const [loading, setLoading] = useState(true)
 
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedDepartment, setSelectedDepartment] = useState("All")
@@ -73,6 +52,190 @@ export default function BrokerageManagementPage() {
   const [isAddAgentOpen, setIsAddAgentOpen] = useState(false)
   const [editingBrokerage, setEditingBrokerage] = useState<Brokerage | null>(null)
   const [editingAgent, setEditingAgent] = useState<Agent | null>(null)
+
+  const loadBrokerages = async () => {
+    try {
+      const response = await fetch("/api/brokerages")
+      if (response.ok) {
+        const data = await response.json()
+        setBrokerages(data)
+      }
+    } catch (error) {
+      console.error("Error loading brokerages:", error)
+      toast({
+        title: "Error",
+        description: "Failed to load brokerages data",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const loadAgents = async () => {
+    try {
+      const response = await fetch("/api/agents")
+      if (response.ok) {
+        const data = await response.json()
+        setAgents(data)
+      }
+    } catch (error) {
+      console.error("Error loading agents:", error)
+      toast({
+        title: "Error",
+        description: "Failed to load agents data",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const saveBrokerages = async (updatedBrokerages: Brokerage[]) => {
+    try {
+      const response = await fetch("/api/brokerages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updatedBrokerages),
+      })
+      if (response.ok) {
+        setBrokerages(updatedBrokerages)
+        toast({
+          title: "Success",
+          description: "Brokerages updated successfully",
+        })
+      }
+    } catch (error) {
+      console.error("Error saving brokerages:", error)
+      toast({
+        title: "Error",
+        description: "Failed to save brokerages data",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const saveAgents = async (updatedAgents: Agent[]) => {
+    try {
+      const response = await fetch("/api/agents", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updatedAgents),
+      })
+      if (response.ok) {
+        setAgents(updatedAgents)
+        toast({
+          title: "Success",
+          description: "Agents updated successfully",
+        })
+      }
+    } catch (error) {
+      console.error("Error saving agents:", error)
+      toast({
+        title: "Error",
+        description: "Failed to save agents data",
+        variant: "destructive",
+      })
+    }
+  }
+
+  useEffect(() => {
+    const loadData = async () => {
+      setLoading(true)
+      await Promise.all([loadBrokerages(), loadAgents()])
+      setLoading(false)
+    }
+    loadData()
+  }, [])
+
+  const handleAddBrokerage = async (formData: FormData) => {
+    const newBrokerage: Brokerage = {
+      id: `new-${Date.now()}`,
+      name: formData.get("name") as string,
+      agency: formData.get("agency") as string,
+      department: formData.get("department") as string,
+      contactEmail: formData.get("contactEmail") as string,
+      contactPhone: formData.get("contactPhone") as string,
+      address: formData.get("address") as string,
+      status: "Active",
+    }
+    const updatedBrokerages = [...brokerages, newBrokerage]
+    await saveBrokerages(updatedBrokerages)
+    setIsAddBrokerageOpen(false)
+  }
+
+  const handleEditBrokerage = async (formData: FormData) => {
+    if (!editingBrokerage) return
+
+    const updatedBrokerage: Brokerage = {
+      ...editingBrokerage,
+      name: formData.get("name") as string,
+      agency: formData.get("agency") as string,
+      department: formData.get("department") as string,
+      contactEmail: formData.get("contactEmail") as string,
+      contactPhone: formData.get("contactPhone") as string,
+      address: formData.get("address") as string,
+    }
+
+    const updatedBrokerages = brokerages.map((b) => (b.id === editingBrokerage.id ? updatedBrokerage : b))
+    await saveBrokerages(updatedBrokerages)
+    setEditingBrokerage(null)
+  }
+
+  const handleDeleteBrokerage = async (id: string) => {
+    const updatedBrokerages = brokerages.filter((b) => b.id !== id)
+    const updatedAgents = agents.filter((a) => a.agencyId !== id)
+    await Promise.all([saveBrokerages(updatedBrokerages), saveAgents(updatedAgents)])
+  }
+
+  const handleAddAgent = async (formData: FormData) => {
+    const newAgent: Agent = {
+      id: `agent-${Date.now()}`,
+      name: formData.get("name") as string,
+      agencyId: formData.get("agencyId") as string,
+      classification: formData.get("classification") as "Broker" | "Salesperson",
+      team: formData.get("team") as "Alpha" | "Mavericks" | "Titans",
+      email: formData.get("email") as string,
+      phone: formData.get("phone") as string,
+      status: "Active",
+    }
+    const updatedAgents = [...agents, newAgent]
+    await saveAgents(updatedAgents)
+    setIsAddAgentOpen(false)
+  }
+
+  const handleEditAgent = async (formData: FormData) => {
+    if (!editingAgent) return
+
+    const updatedAgent: Agent = {
+      ...editingAgent,
+      name: formData.get("name") as string,
+      agencyId: formData.get("agencyId") as string,
+      classification: formData.get("classification") as "Broker" | "Salesperson",
+      team: formData.get("team") as "Alpha" | "Mavericks" | "Titans",
+      email: formData.get("email") as string,
+      phone: formData.get("phone") as string,
+    }
+
+    const updatedAgents = agents.map((a) => (a.id === editingAgent.id ? updatedAgent : a))
+    await saveAgents(updatedAgents)
+    setEditingAgent(null)
+  }
+
+  const handleDeleteAgent = async (id: string) => {
+    const updatedAgents = agents.filter((a) => a.id !== id)
+    await saveAgents(updatedAgents)
+  }
+
+  const toggleBrokerageStatus = async (id: string) => {
+    const updatedBrokerages = brokerages.map((b) =>
+      b.id === id ? { ...b, status: b.status === "Active" ? "Inactive" : "Active" } : b,
+    )
+    await saveBrokerages(updatedBrokerages)
+  }
+
+  const toggleAgentStatus = async (id: string) => {
+    const updatedAgents = agents.map((a) =>
+      a.id === id ? { ...a, status: a.status === "Active" ? "Inactive" : "Active" } : a,
+    )
+    await saveAgents(updatedAgents)
+  }
 
   // Filter brokerages
   const filteredBrokerages = brokerages.filter((brokerage) => {
@@ -90,90 +253,6 @@ export default function BrokerageManagementPage() {
     const matchesDepartment = selectedDepartment === "All" || brokerage?.department === selectedDepartment
     return matchesSearch && matchesDepartment
   })
-
-  const handleAddBrokerage = (formData: FormData) => {
-    const newBrokerage: Brokerage = {
-      id: `new-${Date.now()}`,
-      name: formData.get("name") as string,
-      agency: formData.get("agency") as string,
-      department: formData.get("department") as string,
-      contactEmail: formData.get("contactEmail") as string,
-      contactPhone: formData.get("contactPhone") as string,
-      address: formData.get("address") as string,
-      status: "Active",
-    }
-    setBrokerages([...brokerages, newBrokerage])
-    setIsAddBrokerageOpen(false)
-  }
-
-  const handleEditBrokerage = (formData: FormData) => {
-    if (!editingBrokerage) return
-
-    const updatedBrokerage: Brokerage = {
-      ...editingBrokerage,
-      name: formData.get("name") as string,
-      agency: formData.get("agency") as string,
-      department: formData.get("department") as string,
-      contactEmail: formData.get("contactEmail") as string,
-      contactPhone: formData.get("contactPhone") as string,
-      address: formData.get("address") as string,
-    }
-
-    setBrokerages(brokerages.map((b) => (b.id === editingBrokerage.id ? updatedBrokerage : b)))
-    setEditingBrokerage(null)
-  }
-
-  const handleDeleteBrokerage = (id: string) => {
-    setBrokerages(brokerages.filter((b) => b.id !== id))
-    // Also remove agents from this brokerage
-    setAgents(agents.filter((a) => a.agencyId !== id))
-  }
-
-  const handleAddAgent = (formData: FormData) => {
-    const newAgent: Agent = {
-      id: `agent-${Date.now()}`,
-      name: formData.get("name") as string,
-      agencyId: formData.get("agencyId") as string,
-      classification: formData.get("classification") as "Broker" | "Salesperson",
-      team: formData.get("team") as "Alpha" | "Mavericks" | "Titans",
-      email: formData.get("email") as string,
-      phone: formData.get("phone") as string,
-      status: "Active",
-    }
-    setAgents([...agents, newAgent])
-    setIsAddAgentOpen(false)
-  }
-
-  const handleEditAgent = (formData: FormData) => {
-    if (!editingAgent) return
-
-    const updatedAgent: Agent = {
-      ...editingAgent,
-      name: formData.get("name") as string,
-      agencyId: formData.get("agencyId") as string,
-      classification: formData.get("classification") as "Broker" | "Salesperson",
-      team: formData.get("team") as "Alpha" | "Mavericks" | "Titans",
-      email: formData.get("email") as string,
-      phone: formData.get("phone") as string,
-    }
-
-    setAgents(agents.map((a) => (a.id === editingAgent.id ? updatedAgent : a)))
-    setEditingAgent(null)
-  }
-
-  const handleDeleteAgent = (id: string) => {
-    setAgents(agents.filter((a) => a.id !== id))
-  }
-
-  const toggleBrokerageStatus = (id: string) => {
-    setBrokerages(
-      brokerages.map((b) => (b.id === id ? { ...b, status: b.status === "Active" ? "Inactive" : "Active" } : b)),
-    )
-  }
-
-  const toggleAgentStatus = (id: string) => {
-    setAgents(agents.map((a) => (a.id === id ? { ...a, status: a.status === "Active" ? "Inactive" : "Active" } : a)))
-  }
 
   const BrokerageForm = ({
     brokerage,
@@ -297,15 +376,18 @@ export default function BrokerageManagementPage() {
     </form>
   )
 
-  return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold">Brokerage & Agent Management</h1>
-          <p className="text-muted-foreground">Manage your partner brokerages and their agents</p>
-        </div>
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <RefreshCw className="h-8 w-8 animate-spin" />
+        <span className="ml-2">Loading data...</span>
       </div>
+    )
+  }
 
+  return (
+    <div className="container mx-auto py-12">
+      <h1 className="text-3xl font-bold mb-8">Brokerage & Agent Management</h1>
       {/* Search and Filters */}
       <Card>
         <CardHeader>

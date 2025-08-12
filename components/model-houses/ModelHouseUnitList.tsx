@@ -61,12 +61,12 @@ export function ModelHouseUnitList({ seriesId }: ModelHouseUnitListProps) {
             {filteredUnits.map((unit) => (
               <Card key={unit.id} className="overflow-hidden">
                 <CardContent className="p-0">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-0">
                     <div
                       className="h-40 md:h-full bg-cover bg-center"
                       style={{ backgroundImage: `url(${unit.imageUrl || "/placeholder.svg?height=200&width=300"})` }}
                     ></div>
-                    <div className="p-4 md:col-span-2">
+                    <div className="p-4 sm:p-6 md:col-span-2">
                       <h3 className="text-lg font-bold mb-2">{unit.name}</h3>
                       <div className="grid grid-cols-3 gap-2 mb-3">
                         <div className="flex items-center">

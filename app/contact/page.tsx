@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
-import { Home, Mail, MapPin, Phone, Calendar } from "lucide-react"
+import { Home, Mail, MapPin, Phone, Building } from "lucide-react"
 import { Checkbox } from "@/components/ui/checkbox"
 
 import { Button } from "@/components/ui/button"
@@ -15,54 +15,30 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { submitContactForm } from "@/app/actions/contact"
 import { getAllModelHouseSeries, getModelHouseSeriesById } from "@/data/model-houses"
 import { getBrokerageFromParams } from "@/lib/brokerage-links"
-import { getStoredBrokerageInfo, getReferralExpirationDate, getDaysUntilExpiration } from "@/lib/storage-utils"
+import { getStoredBrokerageInfo, getDaysUntilExpiration } from "@/lib/storage-utils"
 
-// Add broker data structure after imports
-const accreditedBrokers = [
-  // Sales Department Brokers
-  { id: "s1", name: "Sany De Guzman & Edna Chavez", agency: "ADEG Realty", department: "Sales", team: "Mavericks" },
-  { id: "s2", name: "Adolfo Encila Jr.", agency: "Advench Realty", department: "Sales", team: "Mavericks" },
-  { id: "s3", name: "Romeo Delas Alas", agency: "Delaber Realty", department: "Sales", team: "Mavericks" },
-  {
-    id: "s4",
-    name: "Roi Marc Teodoro & Glennda Teodoro",
-    agency: "G.A. Teodoro Realty",
-    department: "Sales",
-    team: "Mavericks",
-  },
-  { id: "s5", name: "Marianne Olaño", agency: "Olaño Realty", department: "Sales", team: "Mavericks" },
-  { id: "s6", name: "Engr. Reinaldo Corre Jr.", agency: "C-Realty", department: "Sales", team: "Mavericks" },
-  { id: "s7", name: "Jun Kalaw", agency: "UMG Realty", department: "Sales", team: "Mavericks" },
-  {
-    id: "s8",
-    name: "Jenelyn T. Janculan",
-    agency: "EasyHomes Realty Services",
-    department: "Sales",
-    team: "Mavericks",
-  },
-  { id: "s9", name: "Mary Grace A. Hallare", agency: "Buena Tierra Realty", department: "Sales", team: "Mavericks" },
+// Define interfaces for dynamic broker and agent data
+interface Brokerage {
+  id: string
+  name: string
+  agency: string
+  department: string
+  contactEmail?: string
+  contactPhone?: string
+  address?: string
+  status: "Active" | "Inactive"
+}
 
-  // Marketing Department Brokers
-  { id: "m1", name: "Roden Rojo", agency: "Red Zeal Realty", department: "Marketing", team: "Alpha" },
-  { id: "m2", name: "Armando Aman", agency: "Audjean Realty", department: "Marketing", team: "Alpha" },
-  { id: "m3", name: "Desiree Bentor", agency: "Dezhomes Realty", department: "Marketing", team: "Alpha" },
-  { id: "m4", name: "Allan Remoquillo", agency: "Sweetville Realty", department: "Marketing", team: "Alpha" },
-  { id: "m5", name: "Renato Guzman", agency: "First Gold Land Realty", department: "Marketing", team: "Alpha" },
-  { id: "m6", name: "Ma. Shiela E. Salvo", agency: "Salvo's House Realty", department: "Marketing", team: "Alpha" },
-  { id: "m7", name: "Luz Obsum", agency: "Obsum Realty", department: "Marketing", team: "Alpha" },
-  { id: "m8", name: "Maricel Adan", agency: "Giya Realty", department: "Marketing", team: "Alpha" },
-  { id: "m9", name: "Angelica De Castro", agency: "Deocrats Realty", department: "Marketing", team: "Alpha" },
-  { id: "m10", name: "Mariben C. Pante", agency: "Aces & B Realty", department: "Marketing", team: "Alpha" },
-  { id: "m11", name: "Viva Francia A. Rojo", agency: "Viva Realm Realty", department: "Marketing", team: "Alpha" },
-
-  // Loans Department Brokers
-  { id: "l1", name: "Emily and Jaime Kalaw", agency: "K-Realty", department: "Loans", team: "Titans" },
-  { id: "l2", name: "Cecile M. Rivera", agency: "CMR Realty", department: "Loans", team: "Titans" },
-  { id: "l3", name: "Jerwin Rojo", agency: "Young Achiever Realty", department: "Loans", team: "Titans" },
-  { id: "l4", name: "Magie R. Hernandez", agency: "MRH Realty", department: "Loans", team: "Titans" },
-  { id: "l5", name: "Wewet Mago", agency: "Terra Verde Realty", department: "Loans", team: "Titans" },
-  { id: "l6", name: "Emma Dolor Parco", agency: "EDP968 Real Estate Services", department: "Loans", team: "Titans" },
-].sort((a, b) => a.agency.localeCompare(b.agency))
+interface Agent {
+  id: string
+  name: string
+  agencyId: string
+  classification: "Broker" | "Salesperson"
+  team: "Alpha" | "Mavericks" | "Titans"
+  email?: string
+  phone?: string
+  status: "Active" | "Inactive"
+}
 
 export default function ContactPage() {
   const searchParams = useSearchParams()
@@ -79,33 +55,75 @@ export default function ContactPage() {
   } | null>(null)
   const [daysRemaining, setDaysRemaining] = useState<number>(0)
 
+  const [accreditedBrokers, setAccreditedBrokers] = useState<Brokerage[]>([])
+  const [agents, setAgents] = useState<Agent[]>([])
+  const [loadingBrokers, setLoadingBrokers] = useState(true)
+
+  useEffect(() => {
+    const loadBrokerageData = async () => {
+      try {
+        const [brokersResponse, agentsResponse] = await Promise.all([fetch("/api/brokerages"), fetch("/api/agents")])
+
+        if (brokersResponse.ok) {
+          const brokersData = await brokersResponse.json()
+          // Filter only active brokers and sort by agency name
+          const activeBrokers = brokersData
+            .filter((b: Brokerage) => b.status === "Active")
+            .sort((a: Brokerage, b: Brokerage) => a.agency.localeCompare(b.agency))
+          setAccreditedBrokers(activeBrokers)
+        }
+
+        if (agentsResponse.ok) {
+          const agentsData = await agentsResponse.json()
+          // Filter only active agents
+          const activeAgents = agentsData.filter((a: Agent) => a.status === "Active")
+          setAgents(activeAgents)
+        }
+      } catch (error) {
+        console.error("Error loading brokerage data:", error)
+        // Fallback to empty arrays if API fails
+        setAccreditedBrokers([])
+        setAgents([])
+      } finally {
+        setLoadingBrokers(false)
+      }
+    }
+
+    loadBrokerageData()
+  }, [])
+
   // Check for brokerage link parameters or localStorage
   useEffect(() => {
-    // First check URL parameters
-    const brokerageFromParams = getBrokerageFromParams(searchParams)
-    if (brokerageFromParams) {
-      setBrokerageInfo(brokerageFromParams)
-      return
+    const loadBrokerageInfo = async () => {
+      // First check URL parameters
+      const brokerageFromParams = await getBrokerageFromParams(searchParams)
+      if (brokerageFromParams) {
+        setBrokerageInfo(brokerageFromParams)
+        return
+      }
+
+      // If not in URL, check localStorage
+      const storedBrokerage = getStoredBrokerageInfo()
+      if (storedBrokerage) {
+        setBrokerageInfo({
+          id: storedBrokerage.id,
+          name: storedBrokerage.name,
+          agency: storedBrokerage.agency,
+          department: storedBrokerage.department,
+          hash: storedBrokerage.hash,
+          expirationDate: storedBrokerage.expirationDate,
+          agentId: storedBrokerage.agentId,
+          agentName: storedBrokerage.agentName,
+          agentClassification: storedBrokerage.agentClassification,
+        })
+
+        // Calculate days remaining
+        const days = getDaysUntilExpiration()
+        setDaysRemaining(days)
+      }
     }
 
-    // If not in URL, check localStorage
-    const storedBrokerage = getStoredBrokerageInfo()
-    if (storedBrokerage) {
-      setBrokerageInfo({
-        id: storedBrokerage.id,
-        name: storedBrokerage.name,
-        agency: storedBrokerage.agency,
-        department: storedBrokerage.department,
-        hash: storedBrokerage.hash,
-        expirationDate: storedBrokerage.expirationDate,
-        agentId: storedBrokerage.agentId,
-        agentName: storedBrokerage.agentName,
-        agentClassification: storedBrokerage.agentClassification,
-      })
-
-      // Set days remaining
-      setDaysRemaining(getDaysUntilExpiration())
-    }
+    loadBrokerageInfo()
   }, [searchParams])
 
   return (
@@ -129,22 +147,39 @@ export default function ContactPage() {
 
         {/* Show brokerage referral info if present */}
         {brokerageInfo && (
-          <div className="mt-4 inline-block bg-green-50 text-green-700 px-4 py-3 rounded-md border border-green-200">
-            <div className="flex items-center">
-              <Calendar className="h-5 w-5 mr-2" />
-              <div>
-                <p className="font-medium">Referred by: {brokerageInfo.agency}</p>
-                {brokerageInfo.agentName && (
-                  <p className="text-sm">
-                    Agent: {brokerageInfo.agentName} ({brokerageInfo.agentClassification})
+          <div className="bg-primary/10 border-l-4 border-primary p-4 mb-6">
+            <div className="flex items-start">
+              <div className="flex-shrink-0">
+                <Building className="h-5 w-5 text-primary" />
+              </div>
+              <div className="ml-3 flex-1">
+                <h3 className="text-sm font-medium text-primary">Brokerage Referral Active</h3>
+                <div className="mt-1 text-sm text-primary/80">
+                  <p>
+                    <strong>Agency:</strong> {brokerageInfo.agency}
                   </p>
-                )}
-                {brokerageInfo.expirationDate && (
-                  <p className="text-sm mt-1">
-                    Referral valid until: <span className="font-medium">{getReferralExpirationDate()}</span>
-                    {daysRemaining > 0 && <span className="ml-1 text-xs">({daysRemaining} days remaining)</span>}
+                  <p>
+                    <strong>Contact:</strong> {brokerageInfo.name}
                   </p>
-                )}
+                  {brokerageInfo.agentName && (
+                    <p>
+                      <strong>Agent:</strong> {brokerageInfo.agentName} ({brokerageInfo.agentClassification})
+                    </p>
+                  )}
+                  <p>
+                    <strong>Team:</strong>{" "}
+                    {brokerageInfo.department === "Marketing"
+                      ? "Alpha"
+                      : brokerageInfo.department === "Sales"
+                        ? "Mavericks"
+                        : "Titans"}
+                  </p>
+                  {daysRemaining > 0 && (
+                    <p>
+                      <strong>Expires in:</strong> {daysRemaining} day{daysRemaining !== 1 ? "s" : ""}
+                    </p>
+                  )}
+                </div>
               </div>
             </div>
           </div>
@@ -156,7 +191,7 @@ export default function ContactPage() {
         <Card>
           <CardContent className="p-6">
             <h2 className="text-2xl font-bold mb-6">Send Us a Message</h2>
-            <ContactForm brokerageInfo={brokerageInfo} />
+            <ContactForm brokerageInfo={brokerageInfo} accreditedBrokers={accreditedBrokers} />
           </CardContent>
         </Card>
 
@@ -248,9 +283,10 @@ interface ContactFormProps {
     agentName?: string
     agentClassification?: "Broker" | "Salesperson"
   } | null
+  accreditedBrokers: Brokerage[]
 }
 
-function ContactForm({ brokerageInfo }: ContactFormProps) {
+function ContactForm({ brokerageInfo, accreditedBrokers }: ContactFormProps) {
   // Get query parameters from URL
   const searchParams = useSearchParams()
   const queryPropertyInterest = searchParams.get("propertyInterest")
@@ -275,7 +311,7 @@ function ContactForm({ brokerageInfo }: ContactFormProps) {
   const [initialValuesSet, setInitialValuesSet] = useState(false)
 
   // Add these state variables after other state variables
-  const [hasInteractedWithBroker, setHasInteractedWithBroker] = useState<boolean>(false)
+  const [hasInteractedWithBroker, setHasInteractedWithBroker] = useState<boolean>(!!brokerageInfo)
   const [selectedBroker, setSelectedBroker] = useState<string>("")
   const [otherBrokerName, setOtherBrokerName] = useState<string>("")
   const [brokerDepartment, setBrokerDepartment] = useState<string>("All")
@@ -283,24 +319,7 @@ function ContactForm({ brokerageInfo }: ContactFormProps) {
   // Set broker information from brokerageInfo prop
   useEffect(() => {
     if (brokerageInfo) {
-      setHasInteractedWithBroker(true)
-
-      // Set department based on brokerage department
-      if (brokerageInfo.department === "Sales") {
-        setBrokerDepartment("Sales")
-      } else if (brokerageInfo.department === "Marketing") {
-        setBrokerDepartment("Marketing")
-      } else if (brokerageInfo.department === "Loans") {
-        setBrokerDepartment("Loans")
-      }
-
-      // Find and set the broker ID
-      const broker = accreditedBrokers.find(
-        (b) => b.agency === brokerageInfo.agency && b.department === brokerageInfo.department,
-      )
-      if (broker) {
-        setSelectedBroker(broker.id)
-      }
+      setSelectedBroker(`${brokerageInfo.id}|${brokerageInfo.name}|${brokerageInfo.agency}|${brokerageInfo.department}`)
     }
   }, [brokerageInfo])
 
@@ -400,12 +419,10 @@ function ContactForm({ brokerageInfo }: ContactFormProps) {
           formData.append("brokerName", otherBrokerName)
           formData.append("brokerAgency", "Other")
         } else {
-          const broker = accreditedBrokers.find((b) => b.id === selectedBroker)
-          if (broker) {
-            formData.append("brokerName", otherBrokerName) // Use the entered broker name
-            formData.append("brokerAgency", broker.agency)
-            formData.append("brokerTeam", broker.department) // Changed from brokerDepartment
-          }
+          const [brokerId, brokerName, brokerAgency, brokerDepartment] = selectedBroker.split("|")
+          formData.append("brokerName", brokerName)
+          formData.append("brokerAgency", brokerAgency)
+          formData.append("brokerTeam", brokerDepartment)
         }
       }
 
@@ -447,7 +464,11 @@ function ContactForm({ brokerageInfo }: ContactFormProps) {
         setModelHousesSeries("")
         setModelHousesUnit("")
         setHasInteractedWithBroker(brokerageInfo ? true : false) // Keep broker info if from referral link
-        setSelectedBroker(brokerageInfo && brokerageInfo.id ? brokerageInfo.id : "")
+        setSelectedBroker(
+          brokerageInfo && brokerageInfo.id
+            ? `${brokerageInfo.id}|${brokerageInfo.name}|${brokerageInfo.agency}|${brokerageInfo.department}`
+            : "",
+        )
         setOtherBrokerName("")
         setBrokerDepartment(brokerageInfo ? brokerageInfo.department : "All")
       }
@@ -545,101 +566,89 @@ function ContactForm({ brokerageInfo }: ContactFormProps) {
         </div>
       )}
 
-      {/* Add this section before the message field in the form */}
-      <div className="space-y-4 border-t pt-4 mt-4">
-        <div className="flex items-center">
-          <Checkbox
-            id="broker-interaction"
-            checked={hasInteractedWithBroker}
-            onCheckedChange={(checked) => setHasInteractedWithBroker(checked === true)}
-            disabled={!!brokerageInfo} // Disable if from brokerage link
-          />
-          <Label htmlFor="broker-interaction" className="ml-2">
-            I have previously interacted with an accredited broker
-          </Label>
+      {/* Broker Selection */}
+      <div className="space-y-2">
+        <Label htmlFor="broker">
+          Have you interacted with any of our accredited brokers?{" "}
+          {!brokerageInfo && <span className="text-red-500">*</span>}
+        </Label>
+        <div className="space-y-3">
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="no-broker"
+              name="hasInteractedWithBroker"
+              value="false"
+              checked={!hasInteractedWithBroker}
+              onChange={() => setHasInteractedWithBroker(false)}
+              disabled={!!brokerageInfo}
+            />
+            <Label htmlFor="no-broker" className="text-sm font-normal">
+              No, I haven't interacted with any broker
+            </Label>
+          </div>
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="yes-broker"
+              name="hasInteractedWithBroker"
+              value="true"
+              checked={hasInteractedWithBroker}
+              onChange={() => setHasInteractedWithBroker(true)}
+              disabled={!!brokerageInfo}
+            />
+            <Label htmlFor="yes-broker" className="text-sm font-normal">
+              Yes, I have interacted with a broker
+            </Label>
+          </div>
         </div>
 
-        {hasInteractedWithBroker && (
-          <div className="space-y-4 pl-6">
-            <div>
-              <Label htmlFor="broker-department">Filter by Team</Label>
-              <Select
-                value={brokerDepartment}
-                onValueChange={setBrokerDepartment}
-                disabled={!!brokerageInfo} // Disable if from brokerage link
-              >
-                <SelectTrigger id="broker-department" className={brokerageInfo ? "bg-gray-100" : ""}>
-                  <SelectValue placeholder="Select a team" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="All">All Teams</SelectItem>
-                  <SelectItem value="Sales">Team Mavericks</SelectItem>
-                  <SelectItem value="Marketing">Team Alpha</SelectItem>
-                  <SelectItem value="Loans">Team Titans</SelectItem>
-                </SelectContent>
-              </Select>
-              {brokerageInfo && (
-                <p className="text-xs text-muted-foreground mt-1">
-                  This field is pre-filled based on your referral link.
-                </p>
-              )}
-            </div>
-
-            {/* Update the broker selection dropdown to sort alphabetically */}
-            <div>
-              <Label htmlFor="broker-selection">Select a Brokerage</Label>
-              <Select
-                value={selectedBroker}
-                onValueChange={setSelectedBroker}
-                disabled={!!brokerageInfo} // Disable if from brokerage link
-              >
-                <SelectTrigger id="broker-selection" className={brokerageInfo ? "bg-gray-100" : ""}>
-                  <SelectValue placeholder="Select a brokerage" />
-                </SelectTrigger>
-                <SelectContent className="max-h-[300px]">
-                  {accreditedBrokers
-                    .filter((broker) => brokerDepartment === "All" || broker.department === brokerDepartment)
-                    .sort((a, b) => a.agency.localeCompare(b.agency))
-                    .map((broker) => (
-                      <SelectItem key={broker.id} value={broker.id}>
-                        {broker.agency}
-                      </SelectItem>
-                    ))}
-                  <SelectItem value="other">Other (not listed)</SelectItem>
-                </SelectContent>
-              </Select>
-              {brokerageInfo && (
-                <p className="text-xs text-muted-foreground mt-1">
-                  This field is pre-filled based on your referral link.
-                </p>
-              )}
-            </div>
-
-            {selectedBroker && selectedBroker !== "other" && (
-              <div>
-                <Label htmlFor="broker-name">Broker/Agent's Name</Label>
-                <Input
-                  id="broker-name"
-                  value={otherBrokerName}
-                  onChange={(e) => setOtherBrokerName(e.target.value)}
-                  placeholder="Enter broker/agent's name"
-                />
-              </div>
-            )}
-
-            {selectedBroker === "other" && (
-              <div>
-                <Label htmlFor="other-broker">Broker/Agent's Name</Label>
-                <Input
-                  id="other-broker"
-                  value={otherBrokerName}
-                  onChange={(e) => setOtherBrokerName(e.target.value)}
-                  placeholder="Enter broker/agent's name"
-                />
-              </div>
-            )}
-          </div>
-        )}
+        {/* Broker Selection Dropdown */}
+        <div className="mt-4">
+          <Label htmlFor="brokerSelect">Select Broker/Agency</Label>
+          <Select
+            name="brokerSelect"
+            disabled={!!brokerageInfo || !accreditedBrokers.length}
+            defaultValue={
+              brokerageInfo
+                ? `${brokerageInfo.id}|${brokerageInfo.name}|${brokerageInfo.agency}|${brokerageInfo.department}`
+                : ""
+            }
+            onValueChange={setSelectedBroker}
+          >
+            <SelectTrigger>
+              <SelectValue
+                placeholder={
+                  !accreditedBrokers.length
+                    ? "Loading brokers..."
+                    : brokerageInfo
+                      ? `${brokerageInfo.agency} - ${brokerageInfo.name}`
+                      : "Select a broker/agency"
+                }
+              />
+            </SelectTrigger>
+            <SelectContent className="max-h-60">
+              {accreditedBrokers.map((broker) => (
+                <SelectItem key={broker.id} value={`${broker.id}|${broker.name}|${broker.agency}|${broker.department}`}>
+                  <div className="flex flex-col">
+                    <span className="font-medium">{broker.agency}</span>
+                    <span className="text-sm text-muted-foreground">
+                      {broker.name} - Team{" "}
+                      {broker.department === "Marketing"
+                        ? "Alpha"
+                        : broker.department === "Sales"
+                          ? "Mavericks"
+                          : "Titans"}
+                    </span>
+                  </div>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {brokerageInfo && (
+            <p className="text-sm text-muted-foreground mt-1">
+              This field is pre-filled based on your referral link and cannot be changed.
+            </p>
+          )}
+        </div>
       </div>
 
       <div>
