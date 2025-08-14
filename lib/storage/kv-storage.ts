@@ -4,6 +4,7 @@ import { DEFAULT_LOAN_CALCULATOR_SETTINGS } from "@/types/loan-calculator"
 import { modelHouseSeries } from "@/data/model-houses"
 import { accreditedBrokerages } from "@/lib/data/brokerages"
 import { getAllAgents } from "@/lib/data/agents"
+import type { Brokerage, Agent } from "@/types/brokerage"
 
 const LOAN_CALCULATOR_SETTINGS_KEY = "loan-calculator-settings"
 const MODEL_HOUSES_DATA_KEY = "model-houses-data"
@@ -91,13 +92,13 @@ export async function resetModelHousesData(): Promise<{ success: boolean; error?
 }
 
 // Brokerage CRUD Functions
-export async function getBrokeragesData() {
+export async function getBrokeragesData(): Promise<Brokerage[]> {
   try {
-    const data = await kv.get(BROKERAGES_DATA_KEY)
+    const data = await kv.get<Brokerage[]>(BROKERAGES_DATA_KEY)
 
     if (!data) {
       // If no data exists, save and return defaults from static data
-      const defaultBrokerages = accreditedBrokerages.map((b) => ({
+      const defaultBrokerages: Brokerage[] = accreditedBrokerages.map((b) => ({
         ...b,
         contactEmail: `contact@${b.agency.toLowerCase().replace(/\s+/g, "")}.com`,
         contactPhone: "+63 912 345 6789",
@@ -122,7 +123,7 @@ export async function getBrokeragesData() {
   }
 }
 
-export async function saveBrokeragesData(data: any[]): Promise<{ success: boolean; error?: string }> {
+export async function saveBrokeragesData(data: Brokerage[]): Promise<{ success: boolean; error?: string }> {
   try {
     await kv.set(BROKERAGES_DATA_KEY, data)
     return { success: true }
@@ -150,13 +151,13 @@ export async function resetBrokeragesData(): Promise<{ success: boolean; error?:
 }
 
 // Agent CRUD Functions
-export async function getAgentsData() {
+export async function getAgentsData(): Promise<Agent[]> {
   try {
-    const data = await kv.get(AGENTS_DATA_KEY)
+    const data = await kv.get<Agent[]>(AGENTS_DATA_KEY)
 
     if (!data) {
       // If no data exists, save and return defaults from static data
-      const defaultAgents = getAllAgents().map((a) => ({
+      const defaultAgents: Agent[] = getAllAgents().map((a) => ({
         ...a,
         email: `${a.name.toLowerCase().replace(/\s+/g, ".")}@${
           accreditedBrokerages
@@ -189,7 +190,7 @@ export async function getAgentsData() {
   }
 }
 
-export async function saveAgentsData(data: any[]): Promise<{ success: boolean; error?: string }> {
+export async function saveAgentsData(data: Agent[]): Promise<{ success: boolean; error?: string }> {
   try {
     await kv.set(AGENTS_DATA_KEY, data)
     return { success: true }
@@ -201,7 +202,7 @@ export async function saveAgentsData(data: any[]): Promise<{ success: boolean; e
 
 export async function resetAgentsData(): Promise<{ success: boolean; error?: string }> {
   try {
-    const defaultAgents = getAllAgents().map((a) => ({
+    const defaultAgents: Agent[] = getAllAgents().map((a) => ({
       ...a,
       email: `${a.name.toLowerCase().replace(/\s+/g, ".")}@${
         accreditedBrokerages

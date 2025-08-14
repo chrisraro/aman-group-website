@@ -5,6 +5,9 @@ const SECRET_KEY = process.env.BROKERAGE_SECRET_KEY || "aman-group-brokerage-lin
 import { accreditedBrokerages } from "@/lib/data/brokerages"
 import type { BrokerageLink } from "@/types/BrokerageLink"
 
+export { accreditedBrokerages }
+export type { BrokerageLink }
+
 /**
  * Generate a secure hash for a brokerage link using Web Crypto API.
  * Works in both browser and Node.js environments.
